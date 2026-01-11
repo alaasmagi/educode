@@ -1,0 +1,28 @@
+meta {
+  name: Auth/Register
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:5139/api/Auth/Register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "fullname": "FULL NAME",
+    "email": "EMAIL",
+    "password": "PASSWORD",
+    "userRole": "USERTYPE",
+    "studentCode": "STUDENTCODE(NULLABLE)",
+    "client": "Bruno"
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

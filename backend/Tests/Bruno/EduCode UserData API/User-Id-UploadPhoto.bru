@@ -1,0 +1,16 @@
+meta {
+  name: User/Id/UploadPhoto
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:5139/api/User/Id/{id}/UploadPhoto
+  body: multipartForm
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

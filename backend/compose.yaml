@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  webapp:
+    image: educode-backend
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - ConnectionStrings__DefaultConnection=${PG_DB_CONNECTION}
+      - PG_DB_CONNECTION=${PG_DB_CONNECTION}
+      - REDIS_CONNECTION=${REDIS_CONNECTION}
+      - OTPKEY=${OTPKEY}
+      - OTP_MINUTES=${OTP_MINUTES}
+      - REFRESH_TOKEN_DAYS=${REFRESH_TOKEN_DAYS}
+      - REFRESH_TOKEN_COOKIE_DAYS=${REFRESH_TOKEN_COOKIE_DAYS}
+      - ADMIN_USER_BCRYPT=${ADMIN_USER_BCRYPT}
+      - ADMIN_KEY_BCRYPT=${ADMIN_KEY_BCRYPT}
+      - JWTKEY=${JWTKEY}
+      - JWTAUD=${JWTAUD}
+      - JWTISS=${JWTISS}
+      - JWT_MINUTES=${JWT_MINUTES}
+      - JWT_COOKIE_MINUTES=${JWT_COOKIE_MINUTES}
+      - MAILSENDER_EMAIL=${MAILSENDER_EMAIL}
+      - MAILSENDER_KEY=${MAILSENDER_KEY}
+      - MAILSENDER_HOST=${MAILSENDER_HOST}
+      - MAILSENDER_PORT=${MAILSENDER_PORT}
+      - OCI_KEY=${OCI_KEY}
+      - OCI_TENANCY_ID=${OCI_TENANCY_ID}
+      - OCI_USER_ID=${OCI_USER_ID}
+      - OCI_FINGERPRINT=${OCI_FINGERPRINT}
+      - OCI_REGION=${OCI_REGION}
+      - OCI_BUCKET_NAME=${OCI_BUCKET_NAME}
+      - OCI_PUBLIC_URL=${OCI_PUBLIC_URL}
+      - SOFTDELETE_EXPIRATION_DAYS=${SOFTDELETE_EXPIRATION_DAYS}
+      - FRONTENDURL=${FRONTENDURL}
+      
+
+

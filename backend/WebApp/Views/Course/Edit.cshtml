@@ -1,0 +1,66 @@
+@model App.Domain.CourseEntity
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>CourseEntity</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="CourseCode" class="control-label"></label>
+                <input asp-for="CourseCode" class="form-control" />
+                <span asp-validation-for="CourseCode" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CourseName" class="control-label"></label>
+                <input asp-for="CourseName" class="form-control" />
+                <span asp-validation-for="CourseName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CourseStatusId" class="control-label">Course Status</label>
+                <select asp-for="CourseStatusId" asp-items="ViewBag.CourseStatus" class="form-control"></select>
+                <span asp-validation-for="CourseStatusId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SchoolId" class="control-label"></label>
+                <select asp-for="SchoolId" asp-items="ViewBag.School" class="form-control"></select>
+                <span asp-validation-for="SchoolId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CrossUniRegistration" class="control-label"></label>
+                <input asp-for="CrossUniRegistration" class="form-check-input" type="checkbox" />
+                <span asp-validation-for="CrossUniRegistration" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UpdatedBy" class="control-label">Updated By</label>
+                <input asp-for="UpdatedBy" class="form-control" />
+                <span asp-validation-for="UpdatedBy" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Deleted" class="control-label">Soft Deleted</label>
+                <input asp-for="Deleted" class="form-check-input" type="checkbox" />
+                <span asp-validation-for="Deleted" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CreatedAt" />
+            <input type="hidden" asp-for="CreatedBy" />
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

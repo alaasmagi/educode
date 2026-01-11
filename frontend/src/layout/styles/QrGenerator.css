@@ -1,0 +1,15 @@
+.qr-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.qr-code {
+  padding: 2vw;
+  background-color: #BCBCBD;
+  border-radius: 10px;
+  border: 1vw solid #525252;
+  max-width: 70vw;
+  max-height: 70vw;
+}

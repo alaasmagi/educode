@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <title>Küsimustik kohaliku omavalitsuse valimistel</title>
+</head>
+<body style="margin:0;padding:0;background:#0000BA;">
+<table width="100%" bgcolor="#0000BA" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+        <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border-radius:12px;padding:0 0 0 0;">
+                <tr>
+                    <td align="center" style="padding:32px 32px 12px 32px;">
+                        <h1 style="font-family:Arial,sans-serif;margin:0 0 12px 0;font-size:26px;line-height:1.25;color:#000;">Kutsume Sind täitma tulevaste valimiste kandidaatide küsimustikku!</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 32px 10px 32px;">
+                        <p style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7;margin:0 0 12px 0;color:#191919;">
+                            Lugupeetud valimiste kandidaat {{ $candidateName }},
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:12px 32px 10px 32px;">
+                        <p style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7;margin:0;color:#222;">
+                            Oled {{ $electionName }} kandidaat {{ $municipality }} ringkonnas.<br>
+                            Palume Sul vastata kandidaatide küsimustikule, mis on oluline valijatele info andmiseks ning avaldatakse valimismootoris.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:14px 32px 16px 32px;">
+                        <strong style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7;color:#222;">Küsimustiku täitmiseks kliki alloleval nupul või kopeeri link veebibrauserisse:</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding:10px 32px 8px 32px;">
+                        <a href="{{ $questionnaireUrl }}"
+                           style="display:inline-block;padding:15px 30px;text-decoration:none;background:#0000BA;border-radius:4px;color:#fff;font-size:16px;font-family:Arial,sans-serif;font-weight:bold;margin:0 0 10px 0;"
+                           target="_blank">
+                            AVA KÜSIMUSTIK
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding:10px 32px 6px 32px;">
+                <span style="font-family:Arial,sans-serif;font-size:15px;color:#222;word-break:break-all;">
+                    Link: <a href="{{ $questionnaireUrl }}" style="color:#2a7ae2;word-break:break-all;">{{ $questionnaireUrl }}</a>
+                </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding:0 32px 10px 32px;">
+                <span style="font-family:Arial,sans-serif;font-size:15px;color:#222;">
+                    Palume küsimustik täita hiljemalt <strong>{{ $questionnaireDeadline }}</strong>.
+                </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:14px 32px 12px 32px;">
+                        <p style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7;margin:0;">
+                            Kui Sul on küsimusi või vajad abi küsimustiku täitmisel, võta ühendust
+                            <br>
+                            valimiste korraldajatega: <a href="mailto:{{ $supportEmail }}" style="color:#2a7ae2;">{{ $supportEmail }}</a>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:14px 32px 18px 32px;">
+                        <p style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7;margin:0;">
+                            Parimate soovidega,<br>
+                            Valimiste meeskond<br>
+                            (või lisa ametlik asutus/lühike kontakt tease, nt VVK, omavalitsus, vmt)
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding:16px 32px 28px 32px;">
+                        <img src="https://reklaam.postimeesgrupp.ee/wp-content/uploads/2024/07/postimees_logo@4x.png" alt="Postimees logo" style="height:100px;width:auto;display:block;margin:auto;">
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,78 @@
+name: Backend - Build and Deploy to both servers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+    
+    - name: Build and Push Docker Image
+      run: |
+        VERSION=1.0.$((100 + $GITHUB_RUN_NUMBER))
+        docker build --no-cache -t educode-backend:$VERSION -f "backend/Dockerfile" "backend"
+        docker tag educode-backend:$VERSION alaasmagi/educode-backend:$VERSION
+        docker tag educode-backend:$VERSION alaasmagi/educode-backend:latest
+        docker push alaasmagi/educode-backend:$VERSION
+        docker push alaasmagi/educode-backend:latest
+        echo "Built and pushed version $VERSION and latest"
+
+  deploy-server-1:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server 1
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.BACKEND_VM1_HOST }}
+          username: ${{ secrets.BACKEND_VM_USERNAME }}
+          key: ${{ secrets.BACKEND_VM1_SSH }}
+          script: |
+            echo "${{ secrets.BACKEND_ENV_FILE }}" | base64 --decode | sudo tee .env > /dev/null
+            sudo docker pull alaasmagi/educode-backend:latest
+            sudo docker stop educode-backend || true
+            sudo docker container prune -f
+            sudo docker image prune -a -f
+            sudo docker run -d \
+              --name educode-backend \
+              --env-file .env \
+              -p 8081:8080 \
+              --restart=always \
+              alaasmagi/educode-backend:latest
+
+  deploy-server-2:
+    needs: deploy-server-1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server 2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.BACKEND_VM2_HOST }}
+          username: ${{ secrets.BACKEND_VM_USERNAME }}
+          key: ${{ secrets.BACKEND_VM2_SSH }}
+          script: |
+            echo "${{ secrets.BACKEND_ENV_FILE }}" | base64 --decode | sudo tee .env > /dev/null
+            sudo docker pull alaasmagi/educode-backend:latest
+            sudo docker stop educode-backend || true
+            sudo docker container prune -f
+            sudo docker image prune -a -f
+            sudo docker run -d \
+              --name educode-backend \
+              --env-file .env \
+              -p 8081:8080 \
+              --restart=always \
+              alaasmagi/educode-backend:latest

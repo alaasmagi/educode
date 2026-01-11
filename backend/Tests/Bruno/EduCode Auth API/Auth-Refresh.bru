@@ -1,0 +1,24 @@
+meta {
+  name: Auth/Refresh
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:5139/api/Auth/Refresh
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "jwtToken": "JWT",
+    "refreshToken": "REFRESHTOKEN",
+    "client": "Bruno"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

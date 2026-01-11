@@ -1,0 +1,25 @@
+{
+  "name": "EduCode – Attendance registration system",
+  "short_name": "EduCode",
+  "description": "EduCode is a multilingual course attendance registration system that allows students to check in easily and securely using QR codes – Present. Simply. Successfully.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#2f2f2f",
+  "theme_color": "#2f2f2f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logos/app-icon-colored-round.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logos/app-icon-round.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}

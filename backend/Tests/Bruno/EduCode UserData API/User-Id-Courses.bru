@@ -1,0 +1,21 @@
+meta {
+  name: User/Id/Courses
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost:5139/api/User/Id/{id}/Courses?pageNr=&pageSize=
+  body: none
+  auth: inherit
+}
+
+params:query {
+  pageNr: 
+  pageSize: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

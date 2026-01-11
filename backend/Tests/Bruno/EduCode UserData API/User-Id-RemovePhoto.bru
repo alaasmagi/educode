@@ -1,0 +1,16 @@
+meta {
+  name: User/Id/RemovePhoto
+  type: http
+  seq: 9
+}
+
+delete {
+  url: http://localhost:5139/api/User/Id/{id}/RemovePhoto
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

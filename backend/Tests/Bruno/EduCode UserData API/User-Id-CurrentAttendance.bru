@@ -1,0 +1,16 @@
+meta {
+  name: User/Id/CurrentAttendance
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:5139/api/User/Id/{id}/CurrentAttendance
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

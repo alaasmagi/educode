@@ -1,4 +1,4 @@
-﻿namespace WebApp.Models;
+﻿namespace WebApp.RequestModels.Auth;
 
 public class RefreshTokenRequestModel : BaseModel
 {

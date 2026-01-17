@@ -23,9 +23,9 @@ public class AttendanceRepository(AppDbContext context)
         return await context.SaveChangesAsync() > 0;
     }
 
-    public async Task<CourseAttendanceEntity?> GetCurrentAttendance(Guid userId)
+    public async Task<AttendanceEntity?> GetCurrentAttendance(Guid userId)
     {
-        var ongoingAttendance= await context.CourseAttendances
+        var ongoingAttendance= await context.Attendances
             .Where(ca => ca.StartTime <= DateTime.UtcNow && ca.EndTime >= DateTime.UtcNow &&
                          ca.Course!.CourseTeacherEntities!.Any(ct => ct.TeacherId == userId)).
             Include(ca => ca.Course).Include(ca => ca.AttendanceType)
@@ -34,11 +34,11 @@ public class AttendanceRepository(AppDbContext context)
         return ongoingAttendance;
     }
     
-    public async Task<bool> AddAttendance(CourseAttendanceEntity attendance)
+    public async Task<bool> AddAttendance(AttendanceEntity attendance)
     {
-        var doesAttendanceExist = context.CourseAttendances.Any(ca => ca.CourseId == attendance.CourseId && 
-                                                                      ca.StartTime == attendance.StartTime && 
-                                                                      ca.EndTime == attendance.EndTime);
+        var doesAttendanceExist = context.Attendances.Any(ca => ca.CourseId == attendance.CourseId && 
+                                                                ca.StartTime == attendance.StartTime && 
+                                                                ca.EndTime == attendance.EndTime);
 
         if (doesAttendanceExist)
         {
@@ -53,14 +53,14 @@ public class AttendanceRepository(AppDbContext context)
         attendance.CreatedAt = DateTime.UtcNow;
         attendance.UpdatedAt = DateTime.UtcNow;
         
-        await context.CourseAttendances.AddAsync(attendance);
+        await context.Attendances.AddAsync(attendance);
        
         return await context.SaveChangesAsync() > 0 ;
     }
     
-    public async Task<bool> UpdateAttendance(Guid attendanceId, CourseAttendanceEntity updatedAttendance)
+    public async Task<bool> UpdateAttendance(Guid attendanceId, AttendanceEntity updatedAttendance)
     {
-        var attendance = await context.CourseAttendances.FirstOrDefaultAsync(a => a.Id == attendanceId);
+        var attendance = await context.Attendances.FirstOrDefaultAsync(a => a.Id == attendanceId);
         if (attendance == null)
         {
             return false;
@@ -76,9 +76,9 @@ public class AttendanceRepository(AppDbContext context)
         return true;
     }
     
-    public async Task<bool> DeleteAttendanceEntity(CourseAttendanceEntity attendanceEntity)
+    public async Task<bool> DeleteAttendanceEntity(AttendanceEntity attendanceEntity)
     {
-        context.CourseAttendances.Remove(attendanceEntity);
+        context.Attendances.Remove(attendanceEntity);
         return await context.SaveChangesAsync() > 0 ;
     }
     
@@ -94,9 +94,9 @@ public class AttendanceRepository(AppDbContext context)
         return attendanceCounts;
     }
 
-    public async Task<CourseAttendanceEntity?> GetAttendanceById(Guid attendanceId)
+    public async Task<AttendanceEntity?> GetAttendanceById(Guid attendanceId)
     {
-        var attendance = await context.CourseAttendances
+        var attendance = await context.Attendances
             .Include(u => u.AttendanceType)
             .Include(u => u.Course)
             .FirstOrDefaultAsync(u => u.Id == attendanceId);
@@ -110,9 +110,9 @@ public class AttendanceRepository(AppDbContext context)
         return attendance;
     }
     
-    public async Task<CourseAttendanceEntity?> GetAttendanceByIdentifier(string attendanceIdentifier)
+    public async Task<AttendanceEntity?> GetAttendanceByIdentifier(string attendanceIdentifier)
     {
-        var attendance = await context.CourseAttendances
+        var attendance = await context.Attendances
             .Include(u => u.AttendanceType)
             .Include(u => u.Course)
             .FirstOrDefaultAsync(u => u.Identifier == attendanceIdentifier);
@@ -143,7 +143,7 @@ public class AttendanceRepository(AppDbContext context)
     
     public async Task<bool> AttendanceAvailabilityCheckById(Guid attendanceId)
     {
-        return await context.CourseAttendances.AnyAsync(u => u.Id == attendanceId);
+        return await context.Attendances.AnyAsync(u => u.Id == attendanceId);
     }
     
     public async Task<bool> AttendanceCheckAvailabilityCheck(string studentCode, string attendanceIdentifier)
@@ -152,9 +152,9 @@ public class AttendanceRepository(AppDbContext context)
                                                               && u.AttendanceIdentifier == attendanceIdentifier);
     }
     
-    public async Task<List<CourseAttendanceEntity>> GetCourseAttendancesByCourseId(Guid courseId, int pageNr, int pageSize)
+    public async Task<List<AttendanceEntity>> GetCourseAttendancesByCourseId(Guid courseId, int pageNr, int pageSize)
     {
-        var attendances = await context.CourseAttendances
+        var attendances = await context.Attendances
             .Where(c => c.CourseId == courseId)
             .Include(c => c.Course)
             .OrderBy(c => c.Id)
@@ -188,9 +188,9 @@ public class AttendanceRepository(AppDbContext context)
     }
     
     
-    public async Task<CourseAttendanceEntity?> GetMostRecentAttendanceByUser(Guid userId)
+    public async Task<AttendanceEntity?> GetMostRecentAttendanceByUser(Guid userId)
     {
-        return await context.CourseAttendances
+        return await context.Attendances
             .Where(ca => ca.Course!.CourseTeacherEntities!
                 .Any(ct => ct.TeacherId == userId) && ca.StartTime <= DateTime.UtcNow) 
             .Include(ca => ca.Course)
@@ -212,7 +212,7 @@ public class AttendanceRepository(AppDbContext context)
     
     public async Task<bool> RemoveOldAttendances(DateTime datePeriod)
     {
-        return await context.CourseAttendances
+        return await context.Attendances
             .IgnoreQueryFilters()
             .Where(e => e.Deleted && e.UpdatedAt <= datePeriod)
             .ExecuteDeleteAsync() > 0;

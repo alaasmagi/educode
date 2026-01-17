@@ -64,13 +64,13 @@ public class AttendanceManagementService : IAttendanceManagementService
         return true;
     }
     
-    public async Task<CourseAttendanceEntity?> GetCurrentAttendanceAsync(Guid userId)
+    public async Task<AttendanceEntity?> GetCurrentAttendanceAsync(Guid userId)
     {
         var cache = await _redisRepository.GetDataAsync(Constants.CurrentAttendancePrefix + 
                                                                                         Constants.UserPrefix + userId);
         if (cache != null)
         {
-            return JsonSerializer.Deserialize<CourseAttendanceEntity?>(cache);
+            return JsonSerializer.Deserialize<AttendanceEntity?>(cache);
         }
         
         var currentAttendance = await _attendanceRepository.GetCurrentAttendance(userId);
@@ -87,12 +87,12 @@ public class AttendanceManagementService : IAttendanceManagementService
         return currentAttendance;
     }
     
-    public async Task<CourseAttendanceEntity?> GetCourseAttendanceByIdAsync(Guid attendanceId, string email)
+    public async Task<AttendanceEntity?> GetCourseAttendanceByIdAsync(Guid attendanceId, string email)
     {
         var cache = await _redisRepository.GetDataAsync(Constants.AttendancePrefix + attendanceId);
         if (cache != null)
         {
-            return JsonSerializer.Deserialize<CourseAttendanceEntity?>(cache);
+            return JsonSerializer.Deserialize<AttendanceEntity?>(cache);
         }
         
         var courseAttendance = await _attendanceRepository.GetAttendanceById(attendanceId);
@@ -115,12 +115,12 @@ public class AttendanceManagementService : IAttendanceManagementService
         return courseAttendance;
     }
     
-    public async Task<CourseAttendanceEntity?> GetCourseAttendanceByIdentifier(string identifier)
+    public async Task<AttendanceEntity?> GetCourseAttendanceByIdentifier(string identifier)
     {
         var cache = await _redisRepository.GetDataAsync(Constants.AttendancePrefix + identifier);
         if (cache != null)
         {
-            return JsonSerializer.Deserialize<CourseAttendanceEntity?>(cache);
+            return JsonSerializer.Deserialize<AttendanceEntity?>(cache);
         }
         
         var courseAttendance = await _attendanceRepository.GetAttendanceByIdentifier(identifier);
@@ -158,12 +158,12 @@ public class AttendanceManagementService : IAttendanceManagementService
         return result;
     }
     
-    public async Task<List<CourseAttendanceEntity>?> GetAttendancesByCourseAsync(Guid courseId, int pageNr, int pageSize)
+    public async Task<List<AttendanceEntity>?> GetAttendancesByCourseAsync(Guid courseId, int pageNr, int pageSize)
     {
         var cache = await _redisRepository.GetDataAsync(Constants.AttendancePrefix + Constants.CoursePrefix + courseId + pageNr + pageSize);
         if (cache != null)
         {
-            return JsonSerializer.Deserialize<List<CourseAttendanceEntity>?>(cache);
+            return JsonSerializer.Deserialize<List<AttendanceEntity>?>(cache);
         }
         
         var attendances = await _attendanceRepository.GetCourseAttendancesByCourseId(courseId, pageNr, pageSize);
@@ -236,13 +236,13 @@ public class AttendanceManagementService : IAttendanceManagementService
         return attendanceChecks;
     }
 
-    public async Task<CourseAttendanceEntity?> GetMostRecentAttendanceByUserAsync(Guid userId)
+    public async Task<AttendanceEntity?> GetMostRecentAttendanceByUserAsync(Guid userId)
     {
         var cache = await _redisRepository.GetDataAsync(Constants.RecentAttendancePrefix + 
                                                         Constants.UserPrefix + userId);
         if (cache != null)
         {
-            return JsonSerializer.Deserialize<CourseAttendanceEntity?>(cache);
+            return JsonSerializer.Deserialize<AttendanceEntity?>(cache);
         }
         
         var attendance = await _attendanceRepository.GetMostRecentAttendanceByUser(userId);
@@ -340,13 +340,13 @@ public class AttendanceManagementService : IAttendanceManagementService
         return result;
     }
     
-    public async Task<bool> AddAttendanceAsync(CourseAttendanceEntity attendance, List<DateOnly> attendanceDates, 
+    public async Task<bool> AddAttendanceAsync(AttendanceEntity attendance, List<DateOnly> attendanceDates, 
                                                                                 TimeOnly startTime, TimeOnly endTime)
     {
         var failureCount = 0;
         foreach (var date in attendanceDates)
         {
-            var newAttendance = new CourseAttendanceEntity()
+            var newAttendance = new AttendanceEntity()
             {
                 CourseId = attendance.CourseId,
                 AttendanceTypeId = attendance.AttendanceTypeId,
@@ -372,7 +372,7 @@ public class AttendanceManagementService : IAttendanceManagementService
         return true;
     }
 
-    public async Task<bool> EditAttendanceAsync(Guid attendanceId, CourseAttendanceEntity updatedAttendance)
+    public async Task<bool> EditAttendanceAsync(Guid attendanceId, AttendanceEntity updatedAttendance)
     {
         if (!await DoesAttendanceExist(attendanceId))
         {
@@ -433,7 +433,7 @@ public class AttendanceManagementService : IAttendanceManagementService
         return true;
     }
 
-    public async Task<bool> IsAttendanceAccessibleByUser(CourseAttendanceEntity attendance, string email)
+    public async Task<bool> IsAttendanceAccessibleByUser(AttendanceEntity attendance, string email)
     {
         var userCache = await _redisRepository.GetDataAsync(Constants.UserPrefix + email);
         UserEntity? user;

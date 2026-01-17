@@ -2,20 +2,20 @@
 
 namespace App.DTO;
 
-public class CourseAttendanceDto(CourseAttendanceEntity courseAttendance)
+public class CourseAttendanceDto(AttendanceEntity attendance)
 {
-    public Guid Id { get; set; } = courseAttendance.Id;
-    public Guid CourseId { get; set; } = courseAttendance.CourseId;
-    public string? CourseCode { get; set; } = courseAttendance.Course?.CourseCode;
-    public string? CourseName { get; set; } = courseAttendance.Course?.CourseName;
-    public int? StudentCount { get; set; } = courseAttendance.AttendanceChecks?.Count();
-    public Guid? AttendanceTypeId { get; set; } = courseAttendance.AttendanceTypeId;
-    public string? AttendanceType { get; set; } = courseAttendance.AttendanceType?.AttendanceType;
-    public DateTime StartTime { get; set; } = courseAttendance.StartTime;
-    public DateTime EndTime { get; set; } = courseAttendance.EndTime;
+    public Guid Id { get; set; } = attendance.Id;
+    public Guid CourseId { get; set; } = attendance.CourseId;
+    public string? CourseCode { get; set; } = attendance.Course?.CourseCode;
+    public string? CourseName { get; set; } = attendance.Course?.CourseName;
+    public int? StudentCount { get; set; } = attendance.AttendanceChecks?.Count();
+    public Guid? AttendanceTypeId { get; set; } = attendance.AttendanceTypeId;
+    public string? AttendanceType { get; set; } = attendance.AttendanceType?.AttendanceType;
+    public DateTime StartTime { get; set; } = attendance.StartTime;
+    public DateTime EndTime { get; set; } = attendance.EndTime;
     
     
-    public static List<CourseAttendanceDto> ToDtoList(List<CourseAttendanceEntity>? entities)
+    public static List<CourseAttendanceDto> ToDtoList(List<AttendanceEntity>? entities)
     {
         if (entities == null)
         {

@@ -38,8 +38,7 @@ public class SchoolRepository(AppDbContext context)
         existingSchool.Name = updatedSchool.Name;
         existingSchool.ShortName = updatedSchool.ShortName;
         existingSchool.Domain = updatedSchool.Domain;
-        existingSchool.PhotoPath = updatedSchool.PhotoPath;
-        existingSchool.StudentCodePattern = updatedSchool.PhotoPath;
+        existingSchool.StudentCodePattern = updatedSchool.StudentCodePattern;
         existingSchool.UpdatedAt = DateTime.UtcNow;
         existingSchool.UpdatedBy = updatedSchool.UpdatedBy;
 

@@ -6,7 +6,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<AttendanceCheckEntity> AttendanceChecks { get; set; }
     public DbSet<AttendanceTypeEntity> AttendanceTypes { get; set; }
-    public DbSet<CourseAttendanceEntity> CourseAttendances { get; set; }
+    public DbSet<AttendanceEntity> Attendances { get; set; }
     public DbSet<CourseEntity> Courses { get; set; }
     public DbSet<CourseStatusEntity> CourseStatuses { get; set; }
     public DbSet<CourseTeacherEntity> CourseTeachers { get; set; }
@@ -56,23 +56,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .IsUnique();
         
         // CourseAttendance relationship
-        modelBuilder.Entity<CourseAttendanceEntity>()
-            .ToTable("CourseAttendances")
+        modelBuilder.Entity<AttendanceEntity>()
+            .ToTable("Attendances")
             .HasQueryFilter(c => c.Deleted == false);
-        modelBuilder.Entity<CourseAttendanceEntity>()
+        modelBuilder.Entity<AttendanceEntity>()
             .HasAlternateKey(c => c.Identifier);
-        modelBuilder.Entity<CourseAttendanceEntity>()
+        modelBuilder.Entity<AttendanceEntity>()
             .HasIndex(c => c.Identifier)
             .IsUnique();
-        modelBuilder.Entity<CourseAttendanceEntity>()
+        modelBuilder.Entity<AttendanceEntity>()
             .HasOne(c => c.Course)
             .WithMany()
             .HasForeignKey(c => c.CourseId);
-        modelBuilder.Entity<CourseAttendanceEntity>()
+        modelBuilder.Entity<AttendanceEntity>()
             .HasOne(c => c.Classroom)
             .WithMany(c => c.CourseAttendances)
             .HasForeignKey(c => c.ClassroomId);
-        modelBuilder.Entity<CourseAttendanceEntity>()
+        modelBuilder.Entity<AttendanceEntity>()
             .HasOne(c => c.AttendanceType)
             .WithMany()
             .HasForeignKey(c => c.AttendanceTypeId)

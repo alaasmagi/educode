@@ -1,4 +1,4 @@
-﻿namespace WebApp.Models;
+﻿namespace WebApp.RequestModels.User;
 
 public class CurrentLectureReturnModel
 {

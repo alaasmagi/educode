@@ -64,7 +64,7 @@ public class CourseRepository(AppDbContext context)
         if (!courseExists)
             return null;
 
-        var attendances = await context.CourseAttendances
+        var attendances = await context.Attendances
             .Where(ca => ca.CourseId == courseId)
             .ToListAsync();
 

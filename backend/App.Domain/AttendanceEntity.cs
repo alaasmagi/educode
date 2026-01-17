@@ -1,10 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using Base.Domain;
 
 namespace App.Domain;
 
-public class CourseAttendanceEntity : BaseEntity
+public class AttendanceEntity : BaseEntity
 {
     [Required]
     public string Identifier  { get; set; } = default!;

@@ -4,6 +4,7 @@ using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApp.Models;
+using WebApp.RequestModels.Auth;
 
 namespace WebApp.ApiControllers;
 

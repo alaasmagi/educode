@@ -34,7 +34,6 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            ViewData["PhotoLink"] = envInitializer.OciPublicUrl + schoolEntity.PhotoPath;
             return View(schoolEntity);
         }
 

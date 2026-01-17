@@ -59,7 +59,6 @@ namespace App.DAL.EF.Migrations
                     Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     ShortName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     Domain = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    PhotoPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     StudentCodePattern = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -226,7 +225,7 @@ namespace App.DAL.EF.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CourseAttendances",
+                name: "Attendances",
                 schema: "educode",
                 columns: table => new
                 {
@@ -246,24 +245,24 @@ namespace App.DAL.EF.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CourseAttendances", x => x.Id);
-                    table.UniqueConstraint("AK_CourseAttendances_Identifier", x => x.Identifier);
+                    table.PrimaryKey("PK_Attendances", x => x.Id);
+                    table.UniqueConstraint("AK_Attendances_Identifier", x => x.Identifier);
                     table.ForeignKey(
-                        name: "FK_CourseAttendances_AttendanceTypes_AttendanceTypeId",
+                        name: "FK_Attendances_AttendanceTypes_AttendanceTypeId",
                         column: x => x.AttendanceTypeId,
                         principalSchema: "educode",
                         principalTable: "AttendanceTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_CourseAttendances_Classrooms_ClassroomId",
+                        name: "FK_Attendances_Classrooms_ClassroomId",
                         column: x => x.ClassroomId,
                         principalSchema: "educode",
                         principalTable: "Classrooms",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_CourseAttendances_Courses_CourseId",
+                        name: "FK_Attendances_Courses_CourseId",
                         column: x => x.CourseId,
                         principalSchema: "educode",
                         principalTable: "Courses",
@@ -381,10 +380,10 @@ namespace App.DAL.EF.Migrations
                 {
                     table.PrimaryKey("PK_AttendanceChecks", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AttendanceChecks_CourseAttendances_AttendanceIdentifier",
+                        name: "FK_AttendanceChecks_Attendances_AttendanceIdentifier",
                         column: x => x.AttendanceIdentifier,
                         principalSchema: "educode",
-                        principalTable: "CourseAttendances",
+                        principalTable: "Attendances",
                         principalColumn: "Identifier",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -415,6 +414,31 @@ namespace App.DAL.EF.Migrations
                 column: "WorkplaceIdentifier");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Attendances_AttendanceTypeId",
+                schema: "educode",
+                table: "Attendances",
+                column: "AttendanceTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Attendances_ClassroomId",
+                schema: "educode",
+                table: "Attendances",
+                column: "ClassroomId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Attendances_CourseId",
+                schema: "educode",
+                table: "Attendances",
+                column: "CourseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Attendances_Identifier",
+                schema: "educode",
+                table: "Attendances",
+                column: "Identifier",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AttendanceTypes_AttendanceType",
                 schema: "educode",
                 table: "AttendanceTypes",
@@ -432,31 +456,6 @@ namespace App.DAL.EF.Migrations
                 schema: "educode",
                 table: "Classrooms",
                 column: "SchoolId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CourseAttendances_AttendanceTypeId",
-                schema: "educode",
-                table: "CourseAttendances",
-                column: "AttendanceTypeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CourseAttendances_ClassroomId",
-                schema: "educode",
-                table: "CourseAttendances",
-                column: "ClassroomId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CourseAttendances_CourseId",
-                schema: "educode",
-                table: "CourseAttendances",
-                column: "CourseId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CourseAttendances_Identifier",
-                schema: "educode",
-                table: "CourseAttendances",
-                column: "Identifier",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Courses_CourseCode",
@@ -589,7 +588,7 @@ namespace App.DAL.EF.Migrations
                 schema: "educode");
 
             migrationBuilder.DropTable(
-                name: "CourseAttendances",
+                name: "Attendances",
                 schema: "educode");
 
             migrationBuilder.DropTable(

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApp.Models;
 using WebApp.Models.Auth;
+using WebApp.RequestModels.Auth;
 
 namespace WebApp.Controllers;
 

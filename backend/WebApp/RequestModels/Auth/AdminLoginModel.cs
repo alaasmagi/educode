@@ -1,4 +1,4 @@
-﻿namespace WebApp.Models.Auth;
+﻿namespace WebApp.RequestModels.Auth;
 
 public class AdminLoginModel
 {

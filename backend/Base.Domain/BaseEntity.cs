@@ -2,7 +2,7 @@
 
 namespace Base.Domain;
 
-public class BaseEntity
+public abstract class BaseEntity
 {
     [Required]
     public Guid Id { get; set; } = Guid.NewGuid();

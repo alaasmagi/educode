@@ -15,7 +15,7 @@ namespace WebApp.Controllers
         // GET: CourseAttendance
         public async Task<IActionResult> Index()
         {
-            var appDbContext = context.CourseAttendances.Include(c => c.AttendanceType).Include(c => c.Course);
+            var appDbContext = context.Attendances.Include(c => c.AttendanceType).Include(c => c.Course);
             return View(await appDbContext.IgnoreQueryFilters().ToListAsync());
         }
 
@@ -27,7 +27,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseAttendanceEntity = await context.CourseAttendances
+            var courseAttendanceEntity = await context.Attendances
                 .IgnoreQueryFilters()
                 .Include(c => c.AttendanceType)
                 .Include(c => c.Course)
@@ -52,19 +52,19 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("CourseId,Identifier,AttendanceTypeId,StartTime,EndTime,CreatedBy,UpdatedBy,Delete")] CourseAttendanceEntity courseAttendanceEntity)
+        public async Task<IActionResult> Create([Bind("CourseId,Identifier,AttendanceTypeId,StartTime,EndTime,CreatedBy,UpdatedBy,Delete")] AttendanceEntity attendanceEntity)
         {
             if (ModelState.IsValid)
             {
-                courseAttendanceEntity.UpdatedAt = DateTime.UtcNow;
-                courseAttendanceEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(courseAttendanceEntity);
+                attendanceEntity.UpdatedAt = DateTime.UtcNow;
+                attendanceEntity.CreatedAt = DateTime.UtcNow;
+                context.Add(attendanceEntity);
                 await context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType", courseAttendanceEntity.AttendanceTypeId);
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", courseAttendanceEntity.CourseId);
-            return View(courseAttendanceEntity);
+            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
+            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", attendanceEntity.CourseId);
+            return View(attendanceEntity);
         }
 
         // GET: CourseAttendance/Edit/5
@@ -75,7 +75,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseAttendanceEntity = await context.CourseAttendances
+            var courseAttendanceEntity = await context.Attendances
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (courseAttendanceEntity == null)
@@ -91,9 +91,9 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,Identifier,AttendanceTypeId,StartTime,EndTime,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] CourseAttendanceEntity courseAttendanceEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,Identifier,AttendanceTypeId,StartTime,EndTime,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] AttendanceEntity attendanceEntity)
         {
-            if (id != courseAttendanceEntity.Id)
+            if (id != attendanceEntity.Id)
             {
                 return NotFound();
             }
@@ -102,16 +102,16 @@ namespace WebApp.Controllers
             {
                 try
                 {
-                    courseAttendanceEntity.CreatedAt = DateTime.SpecifyKind(courseAttendanceEntity.CreatedAt, DateTimeKind.Utc);
-                    courseAttendanceEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{courseAttendanceEntity.Id.ToString()}*");
-                    await redis.DeleteKeysByPatternAsync($"*{courseAttendanceEntity.Identifier}*");                     
-                    context.Update(courseAttendanceEntity);
+                    attendanceEntity.CreatedAt = DateTime.SpecifyKind(attendanceEntity.CreatedAt, DateTimeKind.Utc);
+                    attendanceEntity.UpdatedAt = DateTime.UtcNow;
+                    await redis.DeleteKeysByPatternAsync($"*{attendanceEntity.Id.ToString()}*");
+                    await redis.DeleteKeysByPatternAsync($"*{attendanceEntity.Identifier}*");                     
+                    context.Update(attendanceEntity);
                     await context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!CourseAttendanceEntityExists(courseAttendanceEntity.Id))
+                    if (!CourseAttendanceEntityExists(attendanceEntity.Id))
                     {
                         return NotFound();
                     }
@@ -122,9 +122,9 @@ namespace WebApp.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType", courseAttendanceEntity.AttendanceTypeId);
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", courseAttendanceEntity.CourseId);
-            return View(courseAttendanceEntity);
+            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
+            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", attendanceEntity.CourseId);
+            return View(attendanceEntity);
         }
 
         // GET: CourseAttendance/Delete/5
@@ -135,7 +135,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseAttendanceEntity = await context.CourseAttendances
+            var courseAttendanceEntity = await context.Attendances
                 .IgnoreQueryFilters()
                 .Include(c => c.AttendanceType)
                 .Include(c => c.Course)
@@ -152,14 +152,14 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var courseAttendanceEntity = await context.CourseAttendances
+            var courseAttendanceEntity = await context.Attendances
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (courseAttendanceEntity != null)
             {
                 await redis.DeleteKeysByPatternAsync($"*{courseAttendanceEntity.Id.ToString()}*");
                 await redis.DeleteKeysByPatternAsync($"*{courseAttendanceEntity.Identifier}*");
-                context.CourseAttendances.Remove(courseAttendanceEntity);
+                context.Attendances.Remove(courseAttendanceEntity);
             }
 
             await context.SaveChangesAsync();
@@ -168,7 +168,7 @@ namespace WebApp.Controllers
 
         private bool CourseAttendanceEntityExists(Guid id)
         {
-            return context.CourseAttendances.IgnoreQueryFilters().Any(e => e.Id == id);
+            return context.Attendances.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }

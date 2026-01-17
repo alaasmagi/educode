@@ -1,4 +1,4 @@
-﻿namespace WebApp.Models;
+﻿namespace WebApp.RequestModels.AttendanceCheck;
 
 public class AttendanceCheckModel : BaseModel
 {

@@ -1,6 +1,4 @@
-﻿using App.Domain;
-
-namespace WebApp.Models;
+﻿namespace WebApp.RequestModels.Course;
 
 public class CourseModel : BaseModel
 {

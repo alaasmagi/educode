@@ -1,4 +1,4 @@
-namespace WebApp.Models;
+namespace WebApp.RequestModels;
 
 public abstract class BaseModel
 {

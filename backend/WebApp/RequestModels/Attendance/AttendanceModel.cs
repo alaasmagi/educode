@@ -1,6 +1,4 @@
-﻿using App.Domain;
-
-namespace WebApp.Models;
+﻿namespace WebApp.RequestModels.Attendance;
 
 public class AttendanceModel : BaseModel
 {

@@ -76,6 +76,67 @@ namespace App.DAL.EF.Migrations
                     b.ToTable("AttendanceChecks", "educode");
                 });
 
+            modelBuilder.Entity("App.Domain.AttendanceEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AttendanceTypeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AutomatedRegistration")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ClassroomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Identifier")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttendanceTypeId");
+
+                    b.HasIndex("ClassroomId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("Identifier")
+                        .IsUnique();
+
+                    b.ToTable("Attendances", "educode");
+                });
+
             modelBuilder.Entity("App.Domain.AttendanceTypeEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -157,67 +218,6 @@ namespace App.DAL.EF.Migrations
                     b.HasIndex("SchoolId");
 
                     b.ToTable("Classrooms", "educode");
-                });
-
-            modelBuilder.Entity("App.Domain.CourseAttendanceEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AttendanceTypeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("AutomatedRegistration")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("ClassroomId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("EndTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Identifier")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AttendanceTypeId");
-
-                    b.HasIndex("ClassroomId");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("Identifier")
-                        .IsUnique();
-
-                    b.ToTable("CourseAttendances", "educode");
                 });
 
             modelBuilder.Entity("App.Domain.CourseEntity", b =>
@@ -438,10 +438,6 @@ namespace App.DAL.EF.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("PhotoPath")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
@@ -668,7 +664,7 @@ namespace App.DAL.EF.Migrations
 
             modelBuilder.Entity("App.Domain.AttendanceCheckEntity", b =>
                 {
-                    b.HasOne("App.Domain.CourseAttendanceEntity", "CourseAttendance")
+                    b.HasOne("App.Domain.AttendanceEntity", "CourseAttendance")
                         .WithMany("AttendanceChecks")
                         .HasForeignKey("AttendanceIdentifier")
                         .HasPrincipalKey("Identifier")
@@ -685,22 +681,7 @@ namespace App.DAL.EF.Migrations
                     b.Navigation("Workplace");
                 });
 
-            modelBuilder.Entity("App.Domain.ClassroomEntity", b =>
-                {
-                    b.HasOne("App.Domain.SchoolEntity", null)
-                        .WithMany("Classrooms")
-                        .HasForeignKey("SchoolEntityId");
-
-                    b.HasOne("App.Domain.SchoolEntity", "School")
-                        .WithMany()
-                        .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("School");
-                });
-
-            modelBuilder.Entity("App.Domain.CourseAttendanceEntity", b =>
+            modelBuilder.Entity("App.Domain.AttendanceEntity", b =>
                 {
                     b.HasOne("App.Domain.AttendanceTypeEntity", "AttendanceType")
                         .WithMany()
@@ -725,6 +706,21 @@ namespace App.DAL.EF.Migrations
                     b.Navigation("Classroom");
 
                     b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("App.Domain.ClassroomEntity", b =>
+                {
+                    b.HasOne("App.Domain.SchoolEntity", null)
+                        .WithMany("Classrooms")
+                        .HasForeignKey("SchoolEntityId");
+
+                    b.HasOne("App.Domain.SchoolEntity", "School")
+                        .WithMany()
+                        .HasForeignKey("SchoolId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("School");
                 });
 
             modelBuilder.Entity("App.Domain.CourseEntity", b =>
@@ -815,14 +811,14 @@ namespace App.DAL.EF.Migrations
                     b.Navigation("Classroom");
                 });
 
+            modelBuilder.Entity("App.Domain.AttendanceEntity", b =>
+                {
+                    b.Navigation("AttendanceChecks");
+                });
+
             modelBuilder.Entity("App.Domain.ClassroomEntity", b =>
                 {
                     b.Navigation("CourseAttendances");
-                });
-
-            modelBuilder.Entity("App.Domain.CourseAttendanceEntity", b =>
-                {
-                    b.Navigation("AttendanceChecks");
                 });
 
             modelBuilder.Entity("App.Domain.CourseEntity", b =>

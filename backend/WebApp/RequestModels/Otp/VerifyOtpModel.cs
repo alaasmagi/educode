@@ -1,4 +1,4 @@
-﻿namespace WebApp.Models;
+﻿namespace WebApp.RequestModels.Otp;
 
 public class VerifyOtpModel : BaseModel
 {

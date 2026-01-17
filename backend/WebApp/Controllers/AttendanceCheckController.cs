@@ -41,7 +41,7 @@ namespace WebApp.Controllers
         public IActionResult Create()
         {
             ViewData["WorkplaceId"] = new SelectList(context.Workplaces, "Id", "ClassRoom");
-            ViewData["CourseAttendanceId"] = new SelectList(context.CourseAttendances, "Id", "Id");
+            ViewData["CourseAttendanceId"] = new SelectList(context.Attendances, "Id", "Id");
             return View();
         }
 
@@ -79,7 +79,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
             ViewData["WorkplaceIdentifier"] = new SelectList(context.Workplaces, "Id", "ClassRoom", attendanceCheckEntity.WorkplaceIdentifier);
-            ViewData["AttendanceIdentifier"] = new SelectList(context.CourseAttendances, "Id", "Id", attendanceCheckEntity.AttendanceIdentifier);
+            ViewData["AttendanceIdentifier"] = new SelectList(context.Attendances, "Id", "Id", attendanceCheckEntity.AttendanceIdentifier);
             return View(attendanceCheckEntity);
         }
 

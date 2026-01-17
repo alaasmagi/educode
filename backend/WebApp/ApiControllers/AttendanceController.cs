@@ -6,6 +6,7 @@ using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApp.Models;
+using WebApp.RequestModels.Attendance;
 
 namespace WebApp.ApiControllers;
 
@@ -95,7 +96,7 @@ public class AttendanceController(
             return NotFound(new {message = "Attendance type not found", messageCode = "attendance-type-not-found"});
         }
         
-        var newAttendance = new CourseAttendanceEntity()
+        var newAttendance = new AttendanceEntity()
         {
             CourseId = model.CourseId,
             AttendanceTypeId = model.AttendanceTypeId,
@@ -137,7 +138,7 @@ public class AttendanceController(
             return NotFound(new {message = "Attendance type not found", messageCode = "attendance-type-not-found"});
         }
         
-        var newAttendance = new CourseAttendanceEntity()
+        var newAttendance = new AttendanceEntity()
         {
             CourseId = model.CourseId,
             AttendanceTypeId = model.AttendanceTypeId,

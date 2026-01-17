@@ -22,10 +22,6 @@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.Domain)
         </dd>
-        <dt class = "col-sm-2">Photo Path</dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PhotoPath)
-        </dd>
         <dt class = "col-sm-2">Student Code Regex</dt>
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.StudentCodePattern)
@@ -53,10 +49,6 @@
     </dl>
 </div>
 <div>
-    @if (!string.IsNullOrEmpty(Model.PhotoPath))
-    {
-        <a href="@ViewData["PhotoLink"]" target="_blank">Photo Link</a><text> | </text>
-    }
     <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a> |
     <a asp-action="Index">Back to List</a>
 </div>

@@ -16,17 +16,17 @@ This monorepo contains three main components:
 ### Backend API
 * Languages and technologies: **C#, .NET Core, ASP.NET MVC, Entity Framework Core, JWT, PostgreSQL, Redis**
 * Provides RESTful API for authentication, course management, attendance tracking, and data persistence
-* For detailed information, see [backend/README.md](./backend/README.md)
+* For detailed information, see [the backend README](./backend/README.md)
 
 ### Web Application
 * Languages and technologies: **TypeScript, React, Vite, Tailwind CSS**
 * Browser client for teachers to manage courses, attendance sessions, and view reports
-* For detailed information, see [frontend/README.md](./frontend/README.md)
+* For detailed information, see [the frontend README](./frontend/README.md)
 
 ### Mobile Application
 * Languages and technologies: **TypeScript, React Native, Expo**
 * Mobile app for students to register attendance via QR codes with offline mode support
-* For detailed information, see [mobile/README.md](./mobile/README.md)
+* For detailed information, see [the mobile README](./mobile/README.md)
 
 ## How to run
 

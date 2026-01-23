@@ -127,53 +127,37 @@ public class UserRepository (AppDbContext context)
             .Where(e => e.Deleted && e.UpdatedAt <= datePeriod)
             .ExecuteDeleteAsync() > 0;
     }
+
+    public Guid GetAdminUserTypeId()
+    {
+        var adminUserType = context.UserTypes
+            .FirstOrDefault(ut => ut.AccessLevel == EAccessLevel.QuinaryLevel);
+
+        return adminUserType?.Id ?? Guid.Empty;
+    }
     
-    public void SeedUserTypes()
+    public void SeedAdminUser(UserEntity adminUser, UserAuthEntity adminAuth)
+    {
+        var adminExists = context.Users
+            .Any(u => u.UserTypeId == adminUser.UserTypeId);
+        
+        if (adminExists)
+        {
+            return;
+        }
+        
+        context.Users.Add(adminUser);        
+        context.SaveChanges();
+
+        
+        context.UserAuthData.Add(adminAuth);
+        context.SaveChanges();
+    }
+    
+    public void SeedUserTypes(List<UserTypeEntity> userTypes)
     {
         if (!context.UserTypes.Any())
         {
-            var now = DateTime.UtcNow;
-
-            var userTypes = new List<UserTypeEntity>
-            {
-                new UserTypeEntity
-                {
-                    UserType = "student",
-                    AccessLevel = EAccessLevel.PrimaryLevel,
-                    CreatedBy = "aspnet-initializer",
-                    CreatedAt = now,
-                    UpdatedBy = "aspnet-initializer",
-                    UpdatedAt = now,
-                },
-                new UserTypeEntity
-                {
-                    UserType = "teacher-assistant",
-                    AccessLevel = EAccessLevel.SecondaryLevel,
-                    CreatedBy = "aspnet-initializer",
-                    CreatedAt = now,
-                    UpdatedBy = "aspnet-initializer",
-                    UpdatedAt = now,
-                },
-                new UserTypeEntity
-                {
-                    UserType = "teacher",
-                    AccessLevel = EAccessLevel.TertiaryLevel,
-                    CreatedBy = "aspnet-initializer",
-                    CreatedAt = now,
-                    UpdatedBy = "aspnet-initializer",
-                    UpdatedAt = now,
-                },
-                new UserTypeEntity
-                {
-                    UserType = "school-administrator",
-                    AccessLevel = EAccessLevel.QuaternaryLevel,
-                    CreatedBy = "aspnet-initializer",
-                    CreatedAt = now,
-                    UpdatedBy = "aspnet-initializer",
-                    UpdatedAt = now,
-                }
-            };
-            
             context.UserTypes.AddRange(userTypes);
             context.SaveChanges();
         }

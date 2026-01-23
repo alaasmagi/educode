@@ -11,7 +11,7 @@ using WebApp.RequestModels.Auth;
 
 namespace WebApp.Controllers;
 
-public class AdminPanelController(IAuthService authService, ILogger<AdminPanelController> logger, EnvInitializer envInitializer)
+public class AdminPanelController(IAuthService authService, IUserManagementService userManagementService, ILogger<AdminPanelController> logger, EnvInitializer envInitializer)
     : Controller
 {
     [HttpGet]
@@ -29,15 +29,25 @@ public class AdminPanelController(IAuthService authService, ILogger<AdminPanelCo
     }
 
     [HttpPost]
-    public IActionResult Index([Bind("Username", "Password")] AdminLoginModel model)
+    public async Task<IActionResult> Index([Bind("Username", "Password")] AdminLoginModel model)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
+        
+        var user = await userManagementService.GetUserByEmailAsync(model.Username);
 
-        var token = authService.AdminAccessGrant(model.Username, model.Password);
-        if (token == null)
+        if (user == null)
         {
             return Index("Wrong username or password!");
         }
+        
+        var adminUser = await userManagementService.AuthenticateUserAsync(user.Id, model.Password);
+        
+        if (adminUser == null)
+        {
+            return Index("Wrong username or password!");
+        }
+        
+        var token = authService.GenerateJwtToken(adminUser);
         
         Response.Cookies.Append("jwt", token, new CookieOptions
         {

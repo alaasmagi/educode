@@ -9,8 +9,7 @@ public class UserEntity : BaseEntity
     [Required]
     public Guid UserTypeId { get; set; }
     public UserTypeEntity? UserType { get; set; }
-    [Required]
-    public Guid SchoolId { get; set; }
+    public Guid? SchoolId { get; set; }
     public SchoolEntity? School { get; set; }
     [Required]
     [MaxLength(128)]

@@ -16,5 +16,5 @@ public interface ICourseManagementService
     Task<bool> IsCourseAccessibleToUser(CourseEntity courseEntity, string email);
     Task<bool> DoesCourseExistByCodeAsync(string courseCode);
     Task<bool> DoesCourseExistByIdAsync(Guid id);
-
+    void SeedCourseStatuses();
 }

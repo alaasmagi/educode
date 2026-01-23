@@ -538,4 +538,39 @@ public class AttendanceManagementService : IAttendanceManagementService
         
         return true;
     }
+    
+    public void SeedAttendanceTypes()
+    {
+        var now = DateTime.UtcNow;
+
+        var attendanceTypes = new List<AttendanceTypeEntity>
+        {
+            new AttendanceTypeEntity
+            {
+                AttendanceType = "lecture",
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            },
+            new AttendanceTypeEntity
+            {
+                AttendanceType = "practice",
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            },
+            new AttendanceTypeEntity
+            {
+                AttendanceType = "lecture-practice",
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            }
+        };
+
+        _attendanceRepository.SeedAttendanceTypes(attendanceTypes);
+    }
 }

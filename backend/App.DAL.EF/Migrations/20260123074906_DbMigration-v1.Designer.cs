@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace App.DAL.EF.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260117140247_DbMigration-v1")]
+    [Migration("20260123074906_DbMigration-v1")]
     partial class DbMigrationv1
     {
         /// <inheritdoc />
@@ -21,7 +21,7 @@ namespace App.DAL.EF.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("educode")
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "10.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -545,7 +545,7 @@ namespace App.DAL.EF.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<Guid>("SchoolId")
+                    b.Property<Guid?>("SchoolId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("StudentCode")
@@ -789,8 +789,7 @@ namespace App.DAL.EF.Migrations
                     b.HasOne("App.Domain.SchoolEntity", "School")
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("App.Domain.UserTypeEntity", "UserType")
                         .WithMany()

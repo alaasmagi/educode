@@ -166,7 +166,7 @@ namespace App.DAL.EF.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserTypeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SchoolId = table.Column<Guid>(type: "uuid", nullable: true),
                     Email = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     StudentCode = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     FullName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),

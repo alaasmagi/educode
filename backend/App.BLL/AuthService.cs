@@ -29,29 +29,7 @@ public class AuthService : IAuthService
         _envInitializer = envInitializer;
     }
     
-    public string? AdminAccessGrant(string enteredUsername, string enteredPassword)
-    {
-        var storedUserNameBcrypt = _envInitializer.AdminUserBcrypt;
-        var storedPasswordBcrypt = _envInitializer.AdminKeyBcrypt;
-
-        if (string.IsNullOrWhiteSpace(storedUserNameBcrypt) || 
-            string.IsNullOrWhiteSpace(storedPasswordBcrypt))
-        {
-            _logger.LogError("Reading data from env failed (ADMIN_USER_BCRYPT or ADMIN_KEY_BCRYPT)");
-            return null;
-        }
-        
-        if (BCrypt.Net.BCrypt.Verify(enteredUsername, storedUserNameBcrypt) && 
-            BCrypt.Net.BCrypt.Verify(enteredPassword, storedPasswordBcrypt))
-        {
-            return GenerateJwtToken(null);
-        }
-        
-        _logger.LogError("Admin access grant failed");
-        return null;
-    }
-    
-    public string GenerateJwtToken(UserEntity? user)
+    public string GenerateJwtToken(UserEntity user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtKey = _envInitializer.JwtKey;
@@ -75,25 +53,11 @@ public class AuthService : IAuthService
 
         var key = Encoding.ASCII.GetBytes(jwtKey);
 
-        List<Claim> claims;
-        
-        if (user != null)
-        {
-            claims =
-            [
-                new Claim(Constants.UserIdClaim, user.Id.ToString()),
-                new Claim(Constants.AccessLevelClaim,
-                    ((int)(user.UserType?.AccessLevel ?? EAccessLevel.NoAccess)).ToString())
-            ];
-        }
-        else
-        {
-            claims =
-            [
-                new Claim(Constants.UserIdClaim, "aspnet-admin"),
-                new Claim(Constants.AccessLevelClaim, ((int)EAccessLevel.QuinaryLevel).ToString())
-            ];
-        }
+        List<Claim> claims = [
+            new Claim(Constants.UserIdClaim, user.Id.ToString()),
+            new Claim(Constants.AccessLevelClaim,
+                ((int)(user.UserType?.AccessLevel ?? EAccessLevel.NoAccess)).ToString())
+        ];
         
         var tokenDescriptor = new SecurityTokenDescriptor
         {

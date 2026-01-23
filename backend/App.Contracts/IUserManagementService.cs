@@ -15,5 +15,7 @@ public interface IUserManagementService
     string GetPasswordHash(string password);
     Task<bool> DeleteUserAsync(UserEntity user);
     Task<bool> UpdateUserAsync(UserEntity user);
+    void SeedUserTypes();
+    void SeedAdminUser();
 
 }

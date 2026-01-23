@@ -23,4 +23,5 @@ public interface IAttendanceManagementService
     Task<bool> DeleteAttendanceCheck(Guid attendanceCheckId, string email);
     Task<bool> IsAttendanceAccessibleByUser(AttendanceEntity attendance, string email);
     Task<bool> IsAttendanceCheckAccessibleByUser(AttendanceCheckEntity attendanceCheck, string email);
+    void SeedAttendanceTypes();
 }

@@ -242,40 +242,10 @@ public class AttendanceRepository(AppDbContext context)
             .ExecuteDeleteAsync() > 0;
     }
     
-    public void SeedAttendanceTypes()
+    public void SeedAttendanceTypes(List<AttendanceTypeEntity> attendanceTypes)
     {
         if (!context.AttendanceTypes.Any())
         {
-            var now = DateTime.UtcNow;
-
-            var attendanceTypes = new List<AttendanceTypeEntity>
-            {
-                new AttendanceTypeEntity
-                {
-                    AttendanceType = "lecture",
-                    CreatedBy = "aspnet-initializer",
-                    CreatedAt = now,
-                    UpdatedBy = "aspnet-initializer",
-                    UpdatedAt = now,
-                },
-                new AttendanceTypeEntity
-                {
-                    AttendanceType = "practice",
-                    CreatedBy = "aspnet-initializer",
-                    CreatedAt = now,
-                    UpdatedBy = "aspnet-initializer",
-                    UpdatedAt = now,
-                },
-                new AttendanceTypeEntity
-                {
-                    AttendanceType = "lecture-practice",
-                    CreatedBy = "aspnet-initializer",
-                    CreatedAt = now,
-                    UpdatedBy = "aspnet-initializer",
-                    UpdatedAt = now,
-                }
-            };
-
             context.AttendanceTypes.AddRange(attendanceTypes);
             context.SaveChanges();
         }

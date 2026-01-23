@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using App.Domain;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace App.DAL.EF;
@@ -12,7 +10,7 @@ public class RedisRepository(IConnectionMultiplexer connection, ILogger<RedisRep
 
     public async Task<bool> SetDataAsync(string key, string serializedValue, TimeSpan? expiry)
     {
-        if (!await _database.StringSetAsync(key, serializedValue, expiry))
+        if (!await _database.StringSetAsync(key, serializedValue, expiry, When.Always, CommandFlags.None))
         {
             _logger.LogError("RedisRepository - setting data failed");
             return false;

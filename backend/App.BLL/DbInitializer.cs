@@ -1,4 +1,5 @@
 using App.DAL.EF;
+using Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -18,16 +19,15 @@ public class DbInitializer
     public void InitializeDb()
     {
         using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userService = scope.ServiceProvider.GetRequiredService<IUserManagementService>();
+        var courseService = scope.ServiceProvider.GetRequiredService<ICourseManagementService>();
+        var attendanceService = scope.ServiceProvider.GetRequiredService<IAttendanceManagementService>();
 
-        var attendanceRepository = new AttendanceRepository(context);
-        var courseRepository = new CourseRepository(context);
-        var userRepository = new UserRepository(context);
-
-        attendanceRepository.SeedAttendanceTypes();
-        courseRepository.SeedCourseStatuses();
-        userRepository.SeedUserTypes();
-
+        attendanceService.SeedAttendanceTypes();
+        courseService.SeedCourseStatuses();
+        userService.SeedUserTypes();
+        userService.SeedAdminUser();
+        
         _logger.LogInformation("Database initialization completed.");
     }
 }

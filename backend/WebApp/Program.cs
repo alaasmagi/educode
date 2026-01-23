@@ -10,7 +10,7 @@ using App.Domain;
 using Contracts;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Serilog;
 using StackExchange.Redis;
 using IPNetwork = System.Net.IPNetwork;
@@ -49,15 +49,13 @@ builder.Logging.AddSerilog();
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 
-builder.Services.AddSingleton<DbInitializer>();
 builder.Services.AddScoped<IPhotoService, OciPhotoService>();
 builder.Services.AddScoped<IAttendanceManagementService, AttendanceManagementService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseManagementService, CourseManagementService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
-builder.Services.AddSingleton<IHostedService, CleanupService>();
+builder.Services.AddSingleton<DbInitializer>();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -165,33 +163,32 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "EduCodeAPI", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "EduCodeAPI",
+        Version = "v1"
+    });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        In = ParameterLocation.Header,
-        Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
         Description = "Please enter 'Bearer' followed by your token"
     });
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            []
+            new OpenApiSecuritySchemeReference("Bearer"),
+            new List<string>()
         }
     });
 });
+
+
 
 builder.Services.AddDistributedMemoryCache();
 

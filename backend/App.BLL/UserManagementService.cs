@@ -10,13 +10,15 @@ namespace App.BLL;
 public class UserManagementService : IUserManagementService
 {
     private readonly UserRepository _userRepository;
+    private readonly EnvInitializer _envInitializer;
     private readonly CourseRepository _courseRepository;
     private readonly RedisRepository _redisRepository;
     private readonly ILogger<UserManagementService> _logger;
 
-    public UserManagementService(AppDbContext context, ILogger<UserManagementService> logger, 
+    public UserManagementService(AppDbContext context, ILogger<UserManagementService> logger, EnvInitializer envInitializer,
                                     IConnectionMultiplexer connectionMultiplexer, ILogger<RedisRepository> redisLogger)
     {
+        _envInitializer = envInitializer;
         _userRepository = new UserRepository(context); 
         _courseRepository = new CourseRepository(context); 
         _redisRepository = new RedisRepository(connectionMultiplexer, redisLogger); 
@@ -237,6 +239,96 @@ public class UserManagementService : IUserManagementService
         return true;
     }
     
+    public void SeedUserTypes()
+    {   
+        var now = DateTime.UtcNow;
+        var userTypes = new List<UserTypeEntity>
+        {
+            new UserTypeEntity
+            {
+                UserType = "student",
+                AccessLevel = EAccessLevel.PrimaryLevel,
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            },
+            new UserTypeEntity
+            {
+                UserType = "teacher-assistant",
+                AccessLevel = EAccessLevel.SecondaryLevel,
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            },
+            new UserTypeEntity
+            {
+                UserType = "teacher",
+                AccessLevel = EAccessLevel.TertiaryLevel,
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            },
+            new UserTypeEntity
+            {
+                UserType = "school-administrator",
+                AccessLevel = EAccessLevel.QuaternaryLevel,
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            },
+            new UserTypeEntity
+            {
+                UserType = "system-administrator",
+                AccessLevel = EAccessLevel.QuinaryLevel,
+                CreatedBy = "aspnet-initializer",
+                CreatedAt = now,
+                UpdatedBy = "aspnet-initializer",
+                UpdatedAt = now,
+            }
+        };
+        _userRepository.SeedUserTypes(userTypes);
+    }
+    
+    public void SeedAdminUser()
+    {   
+        var now = DateTime.UtcNow;
+        
+        var adminUserTypeId = _userRepository.GetAdminUserTypeId();
+        if (adminUserTypeId == Guid.Empty)
+        {
+            return;
+        }
+        
+        var adminUser = new UserEntity
+        {
+            Email = _envInitializer.DefaultAdminUser,
+            UserTypeId = adminUserTypeId!,
+            FullName = "Admin I",
+            
+            CreatedBy = "aspnet-initializer",
+            CreatedAt = now,
+            UpdatedBy = "aspnet-initializer",
+            UpdatedAt = now
+        };
+        
+        var adminAuth = new UserAuthEntity
+        {
+            UserId = adminUser.Id,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(_envInitializer.DefaultAdminPassword, workFactor: 12),
+            
+            CreatedBy = "aspnet-initializer",
+            CreatedAt = now,
+            UpdatedBy = "aspnet-initializer",
+            UpdatedAt = now
+        };
+        _userRepository.SeedAdminUser(adminUser, adminAuth);
+    }
+}
+    
     /* TODO: Implement soft deletion that cascade-soft-deletes UserAuthData, CourseTeachers, Courses, AttendanceChecks
                 and HARD-deletes all User's RefreshTokens */
 
@@ -245,4 +337,3 @@ public class UserManagementService : IUserManagementService
     
     // TODO: Implement restoration method that cascade-restores UserAuthData, CourseTeachers, Courses, AttendanceChecks
 
-}

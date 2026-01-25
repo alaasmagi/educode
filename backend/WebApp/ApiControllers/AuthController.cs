@@ -15,7 +15,6 @@ public class AuthController(
     IAuthService authService,
     EnvInitializer envInitializer,
     IOtpService otpService,
-    IEmailService emailService,
     ILogger<AuthController> logger)
     : ControllerBase
 {

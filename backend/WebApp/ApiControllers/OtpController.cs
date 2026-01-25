@@ -13,7 +13,6 @@ namespace WebApp.ApiControllers;
 [Route("api/[controller]")]
 public class OtpController(
     IOtpService otpService,
-    IEmailService emailService,
     IUserManagementService userManagementService,
     IAuthService authService,
     EnvInitializer envInitializer,
@@ -40,11 +39,6 @@ public class OtpController(
         var key = await otpService.GenerateAndStoreOtp(model.Email);
         var recipientEmail = user?.Email ?? model.Email;
         var recipientName = user?.FullName ?? model.FullName ?? "EduCode user";
-
-        if (!await emailService.SendEmailAsync(recipientEmail, recipientName, key))
-        {
-            return BadRequest(new { message = "Email was not sent", messageCode = "email-was-not-sent" });
-        }
         
         logger.LogInformation($"OTP sent successfully for user with email {model.Email}");
         return Ok(new { message = "OTP sent successfully" });

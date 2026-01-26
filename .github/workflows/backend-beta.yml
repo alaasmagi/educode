@@ -1,0 +1,56 @@
+name: Backend - Build and Deploy to beta server
+
+on:
+  push:
+    branches:
+      - beta
+    paths:
+      - 'backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+    
+    - name: Build and Push Docker Image
+      run: |
+        VERSION=1.0.$((100 + $GITHUB_RUN_NUMBER))
+        docker build --no-cache -t educode-backend-beta:$VERSION -f "backend/Dockerfile" "backend"
+        docker tag educode-backend-beta:$VERSION alaasmagi/educode-backend-beta:$VERSION
+        docker tag educode-backend-beta:$VERSION alaasmagi/educode-backend-beta:latest
+        docker push alaasmagi/educode-backend-beta:$VERSION
+        docker push alaasmagi/educode-backend-beta:latest
+        echo "Built and pushed version $VERSION and latest"
+
+  deploy-beta-server:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Beta server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.BACKEND_TEST_HOST }}
+          username: ${{ secrets.BACKEND_VM_USERNAME }}
+          key: ${{ secrets.BACKEND_TEST_SSH }}
+          script: |
+            echo "${{ secrets.BACKEND_ENV_FILE }}" | base64 --decode | sudo tee .env > /dev/null
+            sudo docker pull alaasmagi/educode-backend-beta:latest
+            sudo docker stop educode-backend-beta || true
+            sudo docker container prune -f
+            sudo docker image prune -a -f
+            sudo docker run -d \
+                --name educode-backend-beta \
+                --network educode-net \
+                --env-file .env \
+                -p 8081:8080 \
+                --restart=always \
+                alaasmagi/educode-backend-beta:latest

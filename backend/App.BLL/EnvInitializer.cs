@@ -28,12 +28,6 @@ public class EnvInitializer
     // OTP
     public string OtpKey { get; private set; } = string.Empty;
     public int OtpExpirationMinutes { get; private set; }
-
-    // Mail
-    public string MailSenderEmail { get; private set; } = string.Empty;
-    public string MailSenderKey { get; private set; } = string.Empty;
-    public string MailSenderHost { get; private set; } = string.Empty;
-    public string MailSenderPort { get; private set; } = string.Empty;
     
     // OCI (Oracle Cloud Infrastructure)
     public string OciKey { get; private set; } = string.Empty;
@@ -75,11 +69,6 @@ public class EnvInitializer
         JwtIssuer = GetStringEnv("JWTISS");
         JwtExpirationMinutes = GetIntEnv("JWT_MINUTES");
         JwtCookieExpirationMinutes = GetIntEnv("JWT_COOKIE_MINUTES");
-
-        MailSenderEmail = GetStringEnv("MAILSENDER_EMAIL");
-        MailSenderKey = GetStringEnv("MAILSENDER_KEY");
-        MailSenderHost = GetStringEnv("MAILSENDER_HOST");
-        MailSenderPort = GetStringEnv("MAILSENDER_PORT");
         
         OciKey = GetStringEnv("OCI_KEY");
         OciTenancyId = GetStringEnv("OCI_TENANCY_ID");

@@ -1,4 +1,5 @@
-using Contracts;
+using App.BLL.Contracts;
+using App.Common;
 using Oci.Common;
 using Oci.Common.Auth;
 using Oci.Common.Model;

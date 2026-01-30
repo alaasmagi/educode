@@ -1,9 +1,8 @@
-using App.DAL.EF;
-using Contracts;
+using App.BLL.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace App.BLL;
+namespace App.Common;
 
 public class DbInitializer
 {

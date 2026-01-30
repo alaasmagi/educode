@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="Sentry" Version="6.0.0" />
+      <PackageReference Include="Sentry.AspNetCore" Version="6.0.0" />
     </ItemGroup>
 
 </Project>

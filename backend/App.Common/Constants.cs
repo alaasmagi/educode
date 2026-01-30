@@ -1,4 +1,4 @@
-﻿namespace App.BLL;
+﻿namespace App.Common;
 
 public class Constants
 {

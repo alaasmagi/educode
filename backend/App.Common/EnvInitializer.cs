@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace App.BLL;
+namespace App.Common;
 
 public class EnvInitializer
 {
@@ -16,6 +16,14 @@ public class EnvInitializer
     public string JwtIssuer { get; private set; } = string.Empty;
     public int JwtExpirationMinutes { get; private set; }
     public int JwtCookieExpirationMinutes { get; private set; }
+    
+    // Email API
+    public string EmailApiUrl { get; private set; } = string.Empty;
+    public string EmailApiKey { get; private set; } = string.Empty;
+    public int EmailExpiryMinutes { get; private set; }
+    
+    // Sentry
+    public string SentryDsn { get; private set; } = string.Empty;
 
     // RefreshToken
     public int RefreshTokenExpirationDays { get; private set; }
@@ -42,7 +50,7 @@ public class EnvInitializer
     public int SoftDeleteExpirationDays { get; private set; }
 
     // Frontend
-    public string FrontendUrl { get; private set; } = string.Empty;
+    public string FrontendUrls { get; private set; } = string.Empty;
 
     
     public EnvInitializer(ILogger<EnvInitializer> logger)
@@ -70,6 +78,12 @@ public class EnvInitializer
         JwtExpirationMinutes = GetIntEnv("JWT_MINUTES");
         JwtCookieExpirationMinutes = GetIntEnv("JWT_COOKIE_MINUTES");
         
+        EmailApiUrl = GetStringEnv("EMAIL_API_URL");
+        EmailApiKey = GetStringEnv("EMAIL_API_KEY");
+        EmailExpiryMinutes = GetIntEnv("EMAIL_EXPIRY_MINUTES");
+        
+        SentryDsn = GetStringEnv("SENTRY_DSN");
+        
         OciKey = GetStringEnv("OCI_KEY");
         OciTenancyId = GetStringEnv("OCI_TENANCY_ID");
         OciUserId = GetStringEnv("OCI_USER_ID");
@@ -80,7 +94,7 @@ public class EnvInitializer
 
         SoftDeleteExpirationDays = GetIntEnv("SOFTDELETE_EXPIRATION_DAYS");
         
-        FrontendUrl = GetStringEnv("FRONTENDURL");
+        FrontendUrls = GetStringEnv("FRONTENDURLS");
 
         _logger.LogInformation("Environment variables initialized.");
     }
@@ -91,7 +105,7 @@ public class EnvInitializer
         if (string.IsNullOrWhiteSpace(value))
         {
             _logger.LogWarning($"Environment variable '{key}' is missing or empty.");
-            return string.Empty;
+            return "";
         }
         return value;
     }

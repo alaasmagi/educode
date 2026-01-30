@@ -1,7 +1,7 @@
 ﻿using App.Domain;
 using App.DTO;
 
-namespace Contracts;
+namespace App.BLL.Contracts;
 
 public interface ICourseManagementService
 {

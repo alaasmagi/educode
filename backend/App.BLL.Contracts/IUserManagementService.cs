@@ -1,6 +1,6 @@
 ﻿using App.Domain;
 
-namespace Contracts;
+namespace App.BLL.Contracts;
 
 public interface IUserManagementService
 {

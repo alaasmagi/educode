@@ -6,8 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Threading.RateLimiting;
 using App.BLL;
+using App.BLL.Contracts;
+using App.Common;
 using App.Domain;
-using Contracts;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
@@ -27,6 +28,14 @@ Log.Logger = new LoggerConfiguration()
 var envInitializer = new EnvInitializer(loggerFactory.CreateLogger<EnvInitializer>());
 envInitializer.InitializeEnv();
 builder.Services.AddSingleton(envInitializer);
+
+builder.WebHost.UseSentry(options =>
+{
+    options.Dsn = envInitializer.SentryDsn;
+    options.Environment = builder.Environment.EnvironmentName; 
+    options.Release = "1.0.0"; 
+    options.TracesSampleRate = 1.0;
+});
 
 builder.Services.AddDbContextPool<AppDbContext>(options =>
     options.UseNpgsql(envInitializer.PgDbConnection, npgsqlOptions =>
@@ -72,12 +81,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 builder.Services.AddCors(options =>
 {
+    var frontendUrls = Helpers.SplitWords(envInitializer.FrontendUrls);
+    
     options.AddPolicy("Frontend", policyBuilder =>
     {
-        if (!string.IsNullOrWhiteSpace(envInitializer.FrontendUrl))
+        if (frontendUrls.Length > 0)
         {
             policyBuilder
-                .WithOrigins(envInitializer.FrontendUrl)
+                .WithOrigins(frontendUrls)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -93,7 +104,6 @@ builder.Services.AddCors(options =>
 
     options.DefaultPolicyName = "Frontend";
 });
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

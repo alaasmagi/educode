@@ -1,7 +1,8 @@
 ﻿using App.BLL;
+using App.BLL.Contracts;
+using App.Common;
 using App.Domain;
 using App.DTO;
-using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +13,8 @@ namespace WebApp.ApiControllers;
 public class SchoolController(
     EnvInitializer envInitializer,
     ISchoolManagementService schoolManagementService,
-    IPhotoService photoService,
-    IUserManagementService userManagementService,
-    ILogger<OtpController> logger)
+    ILogger<SchoolController> logger,
+    SentryService sentryService)
     : ControllerBase
 {
     [HttpGet]

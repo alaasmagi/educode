@@ -1,55 +1,65 @@
 ﻿using System.Text.Json;
+using App.BLL.Contracts;
+using App.Common;
+using App.DAL.Contracts;
 using App.DAL.EF;
 using App.Domain;
-using Contracts;
 using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
 
 namespace App.BLL;
 
-public class SchoolManagementService : ISchoolManagementService
+public class SchoolManagementService(ISchoolRepository schoolRepository, RedisRepository redisRepository, 
+                                    ILogger<SchoolManagementService> logger, SentryService sentry) : ISchoolManagementService
 {
-    private readonly SchoolRepository _schoolRepository;
-    private readonly ILogger<SchoolManagementService> _logger;
-    private readonly RedisRepository _redisRepository;
-
-    public SchoolManagementService(AppDbContext context, ILogger<SchoolManagementService> logger,
-                                    IConnectionMultiplexer connectionMultiplexer, ILogger<RedisRepository> redisLogger)
-    {
-        _logger = logger;
-        _schoolRepository = new SchoolRepository(context);
-        _redisRepository = new RedisRepository(connectionMultiplexer, redisLogger); 
-    }
-
     public async Task<List<SchoolEntity>?> GetAllSchools(int pageNr, int pageSize)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.SchoolPrefix + pageNr + pageSize);
+        var cache = await redisRepository.GetAsync(Constants.SchoolPrefix + pageNr + pageSize);
         if (cache != null)
         {
+            logger.LogInformation("Successfully retrieved all schools from cache");
             return JsonSerializer.Deserialize<List<SchoolEntity>?>(cache);
         }
         
-        var schools = await _schoolRepository.GetAllSchools(pageNr, pageSize);
+        logger.LogInformation("Cache miss for all schools, fetching from database");
+        var schools = await schoolRepository.GetAllAsync(pageNr, pageSize);
+
+        if (schools == null)
+        {
+            logger.LogWarning("No schools found in database");
+            sentry.CaptureInfo("No schools found in database");
+            return null;
+        }
         
+        logger.LogInformation("Successfully retrieved all schools from database, storing in cache");
         var serializedSchools = JsonSerializer.Serialize(schools);
-        await _redisRepository.SetDataAsync(Constants.SchoolPrefix + pageNr + pageSize, 
+        await redisRepository.SetAsync(Constants.SchoolPrefix + pageNr + pageSize, 
             serializedSchools, Constants.LongCachePeriod);
         
-        return schools.Count > 0 ? schools : null;
+        return schools;
     }
 
     public async Task<SchoolEntity?> GetSchoolById(Guid id)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.SchoolPrefix + id);
+        var cache = await redisRepository.GetAsync(Constants.SchoolPrefix + id);
         if (cache != null)
         {
+            logger.LogInformation("Successfully retrieved school from cache by ID {SchoolId}", id);
             return JsonSerializer.Deserialize<SchoolEntity?>(cache);
         }
         
-        var school = await _schoolRepository.GetSchoolById(id);
+        logger.LogInformation("Cache miss for school by id {SchoolId}", id);
+        var school = await schoolRepository.GetByIdAsync(id);
         
+        if (school == null)
+        {
+            logger.LogWarning("No schools found in database with ID {SchoolId}", id);
+            sentry.CaptureInfo("No schools found in database with ID {0}", id);
+            return null;
+        }
+        
+        logger.LogInformation("Successfully retrieved school from database by ID {SchoolId}, storing in cache", id);
         var serializedSchool = JsonSerializer.Serialize(school);
-        await _redisRepository.SetDataAsync(Constants.SchoolPrefix + id, serializedSchool,Constants.LongCachePeriod);
+        await redisRepository.SetAsync(Constants.SchoolPrefix + id, serializedSchool,Constants.LongCachePeriod);
 
         return school;
     }

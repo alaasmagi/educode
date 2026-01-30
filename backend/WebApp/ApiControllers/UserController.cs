@@ -1,10 +1,9 @@
-using System.Security.Claims;
-using App.BLL;
+using App.BLL.Contracts;
+using App.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using App.Domain;
 using App.DTO;
-using Contracts;
 
 namespace WebApp.ApiControllers
 {

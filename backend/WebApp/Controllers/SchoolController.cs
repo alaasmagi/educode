@@ -1,7 +1,7 @@
 ﻿using App.BLL;
+using App.Common;
 using App.DAL.EF;
 using App.Domain;
-using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

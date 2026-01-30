@@ -1,7 +1,8 @@
 ﻿using App.BLL;
+using App.BLL.Contracts;
+using App.Common;
 using App.Domain;
 using App.DTO;
-using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApp.Models;

@@ -1,9 +1,10 @@
-﻿using App.Domain;
+﻿using App.DAL.Contracts;
+using App.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace App.DAL.EF;
 
-public class UserRepository (AppDbContext context)
+public class UserRepository (AppDbContext context) : IUserRepository
 {
     public async Task<bool> AddUserEntityToDb(UserEntity newUser)
     {
@@ -161,5 +162,35 @@ public class UserRepository (AppDbContext context)
             context.UserTypes.AddRange(userTypes);
             context.SaveChanges();
         }
+    }
+
+    public Task<List<UserEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<UserEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<UserEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<UserEntity?> CreateAsync(UserEntity entity)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<UserEntity?> UpdateAsync(UserEntity entity)
+    {
+        throw new NotImplementedException();
+    }
+    
+    public Task<UserEntity?> RemoveAsync(UserEntity entity)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -1,4 +1,4 @@
-namespace Contracts;
+namespace App.BLL.Contracts;
 
 public interface IPhotoService
 {

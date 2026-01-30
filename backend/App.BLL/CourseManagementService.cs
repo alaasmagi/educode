@@ -1,8 +1,9 @@
 ﻿using System.Text.Json;
+using App.BLL.Contracts;
+using App.Common;
 using App.DAL.EF;
 using App.Domain;
 using App.DTO;
-using Contracts;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
@@ -17,18 +18,19 @@ public class CourseManagementService : ICourseManagementService
     private readonly UserRepository _userRepository;
     private readonly ILogger<CourseManagementService> _logger;
 
-    public CourseManagementService(AppDbContext context, ILogger<CourseManagementService> logger, IConnectionMultiplexer connectionMultiplexer, ILogger<RedisRepository> redisLogger)
+    public CourseManagementService(AppDbContext context, ILogger<CourseManagementService> logger, IDatabase database, 
+                                    ILogger<RedisRepository> redisLogger, SentryService sentry)
     {
         _logger = logger;
         _courseRepository = new CourseRepository(context);
         _attendanceRepository = new AttendanceRepository(context);
-        _redisRepository = new RedisRepository(connectionMultiplexer, redisLogger); 
+        _redisRepository = new RedisRepository(database, redisLogger, sentry); 
         _userRepository = new UserRepository(context);
     }
 
     public async Task<CourseEntity?> GetCourseByAttendanceIdAsync(Guid attendanceId)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.CoursePrefix + 
+        var cache = await _redisRepository.GetAsync(Constants.CoursePrefix + 
                                                         Constants.AttendancePrefix + attendanceId);
         if (cache != null)
         {
@@ -52,14 +54,14 @@ public class CourseManagementService : ICourseManagementService
         }
         
         var serializedCourse = JsonSerializer.Serialize(course);
-        await _redisRepository.SetDataAsync(Constants.CoursePrefix + Constants.AttendancePrefix + attendanceId, 
+        await _redisRepository.SetAsync(Constants.CoursePrefix + Constants.AttendancePrefix + attendanceId, 
                                                                                     serializedCourse, Constants.LongCachePeriod);
         return course;
     }
 
     public async Task<CourseEntity?> GetCourseByIdAsync(Guid courseId, string email)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.CoursePrefix + courseId);
+        var cache = await _redisRepository.GetAsync(Constants.CoursePrefix + courseId);
         CourseEntity? course;
 
         if (cache != null)
@@ -77,7 +79,7 @@ public class CourseManagementService : ICourseManagementService
             }
 
             var serializedCourse = JsonSerializer.Serialize(course);
-            await _redisRepository.SetDataAsync(Constants.CoursePrefix + courseId, serializedCourse, Constants.MediumCachePeriod);
+            await _redisRepository.SetAsync(Constants.CoursePrefix + courseId, serializedCourse, Constants.MediumCachePeriod);
         }
 
         var accessible = await IsCourseAccessibleToUser(course, email);
@@ -128,7 +130,7 @@ public class CourseManagementService : ICourseManagementService
             return false;
         }
         
-        await _redisRepository.DeleteKeysByPatternAsync($"*{courseId.ToString()}*");
+        await _redisRepository.DeletePatternAsync($"*{courseId.ToString()}*");
         var status = await _courseRepository.UpdateCourseEntity(courseId, newCourse);
         if (!status)
         {
@@ -149,7 +151,7 @@ public class CourseManagementService : ICourseManagementService
             return false;
         }
         
-        await _redisRepository.DeleteKeysByPatternAsync($"*{courseId.ToString()}*");
+        await _redisRepository.DeletePatternAsync($"*{courseId.ToString()}*");
         
         var status = await _courseRepository.DeleteCourseEntity(course);
         
@@ -164,7 +166,7 @@ public class CourseManagementService : ICourseManagementService
     
     public async Task<List<CourseStatusEntity>?> GetAllCourseStatuses()
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.CourseStatusPrefix);
+        var cache = await _redisRepository.GetAsync(Constants.CourseStatusPrefix);
         
         if (cache != null)
         {
@@ -180,7 +182,7 @@ public class CourseManagementService : ICourseManagementService
         }
         
         var serializedCourseStatuses = JsonSerializer.Serialize(courseStatuses);
-        await _redisRepository.SetDataAsync(Constants.CourseStatusPrefix, 
+        await _redisRepository.SetAsync(Constants.CourseStatusPrefix, 
             serializedCourseStatuses, Constants.ExtraLongCachePeriod);
         
         return courseStatuses;
@@ -188,7 +190,7 @@ public class CourseManagementService : ICourseManagementService
     
     public async Task<List<CourseEntity>?> GetCoursesByUserAsync(Guid userId, int pageNr, int pageSize)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.CoursePrefix + 
+        var cache = await _redisRepository.GetAsync(Constants.CoursePrefix + 
                                                         Constants.UserPrefix + userId + pageNr + pageSize);
         if (cache != null)
         {
@@ -203,7 +205,7 @@ public class CourseManagementService : ICourseManagementService
         }
 
         var serializedCoursesByUser = JsonSerializer.Serialize(coursesByUser);
-        await _redisRepository.SetDataAsync(Constants.CoursePrefix + Constants.UserPrefix + userId + pageNr + pageSize, 
+        await _redisRepository.SetAsync(Constants.CoursePrefix + Constants.UserPrefix + userId + pageNr + pageSize, 
             serializedCoursesByUser, Constants.ShortCachePeriod);
         
         return coursesByUser;
@@ -211,7 +213,7 @@ public class CourseManagementService : ICourseManagementService
     
     public async Task<List<AttendanceStudentCountDto>?> GetAttendancesUserCountsByCourseAsync(Guid courseId)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.CourseStudentCountsPrefix + courseId);
+        var cache = await _redisRepository.GetAsync(Constants.CourseStudentCountsPrefix + courseId);
 
         if (cache != null)
         {
@@ -226,14 +228,14 @@ public class CourseManagementService : ICourseManagementService
         }
         
         var serializedStudentCounts = JsonSerializer.Serialize(studentCounts);
-        await _redisRepository.SetDataAsync(Constants.CourseStudentCountsPrefix + courseId, 
+        await _redisRepository.SetAsync(Constants.CourseStudentCountsPrefix + courseId, 
             serializedStudentCounts, Constants.ShortCachePeriod);
         return studentCounts;
     }
     
     public async Task<bool> IsCourseAccessibleToUser(CourseEntity courseEntity, string email)
     {
-        var userCache = await _redisRepository.GetDataAsync(Constants.UserPrefix + email);
+        var userCache = await _redisRepository.GetAsync(Constants.UserPrefix + email);
         UserEntity? user;
 
         if (userCache != null)
@@ -246,7 +248,7 @@ public class CourseManagementService : ICourseManagementService
             if (user != null)
             {
                 var serializedUser = JsonSerializer.Serialize(user);
-                await _redisRepository.SetDataAsync(Constants.UserPrefix + email, serializedUser, 
+                await _redisRepository.SetAsync(Constants.UserPrefix + email, serializedUser, 
                     Constants.DefaultCachePeriod);
             }
         }
@@ -257,7 +259,7 @@ public class CourseManagementService : ICourseManagementService
             return false;
         }
         
-        var accessCache = await _redisRepository.GetDataAsync(Constants.CourseAccessPrefix + courseEntity.Id + user.Id);
+        var accessCache = await _redisRepository.GetAsync(Constants.CourseAccessPrefix + courseEntity.Id + user.Id);
         int access;
 
         if (accessCache != null)
@@ -267,7 +269,7 @@ public class CourseManagementService : ICourseManagementService
         else
         {
             access = await _courseRepository.CourseAccessibilityCheck(courseEntity.Id, user.Id);
-            await _redisRepository.SetDataAsync(Constants.CourseAccessPrefix + courseEntity.Id + user.Id, access.ToString(), 
+            await _redisRepository.SetAsync(Constants.CourseAccessPrefix + courseEntity.Id + user.Id, access.ToString(), 
                 Constants.ShortCachePeriod);
         }
 

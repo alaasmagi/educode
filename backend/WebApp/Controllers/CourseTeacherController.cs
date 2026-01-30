@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using App.DAL.EF;
 using App.Domain;
-using Contracts;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers

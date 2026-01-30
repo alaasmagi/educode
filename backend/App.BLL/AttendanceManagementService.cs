@@ -1,7 +1,8 @@
 ﻿using System.Text.Json;
+using App.BLL.Contracts;
+using App.Common;
 using App.DAL.EF;
 using App.Domain;
-using Contracts;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 

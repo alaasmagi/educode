@@ -5,7 +5,7 @@
 * Development year: **2025**
 * Languages and technologies: **C#, .NET Core, TypeScript, React, React Native, Entity Framework Core, JWT, PostgreSQL, Redis**
 * This is a unified monorepo containing all three components of my Bachelor's final thesis project: backend API, web application, and mobile application
-* Detailed documentation of my Bachelor's final thesis project (in Estonian):<link>
+* Detailed documentation of my Bachelor's final thesis project (in Estonian): [Link to TalTech](https://digikogu.taltech.ee/et/item/6ceef6c1-93b9-428d-a366-8e67b557e207)
 
 **Note**: This repository was previously split into three separate repositories ([backend](https://github.com/alaasmagi/educode-backend), [web client](https://github.com/alaasmagi/educode-web), and [mobile app](https://github.com/alaasmagi/educode-mobile)) and has been unified into a monorepo structure for better maintainability and deployment coordination.
 

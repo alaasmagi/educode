@@ -1,11 +1,8 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using App.Domain;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 
-namespace App.BLL;
+namespace App.Common;
 
-public class Helpers
+public static class Helpers
 {
     public static int GetAccessLevelFromClaims(AuthorizationHandlerContext context)
     {
@@ -22,5 +19,13 @@ public class Helpers
             "image/gif" => ".gif",
             _ => string.Empty,
         };
+    }
+    
+    public static string[] SplitWords(string str)
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return Array.Empty<string>();
+    
+        return str.Split(';', StringSplitOptions.RemoveEmptyEntries);
     }
 }

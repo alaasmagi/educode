@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
-namespace Contracts;
 
+namespace App.BLL.Contracts;
 
 public interface ICleanupService : IHostedService, IDisposable
 {

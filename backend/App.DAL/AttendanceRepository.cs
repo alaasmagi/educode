@@ -1,10 +1,13 @@
-﻿using System.Data;
+﻿using App.Common;
+using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace App.DAL.EF;
 
-public class AttendanceRepository(AppDbContext context)
+public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRepository> logger, SentryService sentry) 
+                                                                                                : IAttendanceRepository
 {
     public async Task<bool> AddAttendanceCheck(AttendanceCheckEntity attendance, string creator, WorkplaceEntity? workplace)
     {
@@ -249,5 +252,159 @@ public class AttendanceRepository(AppDbContext context)
             context.AttendanceTypes.AddRange(attendanceTypes);
             context.SaveChanges();
         }
+    }
+
+    public async Task<List<AttendanceEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Attendances
+                    .IgnoreQueryFilters()
+                    .OrderBy(a => a.Id)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync() : 
+                await context.Attendances
+                    .OrderBy(a => a.Id)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving attendances. Page: {PageNr}, Size: {PageSize}", pageNr, pageSize);
+            sentry.CaptureWithContext(ex, "Error retrieving attendances. Page: {0}, Size: {1}", pageNr, pageSize);
+            return null;
+        }
+    }
+
+    public async Task<AttendanceEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Attendances
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(a => a.Id == id) : 
+                await context.Attendances
+                    .FirstOrDefaultAsync(a => a.Id == id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving attendance. ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving attendance. ID: {0}", id);
+            return null;
+        }        
+    }
+    
+    public async Task<List<AttendanceEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    {
+        try
+        {
+            var normalizedKeyword = keyword.ToLower().Trim();
+
+            var query = includeDeleted 
+                ? context.Attendances.IgnoreQueryFilters() 
+                : context.Attendances;
+
+            return await query
+                .Include(a => a.Course)
+                .ThenInclude(c => c!.CourseTeacherEntities!)
+                .ThenInclude(ct => ct.Teacher)
+                .Include(a => a.Classroom)
+                .ThenInclude(cl => cl!.School)
+                .Include(a => a.AttendanceType)
+                .Where(a =>
+                    (a.Course != null && a.Course.CourseName.ToLower().Contains(normalizedKeyword)) ||
+                    (a.Course != null && a.Course.CourseCode.ToLower().Contains(normalizedKeyword)) ||
+                    (a.Course != null && a.Course.CourseTeacherEntities != null && 
+                     a.Course.CourseTeacherEntities.Any(ct => 
+                         ct.Teacher != null && ct.Teacher.FullName.ToLower().Contains(normalizedKeyword))) ||
+                    (a.Classroom != null && a.Classroom.Classroom.ToLower().Contains(normalizedKeyword)) ||
+                    (a.Classroom != null && a.Classroom.School != null && 
+                     a.Classroom.School.Name.ToLower().Contains(normalizedKeyword)) ||
+                    (a.AttendanceType != null && a.AttendanceType.AttendanceType.ToLower().Contains(normalizedKeyword)) ||
+                    a.Identifier.ToLower().Contains(normalizedKeyword))
+                .OrderByDescending(a => a.StartTime)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error searching attendances. Keyword: {Keyword}", keyword);
+            sentry.CaptureWithContext(ex, "Error searching attendances. Keyword: {0}", keyword);
+            return null;
+        }
+    }
+
+    public async Task<AttendanceEntity?> CreateAsync(AttendanceEntity entity)
+    {
+        try
+        {
+            entity.CreatedAt = DateTime.UtcNow;
+            entity.UpdatedAt = DateTime.UtcNow;
+            
+            await context.Attendances.AddAsync(entity);
+            await context.SaveChangesAsync();
+            return entity;
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error creating attendance. Identifier: {Identifier}", entity.Identifier);
+            sentry.CaptureWithContext(ex, "Database error creating attendance. Identifier: {0}", entity.Identifier);
+            return null;
+        }   
+    }
+
+    public async Task<AttendanceEntity?> UpdateAsync(AttendanceEntity entity)
+    {
+        try
+        {
+            var existingEntity = await context.Attendances.FindAsync(entity.Id);
+            if (existingEntity == null)
+                return null;
+            
+            existingEntity.AutomatedRegistration = entity.AutomatedRegistration;
+            existingEntity.CourseId = entity.CourseId;
+            existingEntity.Identifier = entity.Identifier;
+            existingEntity.StartTime = entity.StartTime;
+            existingEntity.EndTime = entity.EndTime;
+            existingEntity.ClassroomId = entity.ClassroomId;
+            existingEntity.AttendanceTypeId = entity.AttendanceTypeId;
+            existingEntity.Deleted= entity.Deleted;
+            existingEntity.UpdatedAt = DateTime.UtcNow;
+            existingEntity.UpdatedBy = entity.UpdatedBy;
+
+            await context.SaveChangesAsync();
+            return existingEntity;
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            logger.LogError(ex, "Concurrency conflict updating attendance. ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating attendance. ID: {0}", entity.Id);
+            return null;
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error updating attendance. ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating attendance. ID: {0}", entity.Id);
+            return null;
+        }
+    }
+
+    public async Task<AttendanceEntity?> RemoveAsync(AttendanceEntity entity)
+    {
+        try
+        {
+            context.Attendances.Remove(entity);
+            await context.SaveChangesAsync();
+            return entity;
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error removing attendance. ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing attendance. ID: {0}", entity.Id);
+            return null;
+        }    
     }
 }

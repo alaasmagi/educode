@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace App.DAL.EF;
 
-public class WorkplaceRepository(AppDbContext context, ILogger<SchoolRepository> logger, SentryService sentry) : IWorkplaceRepository
+public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceRepository> logger, SentryService sentry) : IWorkplaceRepository
 {
     public async Task<List<WorkplaceEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
     {
@@ -52,6 +52,7 @@ public class WorkplaceRepository(AppDbContext context, ILogger<SchoolRepository>
         }    
     }
 
+    // TODO: INDEXING!
     public async Task<List<WorkplaceEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
     {
         try

@@ -1,10 +1,12 @@
-﻿using App.DAL.Contracts;
+﻿using App.Common;
+using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace App.DAL.EF;
 
-public class UserRepository (AppDbContext context) : IUserRepository
+public class UserRepository(AppDbContext context, ILogger<UserRepository> logger, SentryService sentry) : IUserRepository
 {
     public async Task<bool> AddUserEntityToDb(UserEntity newUser)
     {
@@ -163,34 +165,152 @@ public class UserRepository (AppDbContext context) : IUserRepository
             context.SaveChanges();
         }
     }
+    
+    
+    
 
-    public Task<List<UserEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<UserEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
     {
-        throw new NotImplementedException();
+        try
+        {
+            return includeDeleted ? 
+                await context.Users
+                    .IgnoreQueryFilters()
+                    .OrderBy(u => u.Id)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync() : 
+                await context.Users
+                    .OrderBy(u => u.Id)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving users. Page: {PageNr}, Size: {PageSize}", pageNr, pageSize);
+            sentry.CaptureWithContext(ex, "Error retrieving users. Page: {0}, Size: {1}", pageNr, pageSize);
+            return null;
+        }    
     }
 
-    public Task<UserEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<UserEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
     {
-        throw new NotImplementedException();
+        try
+        {
+            return includeDeleted ? 
+                await context.Users
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.Id == id) : 
+                await context.Users
+                    .FirstOrDefaultAsync(u => u.Id == id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user. ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving user. ID: {0}", id);
+            return null;
+        }    
     }
 
-    public Task<List<UserEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    public async Task<List<UserEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var normalizedKeyword = keyword.ToLower().Trim();
+
+            return includeDeleted ? 
+                await context.Users
+                    .IgnoreQueryFilters()
+                    .Where(u =>
+                        u.Email.ToLower().Contains(normalizedKeyword) ||
+                        u.FullName.ToLower().Contains(normalizedKeyword) ||
+                        u.StudentCode!.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(ut => ut.UserType)
+                    .ToListAsync() : 
+                await context.Users
+                    .Where(u =>
+                        u.Email.ToLower().Contains(normalizedKeyword) ||
+                        u.FullName.ToLower().Contains(normalizedKeyword) ||
+                        u.StudentCode!.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(ut => ut.UserType)
+                    .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error searching users. Keyword: {Keyword}", keyword);
+            sentry.CaptureWithContext(ex, "Error searching users. Keyword: {0}", keyword);
+            return null;
+        }
     }
 
-    public Task<UserEntity?> CreateAsync(UserEntity entity)
+    public async Task<UserEntity?> CreateAsync(UserEntity entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            entity.CreatedAt = DateTime.UtcNow;
+            entity.UpdatedAt = DateTime.UtcNow;
+            
+            await context.Users.AddAsync(entity);
+            await context.SaveChangesAsync();
+            return entity;
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error creating user. Email: {UserType}", entity.Email);
+            sentry.CaptureWithContext(ex, "Database error creating user. Email: {0}", entity.Email);
+            return null;
+        }
     }
 
-    public Task<UserEntity?> UpdateAsync(UserEntity entity)
+    public async Task<UserEntity?> UpdateAsync(UserEntity entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var existingEntity = await context.Users.FindAsync(entity.Id);
+            if (existingEntity == null)
+                return null;
+            
+            existingEntity.Email= entity.Email;
+            existingEntity.FullName= entity.FullName;
+            existingEntity.StudentCode= entity.StudentCode;
+            existingEntity.PhotoPath= entity.PhotoPath;
+            existingEntity.SchoolId= entity.SchoolId;
+            existingEntity.UserTypeId= entity.UserTypeId;
+            existingEntity.Deleted= entity.Deleted;
+            existingEntity.UpdatedAt = DateTime.UtcNow;
+            existingEntity.UpdatedBy = entity.UpdatedBy;
+
+            await context.SaveChangesAsync();
+            return existingEntity;
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            logger.LogError(ex, "Concurrency conflict updating user. ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating user. ID: {0}", entity.Id);
+            return null;
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error updating user. ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating user. ID: {0}", entity.Id);
+            return null;
+        }
     }
     
-    public Task<UserEntity?> RemoveAsync(UserEntity entity)
+    public async Task<UserEntity?> RemoveAsync(UserEntity entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            context.Users.Remove(entity);
+            await context.SaveChangesAsync();
+            return entity;
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error removing user. ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing user. ID: {0}", entity.Id);
+            return null;
+        }
     }
 }

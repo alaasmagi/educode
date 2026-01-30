@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace App.DAL.EF;
 
-public class UserAuthRepository(AppDbContext context, ILogger<SchoolRepository> logger, SentryService sentry) : IUserAuthRepository
+public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository> logger, SentryService sentry) : IUserAuthRepository
 {
     public async Task<List<UserAuthEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
     {
@@ -64,7 +64,7 @@ public class UserAuthRepository(AppDbContext context, ILogger<SchoolRepository> 
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error creating user auth data. User ID: {Course}", entity.UserId);
+            logger.LogError(ex, "Database error creating user auth data. User ID: {UserId}", entity.UserId);
             sentry.CaptureWithContext(ex, "Database error creating user auth data. User ID: {0}", entity.UserId);
             return null;
         }

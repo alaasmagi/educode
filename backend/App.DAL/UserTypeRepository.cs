@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace App.DAL.EF;
 
-public class UserTypeRepository(AppDbContext context, ILogger<SchoolRepository> logger, SentryService sentry) : IUserTypeRepository
+public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository> logger, SentryService sentry) : IUserTypeRepository
 {
     public async Task<List<UserTypeEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
     {
@@ -51,7 +51,8 @@ public class UserTypeRepository(AppDbContext context, ILogger<SchoolRepository> 
             return null;
         }    
     }
-
+    
+    // TODO: INDEXING!
     public async Task<List<UserTypeEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
     {
         try

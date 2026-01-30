@@ -6,7 +6,8 @@ using Microsoft.Extensions.Logging;
 
 namespace App.DAL.EF;
 
-public class AttendanceTypeRepository(AppDbContext context, ILogger<SchoolRepository> logger, SentryService sentry) : IAttendanceTypeRepository
+public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTypeRepository> logger, SentryService sentry) 
+                                                                                                : IAttendanceTypeRepository
 {
     public async Task<List<AttendanceTypeEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
     {

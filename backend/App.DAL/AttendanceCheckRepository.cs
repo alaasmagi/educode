@@ -34,7 +34,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }    
     }
     
-    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendance(Guid attendanceId)
+    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendanceAysnc(Guid attendanceId)
     {
         try
         {
@@ -51,8 +51,8 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }
     }
     
-    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendanceIdentifier(string attendanceIdentifier, 
-        int pageNr, int pageSize)
+    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendanceIdentifierAsync(string attendanceIdentifier, 
+                                                                                                int pageNr, int pageSize)
     {
         try
         {
@@ -67,6 +67,22 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         {
             logger.LogError(ex, "Error retrieving attendance checks by attendance. Page: {PageNr}, Size: {PageSize}", pageNr, pageSize);
             sentry.CaptureWithContext(ex, "Error retrieving attendance checks by attendance. Page: {0}, Size: {1}", pageNr, pageSize);
+            return null;
+        }
+    }
+    
+    public async Task<int?> GetUserCountsAsync(Guid attendanceId)
+    {
+        try
+        {
+            return await context.AttendanceChecks
+                .Where(a => a.Id == attendanceId)
+                .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user count by attendance. Attendance ID: {AttendanceId}", attendanceId);
+            sentry.CaptureWithContext(ex, "Error retrieving user count by attendance. Attendance ID: {0}", attendanceId);
             return null;
         }
     }
@@ -196,18 +212,4 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }
     }
     
-    
-    
-    
-    
-    
-    // TODO: MOVE TO ATTENDANCE CHECK REPOSITORY
-    
-    
-    public async Task<int> GetStudentCountByAttendanceId(string attendanceIdentifier)
-    {
-        var attendanceCounts = await context.AttendanceChecks.Where(a => a.AttendanceIdentifier == attendanceIdentifier)
-            .CountAsync();
-        return attendanceCounts;
-    }
 }

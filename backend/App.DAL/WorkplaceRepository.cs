@@ -152,25 +152,26 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
         }
     }
     
-    
-    
-    
-    
-    
-    
-    // TODO: MOVE TO WORKPLACE REPOSITORY
-    public async Task<bool> WorkplaceAvailabilityCheckById(string workplaceIdentifier)
+    public async Task<Guid?> CheckAvailabilityByIdentifierAsync(string identifier, bool includeDeleted)
     {
-        return await context.Workplaces.AnyAsync(w => w.Identifier == workplaceIdentifier);
-    }
-    
-    public async Task<bool> WorkplaceAvailabilityCheckByIdentifier(string workplaceIdentifier)
-    {
-        return await context.Workplaces.AnyAsync(w => w.Identifier == workplaceIdentifier);
-    }
-    
-    public async Task<WorkplaceEntity?> GetWorkplaceByIdentifier(string workplaceIdentifier)
-    {
-        return await context.Workplaces.FirstOrDefaultAsync(w => w.Identifier == workplaceIdentifier);
+        try
+        {
+            return includeDeleted ? 
+                await context.Workplaces
+                    .IgnoreQueryFilters()
+                    .Where(u => u.Identifier == identifier)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync() :
+                await context.Workplaces
+                    .Where(u => u.Identifier == identifier)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking workplace availability. Identifier: {Identifier}", identifier);
+            sentry.CaptureWithContext(ex, "Error checking workplace availability. Identifier: {0}", identifier);
+            return null;
+        }
     }
 }

@@ -181,4 +181,14 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return null;
         }
     }
+    
+    // TODO: MOVE THE MAIN SEEDING LOGIC TO THE SERVICE
+    public void SeedUserTypes(List<UserTypeEntity> userTypes)
+    {
+        if (!context.UserTypes.Any())
+        {
+            context.UserTypes.AddRange(userTypes);
+            context.SaveChanges();
+        }
+    }
 }

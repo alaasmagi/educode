@@ -265,6 +265,28 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
         }    
     }
     
+    public async Task<Guid?> CheckAvailabilityByIdentifierAsync(string identifier, bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Attendances
+                    .IgnoreQueryFilters()
+                    .Where(u => u.Identifier == identifier)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync() :
+                await context.Attendances
+                    .Where(u => u.Identifier == identifier)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking attendance availability. Identifier: {Identifier}", identifier);
+            sentry.CaptureWithContext(ex, "Error checking attendance availability. Identifier: {0}", identifier);
+            return null;
+        }
+    }
     
     // TODO: MOVE TO SERVICE LAYER
     public void SeedAttendanceTypes(List<AttendanceTypeEntity> attendanceTypes)

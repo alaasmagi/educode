@@ -21,46 +21,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         
         return result.Count > 0 ? result : null; 
     }
-    
-    public async Task<bool> AddCourseEntity(CourseTeacherEntity teacher, CourseEntity newCourse)
-    {
-        newCourse.CreatedAt = DateTime.UtcNow;
-        newCourse.UpdatedAt = DateTime.UtcNow;
-        
-        await context.Courses.AddAsync(newCourse);
-        
-        teacher.CourseId = newCourse.Id;
-        teacher.Course = newCourse;
-        teacher.CreatedAt = DateTime.UtcNow;
-        teacher.UpdatedAt = DateTime.UtcNow;
-        
-        await context.CourseTeachers.AddAsync(teacher);
-        return await context.SaveChangesAsync() > 0;
-    }
-    
-    public async Task<bool> UpdateCourseEntity(Guid courseId, CourseEntity updatedCourse)
-    {
-        var course = await context.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
-        if (course == null)
-        {
-            return false;
-        }
-
-        course.CourseName = updatedCourse.CourseName;
-        course.CourseCode = updatedCourse.CourseCode;
-        course.CourseStatusId = updatedCourse.CourseStatusId;
-        course.UpdatedAt = DateTime.UtcNow;
-
-        await context.SaveChangesAsync();
-        return true;
-    }
-    
-    public async Task<bool> DeleteCourseEntity(CourseEntity course)
-    {
-        context.Courses.Remove(course);
-        return await context.SaveChangesAsync() > 0;
-    }
-    
+   
     public async Task<List<AttendanceStudentCountDto>?> GetAllUserCountsByCourseId(Guid courseId)
     {
         var courseExists = await context.Courses.AnyAsync(c => c.Id == courseId);
@@ -135,30 +96,6 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         return false;
     }
     
-    public async Task<bool> RemoveOldCourses(DateTime datePeriod)
-    {
-        return await context.Courses
-            .IgnoreQueryFilters()
-            .Where(e => e.Deleted && e.UpdatedAt <= datePeriod)
-            .ExecuteDeleteAsync() > 0;
-    }
-    
-    public async Task<bool> RemoveOldCourseStatuses(DateTime datePeriod)
-    {
-        return await context.CourseStatuses
-            .IgnoreQueryFilters()
-            .Where(e => e.Deleted && e.UpdatedAt <= datePeriod)
-            .ExecuteDeleteAsync() > 0;
-    }
-    
-    public async Task<bool> RemoveOldCourseTeachers(DateTime datePeriod)
-    {
-        return await context.CourseTeachers
-            .IgnoreQueryFilters()
-            .Where(e => e.Deleted && e.UpdatedAt <= datePeriod)
-            .ExecuteDeleteAsync() > 0;
-    }
-    
     public void SeedCourseStatuses(List<CourseStatusEntity> courseStatuses)
     {
         if (!context.CourseStatuses.Any())
@@ -175,7 +112,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             .ExecuteDeleteAsync();
     }
 
-    public async Task<List<CourseEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<CourseEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -206,7 +143,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         }
     }
 
-    public async Task<CourseEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<CourseEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
@@ -214,24 +151,26 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
                 await context.Courses
                     .IgnoreQueryFilters()
                     .Include(c => c.CourseStatus)
+                    .Include(c => c.School)
                     .Include(c => c.CourseTeacherEntities!)
                     .ThenInclude(ct => ct.Teacher)
                     .FirstOrDefaultAsync(c => c.Id == id) : 
                 await context.Courses
                     .Include(c => c.CourseStatus)
+                    .Include(c => c.School)
                     .Include(c => c.CourseTeacherEntities!)
                     .ThenInclude(ct => ct.Teacher)
                     .FirstOrDefaultAsync(c => c.Id == id);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting course by ID. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error getting course by ID. ID: {0}", id);
+            logger.LogError(ex, "Error getting course. Course ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error getting course. Course ID: {0}", id);
             return null;
         }
     }
     
-    public async Task<List<CourseEntity>?> SearchAsync(string keyword, bool includeDeleted)
+    public async Task<List<CourseEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -315,8 +254,8 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error updating course. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Error updating course. ID: {0}", entity.Id);
+            logger.LogError(ex, "Error updating course. Course ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Error updating course. Course ID: {0}", entity.Id);
             return null;
         }
     }
@@ -332,8 +271,8 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error removing course. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Error removing course. ID: {0}", entity.Id);
+            logger.LogError(ex, "Error removing course. Course ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Error removing course. Course ID: {0}", entity.Id);
             return null;
         }
     }

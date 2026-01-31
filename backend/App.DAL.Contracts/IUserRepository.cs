@@ -4,5 +4,5 @@ namespace App.DAL.Contracts;
 
 public interface IUserRepository : IRepository<UserEntity>
 {
-    Task<List<UserEntity>?> SearchAsync(string keyword, bool includeDeleted = false);
+    Task<List<UserEntity>?> SearchAsync(string keyword, Guid? resourceFilterId = null, bool includeDeleted = false);
 }

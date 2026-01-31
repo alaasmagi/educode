@@ -8,7 +8,7 @@ namespace App.DAL.EF;
 
 public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceRepository> logger, SentryService sentry) : IWorkplaceRepository
 {
-    public async Task<List<WorkplaceEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<WorkplaceEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -33,7 +33,7 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
         }
     }
 
-    public async Task<WorkplaceEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<WorkplaceEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
@@ -46,30 +46,33 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving workplace. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving workplace. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving workplace. Workplace ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving workplace. Workplace ID: {0}", id);
             return null;
         }    
     }
 
     // TODO: INDEXING!
-    public async Task<List<WorkplaceEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    public async Task<List<WorkplaceEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
             var normalizedKeyword = keyword.ToLower().Trim();
 
-            return includeDeleted ? 
+            return includeDeleted ?
                 await context.Workplaces
                     .IgnoreQueryFilters()
                     .Include(w => w.Classroom)
                     .Where(w =>
-                        w.Classroom!.Classroom.ToLower().Contains(normalizedKeyword))
+                        w.Classroom!.Classroom.ToLower().Contains(normalizedKeyword) &&
+                        (!resourceFilterId.HasValue || w.ClassroomId == resourceFilterId.Value))
                     .OrderBy(w => w.ComputerCode)
-                    .ToListAsync() : 
+                    .ToListAsync() :
                 await context.Workplaces
+                    .Include(w => w.Classroom)
                     .Where(w =>
-                        w.Classroom!.Classroom.ToLower().Contains(normalizedKeyword))
+                        w.Classroom!.Classroom.ToLower().Contains(normalizedKeyword) &&
+                        (!resourceFilterId.HasValue || w.ClassroomId == resourceFilterId.Value))
                     .OrderBy(w => w.ComputerCode)
                     .ToListAsync();
         }
@@ -80,6 +83,7 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
             return null;
         }
     }
+
 
     public async Task<WorkplaceEntity?> CreateAsync(WorkplaceEntity entity)
     {
@@ -120,14 +124,14 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating workplace. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating workplace. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating workplace. Workplace ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating workplace. Workplace ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating workplace. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating workplace. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating workplace. Workplace ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating workplace. Workplace ID: {0}", entity.Id);
             return null;
         }
     }
@@ -142,9 +146,31 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing workplace. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing workplace. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing workplace. Workplace ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing workplace. Workplace ID: {0}", entity.Id);
             return null;
         }
+    }
+    
+    
+    
+    
+    
+    
+    
+    // TODO: MOVE TO WORKPLACE REPOSITORY
+    public async Task<bool> WorkplaceAvailabilityCheckById(string workplaceIdentifier)
+    {
+        return await context.Workplaces.AnyAsync(w => w.Identifier == workplaceIdentifier);
+    }
+    
+    public async Task<bool> WorkplaceAvailabilityCheckByIdentifier(string workplaceIdentifier)
+    {
+        return await context.Workplaces.AnyAsync(w => w.Identifier == workplaceIdentifier);
+    }
+    
+    public async Task<WorkplaceEntity?> GetWorkplaceByIdentifier(string workplaceIdentifier)
+    {
+        return await context.Workplaces.FirstOrDefaultAsync(w => w.Identifier == workplaceIdentifier);
     }
 }

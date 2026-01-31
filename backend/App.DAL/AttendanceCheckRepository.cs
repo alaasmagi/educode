@@ -9,7 +9,7 @@ namespace App.DAL.EF;
 public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceCheckRepository> logger, SentryService sentry)
                                                                                             : IAttendanceCheckRepository
 {
-    public async Task<List<AttendanceCheckEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<AttendanceCheckEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -33,28 +33,69 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             return null;
         }    
     }
+    
+    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendance(Guid attendanceId)
+    {
+        try
+        {
+            return await context.AttendanceChecks
+                .Where(c => c.CourseAttendance!.Id == attendanceId)
+                .OrderBy(c => c.Id)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving attendance checks by attendance. Attendance ID: {AttendanceId}", attendanceId);
+            sentry.CaptureWithContext(ex, "Error retrieving attendance checks by attendance. Attendance ID: {0}", attendanceId);
+            return null;
+        }
+    }
+    
+    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendanceIdentifier(string attendanceIdentifier, 
+        int pageNr, int pageSize)
+    {
+        try
+        {
+            return await context.AttendanceChecks
+                .Where(c => c.AttendanceIdentifier == attendanceIdentifier)
+                .OrderBy(c => c.Id)
+                .Skip((pageNr - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving attendance checks by attendance. Page: {PageNr}, Size: {PageSize}", pageNr, pageSize);
+            sentry.CaptureWithContext(ex, "Error retrieving attendance checks by attendance. Page: {0}, Size: {1}", pageNr, pageSize);
+            return null;
+        }
+    }
 
-    // TODO: INDEXING!
-    public async Task<AttendanceCheckEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<AttendanceCheckEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
             return includeDeleted ? 
                 await context.AttendanceChecks
                     .IgnoreQueryFilters()
+                    .Include(ac => ac.CourseAttendance)
+                    .Include(ac => ac.Workplace)
                     .FirstOrDefaultAsync(ac => ac.Id == id) : 
                 await context.AttendanceChecks
+                    .Include(ac => ac.CourseAttendance)
+                    .Include(ac => ac.Workplace)
                     .FirstOrDefaultAsync(ac => ac.Id == id);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving attendance check. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving attendance check. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving attendance check. AttendanceCheck ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving attendance check. AttendanceCheck ID: {0}", id);
             return null;
         }    
     }
 
-    public async Task<List<AttendanceCheckEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    // TODO: INDEXING!
+    public async Task<List<AttendanceCheckEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -127,14 +168,14 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating attendance check. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating attendance check. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating attendance check. AttendanceCheck ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating attendance check. AttendanceCheck ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating attendance check. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating attendance check. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating attendance check. AttendanceCheck ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating attendance check. AttendanceCheck ID: {0}", entity.Id);
             return null;
         }
     }
@@ -149,9 +190,24 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing attendance check. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing attendance check. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing attendance check. AttendanceCheck ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing attendance check. AttendanceCheck ID: {0}", entity.Id);
             return null;
         }
+    }
+    
+    
+    
+    
+    
+    
+    // TODO: MOVE TO ATTENDANCE CHECK REPOSITORY
+    
+    
+    public async Task<int> GetStudentCountByAttendanceId(string attendanceIdentifier)
+    {
+        var attendanceCounts = await context.AttendanceChecks.Where(a => a.AttendanceIdentifier == attendanceIdentifier)
+            .CountAsync();
+        return attendanceCounts;
     }
 }

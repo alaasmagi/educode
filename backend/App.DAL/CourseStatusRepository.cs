@@ -9,7 +9,7 @@ namespace App.DAL.EF;
 public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRepository> logger, SentryService sentry)
                                                                                                 : ICourseStatusRepository
 {
-    public async Task<List<CourseStatusEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<CourseStatusEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -34,7 +34,7 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
         }
     }
 
-    public async Task<CourseStatusEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<CourseStatusEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
@@ -47,13 +47,13 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving course status. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving course status. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving course status. CourseStatus ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving course status. CourseStatus ID: {0}", id);
             return null;
         }
     }
 
-    public async Task<List<CourseStatusEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    public async Task<List<CourseStatusEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -117,14 +117,14 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating course status. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating course status. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating course status. CourseStatus ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating course status. CourseStatus ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating course status. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating course status. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating course status. CourseStatus ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating course status. CourseStatus ID: {0}", entity.Id);
             return null;
         }
     }
@@ -139,8 +139,8 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing course status. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing course status. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing course status. CourseStatus ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing course status. CourseStatus ID: {0}", entity.Id);
             return null;
         }
     }

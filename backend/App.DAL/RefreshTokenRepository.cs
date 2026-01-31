@@ -47,10 +47,25 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving refresh token. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving refresh token. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving refresh token. RefreshToken ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving refresh token. RefreshToken ID: {0}", id);
             return null;
         }    
+    }
+    
+    public async Task<RefreshTokenEntity?> GetByItself(string refreshToken)
+    {
+        try
+        {
+            return await context.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving refresh token via token itself");
+            sentry.CaptureWithContext(ex, "Error retrieving refresh token via token itself");
+            return null;
+        }
     }
 
     public async Task<RefreshTokenEntity?> CreateAsync(RefreshTokenEntity entity)
@@ -95,14 +110,14 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating refresh token. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating refresh token. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating refresh token. RefreshToken ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating refresh token. RefreshToken ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating refresh token. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating refresh token. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating refresh token. RefreshToken ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating refresh token. RefreshToken ID: {0}", entity.Id);
             return null;
         }
     }
@@ -117,24 +132,9 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing refresh token. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing refresh token. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing refresh token. RefreshToken ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing refresh token. RefreshToken ID: {0}", entity.Id);
             return null;
         }    
-    }
-    
-    public async Task<RefreshTokenEntity?> GetRefreshToken(string refreshToken)
-    {
-        try
-        {
-            return await context.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error retrieving refresh token via token itself");
-            sentry.CaptureWithContext(ex, "Error retrieving refresh token via token itself");
-            return null;
-        }
     }
 }

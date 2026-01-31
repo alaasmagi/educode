@@ -8,7 +8,7 @@ namespace App.DAL.EF;
 
 public class ClassroomRepository(AppDbContext context, ILogger<ClassroomRepository> logger, SentryService sentry) : IClassroomRepository
 {
-    public async Task<List<ClassroomEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<ClassroomEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -33,7 +33,7 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
         }
     }
 
-    public async Task<ClassroomEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<ClassroomEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
@@ -46,13 +46,13 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving classroom. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving classroom. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving classroom. Classroom ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving classroom. Classroom ID: {0}", id);
             return null;
         }
     }
 
-    public async Task<List<ClassroomEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    public async Task<List<ClassroomEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -123,14 +123,14 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating classroom. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating classroom. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating classroom. Classroom ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating classroom. Classroom ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating classroom. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating classroom. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating classroom. Classroom ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating classroom. Classroom ID: {0}", entity.Id);
             return null;
         }
     }
@@ -145,8 +145,8 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing classroom. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing classroom. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing classroom. Classroom ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing classroom. Classroom ID: {0}", entity.Id);
             return null;
         }
     }

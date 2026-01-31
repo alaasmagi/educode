@@ -4,5 +4,5 @@ namespace App.DAL.Contracts;
 
 public interface IWorkplaceRepository : IRepository<WorkplaceEntity>
 {
-    Task<List<WorkplaceEntity>?> SearchAsync(string keyword, bool includeDeleted = false);
+    Task<List<WorkplaceEntity>?> SearchAsync(string keyword, Guid? resourceFilterId = null, bool includeDeleted = false);
 }

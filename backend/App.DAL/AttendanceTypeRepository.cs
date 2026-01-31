@@ -9,7 +9,7 @@ namespace App.DAL.EF;
 public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTypeRepository> logger, SentryService sentry) 
                                                                                                 : IAttendanceTypeRepository
 {
-    public async Task<List<AttendanceTypeEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<AttendanceTypeEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -34,7 +34,7 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }
     }
 
-    public async Task<AttendanceTypeEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<AttendanceTypeEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
@@ -47,13 +47,13 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving attendance type. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving attendance type. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving attendance type. AttendanceCheck ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving attendance type. AttendanceCheck ID: {0}", id);
             return null;
         }        
     }
 
-    public async Task<List<AttendanceTypeEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    public async Task<List<AttendanceTypeEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -117,14 +117,14 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating attendance type. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating attendance type. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating attendance type. AttendanceCheck ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating attendance type. AttendanceCheck ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating attendance type. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating attendance type. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating attendance type. AttendanceCheck ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating attendance type. AttendanceCheck ID: {0}", entity.Id);
             return null;
         }
     }
@@ -139,8 +139,8 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing attendance type. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing attendance type. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing attendance type. AttendanceCheck ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing attendance type. AttendanceCheck ID: {0}", entity.Id);
             return null;
         }    
     }

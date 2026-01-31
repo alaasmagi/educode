@@ -9,7 +9,7 @@ namespace App.DAL.EF;
 public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacherRepository> logger, SentryService sentry) 
                                                                                                 : ICourseTeacherRepository
 {
-    public async Task<List<CourseTeacherEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<CourseTeacherEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -34,26 +34,30 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
         }
     }
 
-    public async Task<CourseTeacherEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<CourseTeacherEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
             return includeDeleted ? 
                 await context.CourseTeachers
+                    .Include(ct => ct.Teacher)
+                    .Include(ct => ct.Course)
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(ct => ct.Id == id) : 
                 await context.CourseTeachers
+                    .Include(ct => ct.Teacher)
+                    .Include(ct => ct.Course)
                     .FirstOrDefaultAsync(ct => ct.Id == id);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving course teachers. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving course teachers. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving course teacher. CourseTeacher ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving course teacher. CourseTeacher ID: {0}", id);
             return null;
         }
     }
 
-    public async Task<List<CourseTeacherEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    public async Task<List<CourseTeacherEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -128,14 +132,14 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating course teacher. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating course teacher. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating course teacher. CourseTeacher ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating course teacher. CourseTeacher ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating course teacher. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating course teacher. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating course teacher. CourseTeacher ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating course teacher. CourseTeacher ID: {0}", entity.Id);
             return null;
         }
     }
@@ -150,8 +154,8 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing course teacher. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing course teacher. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing course teacher. CourseTeacher ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing course teacher. CourseTeacher ID: {0}", entity.Id);
             return null;
         }
     }

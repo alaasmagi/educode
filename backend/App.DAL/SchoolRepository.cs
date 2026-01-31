@@ -46,14 +46,14 @@ public abstract class SchoolRepository(AppDbContext context, ILogger<SchoolRepos
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving school. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving school. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving school. School ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving school. School ID: {0}", id);
             return null;
         }
     }
 
     // TODO: INDEXING!
-    public async Task<List<SchoolEntity>?> SearchAsync(string keyword, bool includeDeleted)
+    public async Task<List<SchoolEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -124,14 +124,14 @@ public abstract class SchoolRepository(AppDbContext context, ILogger<SchoolRepos
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating school. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating school. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating school. School ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating school. School ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating school. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating school. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating school. School ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating school. School ID: {0}", entity.Id);
             return null;
         }
     }
@@ -146,8 +146,8 @@ public abstract class SchoolRepository(AppDbContext context, ILogger<SchoolRepos
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing school. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing school. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing school. School ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing school. School ID: {0}", entity.Id);
             return null;
         }
     }

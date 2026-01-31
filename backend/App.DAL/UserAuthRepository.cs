@@ -38,15 +38,17 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
         {
             return includeDeleted ? 
                 await context.UserAuthData
+                    .Include(ua => ua.User)
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(ua => ua.Id == id) : 
                 await context.UserAuthData
+                    .Include(ua => ua.User)
                     .FirstOrDefaultAsync(ua => ua.Id == id);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving user auth data. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving user auth data. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving user auth data. UserAuth ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving user auth data. UserAuth ID: {0}", id);
             return null;
         }
     }
@@ -90,14 +92,14 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating user auth data. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating user auth data. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating user auth data. UserAuth ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating user auth data. UserAuth ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating user auth data. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating user auth data. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating user auth data. UserAuth ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating user auth data. UserAuth ID: {0}", entity.Id);
             return null;
         }
     }
@@ -112,8 +114,8 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing user auth data. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing user auth data. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing user auth data. UserAuth ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing user auth data. UserAuth ID: {0}", entity.Id);
             return null;
         }
     }

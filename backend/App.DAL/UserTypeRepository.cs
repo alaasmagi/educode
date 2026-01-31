@@ -8,7 +8,7 @@ namespace App.DAL.EF;
 
 public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository> logger, SentryService sentry) : IUserTypeRepository
 {
-    public async Task<List<UserTypeEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted = false)
+    public async Task<List<UserTypeEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -32,8 +32,25 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return null;
         }
     }
+    
+    public async Task<List<UserTypeEntity>?> GetTypeByLevelAsync(EAccessLevel level)
+    {
+        try
+        {
+            return await context.UserTypes
+                .IgnoreQueryFilters()
+                .Where(ut => ut.AccessLevel == level)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user types by EAccessLevel. EAccessLevel: {AccessLevel}", level);
+            sentry.CaptureWithContext(ex, "Error retrieving user types by EAccessLevel. EAccessLevel: {0}", level);
+            return null;
+        }    
+    }
 
-    public async Task<UserTypeEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
+    public async Task<UserTypeEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try
         {
@@ -46,14 +63,33 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving user type. ID: {Id}", id);
-            sentry.CaptureWithContext(ex, "Error retrieving user type. ID: {0}", id);
+            logger.LogError(ex, "Error retrieving user type. UserType ID: {Id}", id);
+            sentry.CaptureWithContext(ex, "Error retrieving user type. UserType ID: {0}", id);
             return null;
         }    
     }
     
+    public async Task<UserTypeEntity?> GetByTypeAsync(string userType, bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.UserTypes
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(ut => ut.UserType == userType) : 
+                await context.UserTypes
+                    .FirstOrDefaultAsync(ut => ut.UserType == userType);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user type by itself. UserTpe: {UserType}", userType);
+            sentry.CaptureWithContext(ex, "Error retrieving user type. UserTpe: {0}", userType);
+            return null;
+        }        
+    }
+    
     // TODO: INDEXING!
-    public async Task<List<UserTypeEntity>?> SearchAsync(string keyword, bool includeDeleted = false)
+    public async Task<List<UserTypeEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
         {
@@ -118,14 +154,14 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            logger.LogError(ex, "Concurrency conflict updating user type. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Concurrency conflict updating user type. ID: {0}", entity.Id);
+            logger.LogError(ex, "Concurrency conflict updating user type. UserType ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Concurrency conflict updating user type. UserType ID: {0}", entity.Id);
             return null;
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error updating user type. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error updating user type. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error updating user type. UserType ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error updating user type. UserType ID: {0}", entity.Id);
             return null;
         }
     }
@@ -140,8 +176,8 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error removing user type. ID: {Id}", entity.Id);
-            sentry.CaptureWithContext(ex, "Database error removing user type. ID: {0}", entity.Id);
+            logger.LogError(ex, "Database error removing user type. UserType ID: {Id}", entity.Id);
+            sentry.CaptureWithContext(ex, "Database error removing user type. UserType ID: {0}", entity.Id);
             return null;
         }
     }

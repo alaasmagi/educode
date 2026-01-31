@@ -9,10 +9,15 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["WebApp/WebApp.csproj", "WebApp/"]
 COPY ["App.BLL/App.BLL.csproj", "App.BLL/"]
-COPY ["App.Contracts/App.Contracts.csproj", "App.Contracts/"]
+COPY ["App.BLL.Contracts/App.BLL.Contracts.csproj", "App.BLL.Contracts/"]
 COPY ["App.Domain/App.Domain.csproj", "App.Domain/"]
+COPY ["App.Common/App.Common.csproj", "App.Common/"]
+COPY ["App.DAL/App.DAL.csproj", "App.DAL/"]
+COPY ["App.DAL.Contracts/App.DAL.Contracts.csproj", "App.DAL.Contracts/"]
+COPY ["App.DTO/App.DTO.csproj", "App.DTO/"]
+COPY ["App.Validation/App.Validation.csproj", "App.Validation/"]
 COPY ["Base.Domain/Base.Domain.csproj", "Base.Domain/"]
-COPY ["App.DAL.EF/App.DAL.EF.csproj", "App.DAL.EF/"]
+
 RUN dotnet restore "WebApp/WebApp.csproj"
 COPY . .
 WORKDIR "/src/WebApp"

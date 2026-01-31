@@ -1,7 +1,6 @@
 using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
@@ -44,7 +43,7 @@ namespace WebApp.Controllers
             var workplaces = await workplaceRepository.GetAllAsync(1, 100);
             var attendances = await attendanceRepository.GetAllAsync(1, 100);
             ViewData["WorkplaceId"] = new SelectList(workplaces, "Id", "ClassRoom");
-            ViewData["CourseAttendanceId"] = new SelectList(attendances, "Id", "Id");
+            ViewData["AttendanceId"] = new SelectList(attendances, "Id", "Id");
             return View();
         }
 

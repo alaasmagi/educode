@@ -45,7 +45,7 @@ namespace WebApp.Controllers
         {
             var userTypes = await userTypeRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType");
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "TypeName");
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View();
         }
@@ -54,7 +54,7 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("UserTypeId,SchoolId,Email,StudentCode,FullName,PhotoPath,CreatedBy,UpdatedBy,Deleted")] UserEntity userEntity)
+        public async Task<IActionResult> Create([Bind("TypeId,SchoolId,Email,StudentCode,FullName,PhotoPath,CreatedBy,UpdatedBy,Deleted")] UserEntity userEntity)
         {
             if (ModelState.IsValid)
             {
@@ -64,7 +64,7 @@ namespace WebApp.Controllers
             
             var userTypes = await userTypeRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.TypeId);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "TypeName", userEntity.TypeId);
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(userEntity);
         }
@@ -85,7 +85,7 @@ namespace WebApp.Controllers
             
             var userTypes = await userTypeRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.TypeId);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "TypeName", userEntity.TypeId);
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             ViewData["CreatedAt"] = userEntity.CreatedAt;
             ViewData["CreatedBy"] = userEntity.CreatedBy;
@@ -96,7 +96,7 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("UserTypeId,SchoolId,Email,StudentCode,FullName,Id,PhotoPath,CreatedBy,CreatedAt,UpdatedBy,Deleted")] UserEntity userEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("TypeId,SchoolId,Email,StudentCode,FullName,Id,PhotoPath,CreatedBy,CreatedAt,UpdatedBy,Deleted")] UserEntity userEntity)
         {
             if (id != userEntity.Id)
             {
@@ -120,7 +120,7 @@ namespace WebApp.Controllers
             
             var userTypes = await userTypeRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.Type);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "TypeName", userEntity.TypeId);
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(userEntity);
         }

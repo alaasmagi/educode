@@ -66,10 +66,12 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
             return includeDeleted ? 
                 await context.UserAuthData
                     .Include(ua => ua.User)
+                        .ThenInclude(u => u!.Type)
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(ua => ua.UserId == userId) : 
                 await context.UserAuthData
                     .Include(ua => ua.User)
+                        .ThenInclude(u => u!.Type)
                     .FirstOrDefaultAsync(ua => ua.UserId == userId);
         }
         catch (Exception ex)

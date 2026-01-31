@@ -42,7 +42,7 @@ namespace WebApp.Controllers
         {
             var courses = await courseRepository.GetAllAsync(1, 100);
             var users = await userRepository.GetAllAsync(1, 100);
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode");
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code");
             ViewData["TeacherId"] = new SelectList(users, "Id", "Email");
             return View();
         }
@@ -61,7 +61,7 @@ namespace WebApp.Controllers
             
             var courses = await courseRepository.GetAllAsync(1, 100);
             var users = await userRepository.GetAllAsync(1, 100);
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code", courseTeacherEntity.CourseId);
             ViewData["TeacherId"] = new SelectList(users, "Id", "Email", courseTeacherEntity.TeacherId);
             return View(courseTeacherEntity);
         }
@@ -82,7 +82,7 @@ namespace WebApp.Controllers
             
             var courses = await courseRepository.GetAllAsync(1, 100);
             var users = await userRepository.GetAllAsync(1, 100);
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code", courseTeacherEntity.CourseId);
             ViewData["TeacherId"] = new SelectList(users, "Id", "Email", courseTeacherEntity.TeacherId);
             return View(courseTeacherEntity);
         }
@@ -116,7 +116,7 @@ namespace WebApp.Controllers
             
             var courses = await courseRepository.GetAllAsync(1, 100);
             var users = await userRepository.GetAllAsync(1, 100);
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code", courseTeacherEntity.CourseId);
             ViewData["TeacherId"] = new SelectList(users, "Id", "Email", courseTeacherEntity.TeacherId);
             return View(courseTeacherEntity);
         }

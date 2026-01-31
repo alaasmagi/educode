@@ -42,7 +42,7 @@ namespace WebApp.Controllers
         {
             var courseStatuses = await courseStatusRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus");
+            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "StatusName");
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View();
         }
@@ -51,7 +51,7 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("CourseCode,CourseName,SchoolId,CrossUniRegistration,CourseStatusId,CreatedBy,UpdatedBy,Deleted")] CourseEntity courseEntity)
+        public async Task<IActionResult> Create([Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,CreatedBy,UpdatedBy,Deleted")] CourseEntity courseEntity)
         {
             if (ModelState.IsValid)
             {
@@ -61,7 +61,7 @@ namespace WebApp.Controllers
             
             var courseStatuses = await courseStatusRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus", courseEntity.StatusId);
+            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "StatusName", courseEntity.StatusId);
             ViewData["School"] = new SelectList(schools, "Id", "Name", courseEntity.SchoolId);
             return View(courseEntity);
         }
@@ -82,7 +82,7 @@ namespace WebApp.Controllers
             
             var courseStatuses = await courseStatusRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus");
+            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "StatusName");
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(courseEntity);
         }
@@ -91,7 +91,7 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CourseCode,CourseName,SchoolId,CrossUniRegistration,CourseStatusId,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] CourseEntity courseEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] CourseEntity courseEntity)
         {
             if (id != courseEntity.Id)
             {
@@ -114,7 +114,7 @@ namespace WebApp.Controllers
             
             var courseStatuses = await courseStatusRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus", courseEntity.StatusId);
+            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "StatusName", courseEntity.StatusId);
             ViewData["School"] = new SelectList(schools, "Id", "Name", courseEntity.SchoolId);
             return View(courseEntity);
         }

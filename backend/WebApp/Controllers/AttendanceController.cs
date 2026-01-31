@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class CourseAttendanceController(
+    public class AttendanceController(
         IAttendanceRepository attendanceRepository,
         IAttendanceTypeRepository attendanceTypeRepository,
         ICourseRepository courseRepository,
@@ -43,8 +43,8 @@ namespace WebApp.Controllers
         {
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
-            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType");
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode");
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "TypeName");
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code");
             return View();
         }
 
@@ -52,7 +52,7 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("CourseId,Identifier,AttendanceTypeId,StartTime,EndTime,CreatedBy,UpdatedBy,Delete")] AttendanceEntity attendanceEntity)
+        public async Task<IActionResult> Create([Bind("CourseId,Identifier,TypeId,StartTime,EndTime,CreatedBy,UpdatedBy,Delete")] AttendanceEntity attendanceEntity)
         {
             if (ModelState.IsValid)
             {
@@ -62,8 +62,8 @@ namespace WebApp.Controllers
             
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
-            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.TypeId);
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", attendanceEntity.CourseId);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "TypeName", attendanceEntity.TypeId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code", attendanceEntity.CourseId);
             return View(attendanceEntity);
         }
 
@@ -83,8 +83,8 @@ namespace WebApp.Controllers
             
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
-            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", courseAttendanceEntity.TypeId);
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseAttendanceEntity.CourseId);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "TypeName", courseAttendanceEntity.TypeId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code", courseAttendanceEntity.CourseId);
             return View(courseAttendanceEntity);
         }
 
@@ -92,7 +92,7 @@ namespace WebApp.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,Identifier,AttendanceTypeId,StartTime,EndTime,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] AttendanceEntity attendanceEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,Identifier,TypeId,StartTime,EndTime,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] AttendanceEntity attendanceEntity)
         {
             if (id != attendanceEntity.Id)
             {
@@ -116,8 +116,8 @@ namespace WebApp.Controllers
             
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
-            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.TypeId);
-            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", attendanceEntity.CourseId);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "TypeName", attendanceEntity.TypeId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Code", attendanceEntity.CourseId);
             return View(attendanceEntity);
         }
 

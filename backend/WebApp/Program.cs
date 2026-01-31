@@ -165,7 +165,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Request.Cookies.TryGetValue("jwt", out var jwtToken))
                 {
                     context.Token = jwtToken;
+                    Log.Information($"JWT token read from cookie for path: {context.Request.Path}");
                 }
+                else
+                {
+                    Log.Warning($"No JWT token found in cookie for path: {context.Request.Path}");
+                }
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var userId = context.Principal?.FindFirst("UserId")?.Value;
+                var accessLevel = context.Principal?.FindFirst("AccessLevel")?.Value;
+                Log.Information($"JWT token validated. UserId: {userId}, AccessLevel: {accessLevel}, Path: {context.Request.Path}");
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                Log.Error($"JWT authentication failed for path {context.Request.Path}: {context.Exception.Message}");
+                return Task.CompletedTask;
+            },
+            OnForbidden = context =>
+            {
+                var userId = context.Principal?.FindFirst("UserId")?.Value;
+                var accessLevel = context.Principal?.FindFirst("AccessLevel")?.Value;
+                Log.Warning($"Access forbidden for path {context.Request.Path}. UserId: {userId}, AccessLevel: {accessLevel}");
                 return Task.CompletedTask;
             }
         };
@@ -190,7 +214,18 @@ builder.Services.AddAuthorization(options =>
             policy.RequireAssertion(context =>
             {
                 var userLevel = Helpers.GetAccessLevelFromClaims(context);
-                return userLevel >= (int)level;
+                var requiredLevel = (int)level;
+                var result = userLevel >= requiredLevel;
+                
+                var logger = context.Resource as HttpContext;
+                if (logger != null)
+                {
+                    var loggerFactory = logger.RequestServices.GetService<ILoggerFactory>();
+                    var log = loggerFactory?.CreateLogger("Authorization");
+                    log?.LogInformation($"Authorization check for policy '{level}': UserLevel={userLevel}, RequiredLevel={requiredLevel}, Result={result}");
+                }
+                
+                return result;
             }));
     }
 });
@@ -265,14 +300,15 @@ app.MapStaticAssets();
 
 app.UseStaticFiles();
 
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllerRoute(
         name: "default",
         pattern: "{controller=AdminPanel}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-app.UseRateLimiter();
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapGet("/", () => Results.Redirect($"/AdminPanel/Index")).RequireRateLimiting("fixed");
 

@@ -1,13 +1,10 @@
 using System.Diagnostics;
-using App.BLL;
 using App.BLL.Contracts;
 using App.Common;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApp.Models;
-using WebApp.Models.Auth;
 using WebApp.RequestModels.Auth;
 
 namespace WebApp.Controllers;
@@ -58,7 +55,7 @@ public class AdminPanelController(IAuthService authService, IUserManagementServi
             MaxAge = TimeSpan.FromMinutes(envInitializer.JwtCookieExpirationMinutes)
         });
         
-        logger.LogInformation($"Admin access granted successfully");
+        logger.LogInformation($"Admin access granted successfully. JWT cookie set.");
         return  RedirectToAction("Home");
     }
 

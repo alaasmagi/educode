@@ -61,7 +61,7 @@ namespace WebApp.Controllers
             
             var courseStatuses = await courseStatusRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus", courseEntity.CourseStatusId);
+            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus", courseEntity.StatusId);
             ViewData["School"] = new SelectList(schools, "Id", "Name", courseEntity.SchoolId);
             return View(courseEntity);
         }
@@ -114,7 +114,7 @@ namespace WebApp.Controllers
             
             var courseStatuses = await courseStatusRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus", courseEntity.CourseStatusId);
+            ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "CourseStatus", courseEntity.StatusId);
             ViewData["School"] = new SelectList(schools, "Id", "Name", courseEntity.SchoolId);
             return View(courseEntity);
         }

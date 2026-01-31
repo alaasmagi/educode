@@ -7,5 +7,5 @@ public class AttendanceTypeEntity : BaseEntity
 {
     [Required]
     [MaxLength(128)]
-    public string AttendanceType { get; set; } = default!;
+    public string TypeName { get; set; } = default!;
 }

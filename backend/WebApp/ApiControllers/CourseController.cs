@@ -128,9 +128,9 @@ public class CourseController(
         
         var newCourse = new CourseEntity
         {
-            CourseName = model.CourseName,
-            CourseCode = model.CourseCode,
-            CourseStatusId = model.CourseStatusId,
+            Name = model.CourseName,
+            Code = model.CourseCode,
+            StatusId = model.CourseStatusId,
             CreatedBy = model.Client,
             UpdatedBy = model.Client,
         };
@@ -158,9 +158,9 @@ public class CourseController(
         
         var newCourse = new CourseEntity
         {
-            CourseName = model.CourseName,
-            CourseCode = model.CourseCode,
-            CourseStatusId = model.CourseStatusId,
+            Name = model.CourseName,
+            Code = model.CourseCode,
+            StatusId = model.CourseStatusId,
             CreatedBy = model.Client,
             UpdatedBy = model.Client,
         };

@@ -5,10 +5,10 @@ namespace App.DTO;
 public class CourseDto(CourseEntity course)
 {
     public Guid Id { get; set; } = course.Id;
-    public string CourseCode { get; set; } = course.CourseCode;
-    public string CourseName { get; set; } = course.CourseName;
-    public Guid? CourseStatusId { get; set; } = course.CourseStatusId;
-    public string? CourseStatus { get; set; } = course.CourseStatus?.CourseStatus;
+    public string CourseCode { get; set; } = course.Code;
+    public string CourseName { get; set; } = course.Name;
+    public Guid? CourseStatusId { get; set; } = course.StatusId;
+    public string? CourseStatus { get; set; } = course.Status?.StatusName;
     
     public static List<CourseDto> ToDtoList(List<CourseEntity>? entities)
     {

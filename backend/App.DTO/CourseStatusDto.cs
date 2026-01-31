@@ -5,7 +5,7 @@ namespace App.DTO;
 public class CourseStatusDto(CourseStatusEntity courseStatus)
 {
     public Guid Id { get; set; } = courseStatus.Id;
-    public string Status { get; set; } = courseStatus.CourseStatus;
+    public string Status { get; set; } = courseStatus.StatusName;
     
     public static List<CourseStatusDto> ToDtoList(List<CourseStatusEntity>? entities)
     {

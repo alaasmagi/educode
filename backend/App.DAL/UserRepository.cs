@@ -1,4 +1,8 @@
-﻿using App.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -15,11 +19,15 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
             return includeDeleted ? 
                 await context.Users
                     .IgnoreQueryFilters()
+                    .Include(u => u.Type)
+                    .Include(u => u.School)
                     .OrderBy(u => u.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Users
+                    .Include(u => u.Type)
+                    .Include(u => u.School)
                     .OrderBy(u => u.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -39,12 +47,12 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
         {
             return includeDeleted ? 
                 await context.Users
-                    .Include(u => u.UserType)
+                    .Include(u => u.Type)
                     .Include(u => u.School)
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(u => u.Id == id) : 
                 await context.Users
-                    .Include(u => u.UserType)
+                    .Include(u => u.Type)
                     .Include(u => u.School)
                     .FirstOrDefaultAsync(u => u.Id == id);
         }
@@ -56,7 +64,6 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
         }    
     }
 
-    // TODO: INDEXING!
     public async Task<List<UserEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -70,14 +77,14 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
                         u.Email.ToLower().Contains(normalizedKeyword) ||
                         u.FullName.ToLower().Contains(normalizedKeyword) ||
                         u.StudentCode!.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(ut => ut.UserType)
+                    .OrderBy(u => u.Type)
                     .ToListAsync() : 
                 await context.Users
                     .Where(u =>
                         u.Email.ToLower().Contains(normalizedKeyword) ||
                         u.FullName.ToLower().Contains(normalizedKeyword) ||
                         u.StudentCode!.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(ut => ut.UserType)
+                    .OrderBy(u => u.Type)
                     .ToListAsync();
         }
         catch (Exception ex)
@@ -120,7 +127,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
             existingEntity.StudentCode= entity.StudentCode;
             existingEntity.PhotoPath= entity.PhotoPath;
             existingEntity.SchoolId= entity.SchoolId;
-            existingEntity.UserTypeId= entity.UserTypeId;
+            existingEntity.TypeId= entity.TypeId;
             existingEntity.Deleted= entity.Deleted;
             existingEntity.UpdatedAt = DateTime.UtcNow;
             existingEntity.UpdatedBy = entity.UpdatedBy;
@@ -166,11 +173,11 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
                 await context.Users
                     .IgnoreQueryFilters()
                     .Where(u => u.Email == email)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Users
                     .Where(u => u.Email == email)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -189,11 +196,11 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
                 await context.Users
                     .IgnoreQueryFilters()
                     .Where(u => u.FullName == fullName)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Users
                     .Where(u => u.FullName == fullName)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
         }
         catch (Exception ex)

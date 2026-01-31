@@ -6,9 +6,9 @@ public class UserDto(UserEntity user, string bucketUrl)
 {
     public Guid Id { get; set; } = user.Id;
     public string Email { get; set; } = user.Email;
-    public Guid UserTypeId { get; set; } = user.UserTypeId;
-    public string? UserType { get; set; } = user.UserType?.UserType ?? null;
-    public EAccessLevel? AccessLevel { get; set; } = user.UserType?.AccessLevel ?? null;
+    public Guid UserTypeId { get; set; } = user.TypeId;
+    public string? UserType { get; set; } = user.Type?.TypeName ?? null;
+    public EAccessLevel? AccessLevel { get; set; } = user.Type?.AccessLevel ?? null;
     public string? StudentCode { get; set; } = user.StudentCode ?? null;
     public string? PhotoLink { get; set; } = user.PhotoPath != string.Empty ? bucketUrl + user.PhotoPath : null;
     

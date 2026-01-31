@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -16,12 +20,16 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             return includeDeleted ? 
                 await context.AttendanceChecks
                     .IgnoreQueryFilters()
+                    .Include(ac => ac.Attendance)
+                    .Include(ac => ac.Workplace)
                     .OrderBy(ac => ac.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.AttendanceChecks
                     .OrderBy(ac => ac.Id)
+                    .Include(ac => ac.Attendance)
+                    .Include(ac => ac.Workplace)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -39,7 +47,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         try
         {
             return await context.AttendanceChecks
-                .Where(c => c.CourseAttendance!.Id == attendanceId)
+                .Where(c => c.Attendance!.Id == attendanceId)
                 .OrderBy(c => c.Id)
                 .ToListAsync();
         }
@@ -94,11 +102,11 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             return includeDeleted ? 
                 await context.AttendanceChecks
                     .IgnoreQueryFilters()
-                    .Include(ac => ac.CourseAttendance)
+                    .Include(ac => ac.Attendance)
                     .Include(ac => ac.Workplace)
                     .FirstOrDefaultAsync(ac => ac.Id == id) : 
                 await context.AttendanceChecks
-                    .Include(ac => ac.CourseAttendance)
+                    .Include(ac => ac.Attendance)
                     .Include(ac => ac.Workplace)
                     .FirstOrDefaultAsync(ac => ac.Id == id);
         }
@@ -110,7 +118,6 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }    
     }
 
-    // TODO: INDEXING!
     public async Task<List<AttendanceCheckEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -172,7 +179,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             existingEntity.AttendanceIdentifier = entity.AttendanceIdentifier;
             existingEntity.FullName = entity.FullName;
             existingEntity.StudentCode = entity.StudentCode;
-            existingEntity.CourseAttendance = entity.CourseAttendance;
+            existingEntity.Attendance = entity.Attendance;
             existingEntity.Workplace = entity.Workplace;
             existingEntity.WorkplaceIdentifier = entity.WorkplaceIdentifier;
             existingEntity.Deleted= entity.Deleted;

@@ -7,5 +7,5 @@ public class CourseStatusEntity : BaseEntity
 {
     [Required]
     [MaxLength(128)]
-    public string CourseStatus { get; set; } = default!;
+    public string StatusName { get; set; } = default!;
 }

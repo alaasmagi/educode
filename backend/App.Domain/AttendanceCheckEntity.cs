@@ -12,7 +12,7 @@ public class AttendanceCheckEntity : BaseEntity
     public string FullName { get; set; } = default!;
     [Required]
     public string AttendanceIdentifier { get; set; } = default!;
-    public AttendanceEntity? CourseAttendance { get; set; }
+    public AttendanceEntity? Attendance { get; set; }
     public string? WorkplaceIdentifier { get; set; }
     public WorkplaceEntity? Workplace { get; set; }
 }

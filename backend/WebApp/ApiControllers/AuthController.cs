@@ -148,7 +148,7 @@ public class AuthController(
         newUser.Email = requestModel.Email;
         newUser.FullName = requestModel.Fullname;
         newUser.StudentCode = requestModel.StudentCode;
-        newUser.UserTypeId = userType.Id;
+        newUser.TypeId = userType.Id;
         newUser.CreatedBy = requestModel.Client;
         newUser.UpdatedBy = requestModel.Client;
         

@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -52,7 +56,6 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
         }    
     }
 
-    // TODO: INDEXING!
     public async Task<List<WorkplaceEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -160,11 +163,11 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
                 await context.Workplaces
                     .IgnoreQueryFilters()
                     .Where(u => u.Identifier == identifier)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Workplaces
                     .Where(u => u.Identifier == identifier)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
         }
         catch (Exception ex)

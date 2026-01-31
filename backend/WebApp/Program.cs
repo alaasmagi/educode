@@ -279,7 +279,7 @@ app.MapGet("/", () => Results.Redirect($"/AdminPanel/Index")).RequireRateLimitin
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
-    dbInitializer.InitializeDb();
+    await dbInitializer.InitializeDb();
 }
 
 app.Run();

@@ -62,7 +62,7 @@ namespace WebApp.Controllers
             
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
-            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.TypeId);
             ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", attendanceEntity.CourseId);
             return View(attendanceEntity);
         }
@@ -83,7 +83,7 @@ namespace WebApp.Controllers
             
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
-            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", courseAttendanceEntity.AttendanceTypeId);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", courseAttendanceEntity.TypeId);
             ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseAttendanceEntity.CourseId);
             return View(courseAttendanceEntity);
         }
@@ -116,7 +116,7 @@ namespace WebApp.Controllers
             
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
-            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.TypeId);
             ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", attendanceEntity.CourseId);
             return View(attendanceEntity);
         }

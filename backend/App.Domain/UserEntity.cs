@@ -7,8 +7,8 @@ namespace App.Domain;
 public class UserEntity : BaseEntity
 {
     [Required]
-    public Guid UserTypeId { get; set; }
-    public UserTypeEntity? UserType { get; set; }
+    public Guid TypeId { get; set; }
+    public UserTypeEntity? Type { get; set; }
     public Guid? SchoolId { get; set; }
     public SchoolEntity? School { get; set; }
     [Required]

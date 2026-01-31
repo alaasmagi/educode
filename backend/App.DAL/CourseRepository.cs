@@ -1,4 +1,8 @@
-﻿using App.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
 using App.DTO;
@@ -16,18 +20,18 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
-                    .OrderBy(c => c.CourseName)
+                    .OrderBy(c => c.Name)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Courses.IgnoreQueryFilters()
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
-                    .OrderBy(c => c.CourseName)
+                    .OrderBy(c => c.Name)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -47,22 +51,22 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
-                    .Where(ca => ca.CourseTeacherEntities!
+                    .Where(ca => ca.Teachers!
                         .Any(ct => ct.TeacherId == userId))                   
-                    .OrderBy(c => c.CourseName)
+                    .OrderBy(c => c.Name)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Courses.IgnoreQueryFilters()
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
-                    .Where(ca => ca.CourseTeacherEntities!
+                    .Where(ca => ca.Teachers!
                         .Any(ct => ct.TeacherId == userId))
-                    .OrderBy(c => c.CourseName)
+                    .OrderBy(c => c.Name)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -84,22 +88,22 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ?
                 await context.Courses
                     .IgnoreQueryFilters()
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
-                    .Where(ca => ca.CourseTeacherEntities!.Count == 1 && 
-                                 ca.CourseTeacherEntities!.Any(ct => ct.TeacherId == userId))
-                    .OrderBy(c => c.CourseName)
+                    .Where(ca => ca.Teachers!.Count == 1 && 
+                                 ca.Teachers!.Any(ct => ct.TeacherId == userId))
+                    .OrderBy(c => c.Name)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() :
                 await context.Courses
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
-                    .Where(ca => ca.CourseTeacherEntities!.Count == 1 && 
-                                 ca.CourseTeacherEntities!.Any(ct => ct.TeacherId == userId))
-                    .OrderBy(c => c.CourseName)
+                    .Where(ca => ca.Teachers!.Count == 1 && 
+                                 ca.Teachers!.Any(ct => ct.TeacherId == userId))
+                    .OrderBy(c => c.Name)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -153,15 +157,15 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
-                    .Include(c => c.CourseStatus)
+                    .Include(c => c.Status)
                     .Include(c => c.School)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
                     .FirstOrDefaultAsync(c => c.Id == id) : 
                 await context.Courses
-                    .Include(c => c.CourseStatus)
+                    .Include(c => c.Status)
                     .Include(c => c.School)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
                     .FirstOrDefaultAsync(c => c.Id == id);
         }
@@ -182,30 +186,30 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ?
                 await context.Courses
                     .IgnoreQueryFilters()
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
                     .Where(c => 
-                        c.CourseName.ToLower().Contains(normalizedKeyword) || 
-                        c.CourseCode.ToLower().Contains(normalizedKeyword) ||
-                        (c.CourseStatus != null && c.CourseStatus.CourseStatus.ToLower().Contains(normalizedKeyword)) || 
-                        (c.CourseTeacherEntities != null && 
-                         c.CourseTeacherEntities.Any(ct =>
+                        c.Name.ToLower().Contains(normalizedKeyword) || 
+                        c.Code.ToLower().Contains(normalizedKeyword) ||
+                        (c.Status != null && c.Status.StatusName.ToLower().Contains(normalizedKeyword)) || 
+                        (c.Teachers != null && 
+                         c.Teachers.Any(ct =>
                              ct.Teacher != null && ct.Teacher.FullName.ToLower().Contains(normalizedKeyword))))
-                    .OrderBy(c => c.CourseName)
+                    .OrderBy(c => c.Name)
                     .ToListAsync() : 
                 await context.Courses
-                    .Include(c => c.CourseStatus)
-                    .Include(c => c.CourseTeacherEntities!)
+                    .Include(c => c.Status)
+                    .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
                     .Where(c => 
-                        c.CourseName.ToLower().Contains(normalizedKeyword) || 
-                        c.CourseCode.ToLower().Contains(normalizedKeyword) ||
-                        (c.CourseStatus != null && c.CourseStatus.CourseStatus.ToLower().Contains(normalizedKeyword)) || 
-                        (c.CourseTeacherEntities != null && 
-                         c.CourseTeacherEntities.Any(ct =>
+                        c.Name.ToLower().Contains(normalizedKeyword) || 
+                        c.Code.ToLower().Contains(normalizedKeyword) ||
+                        (c.Status != null && c.Status.StatusName.ToLower().Contains(normalizedKeyword)) || 
+                        (c.Teachers != null && 
+                         c.Teachers.Any(ct =>
                              ct.Teacher != null && ct.Teacher.FullName.ToLower().Contains(normalizedKeyword))))
-                    .OrderBy(c => c.CourseName)
+                    .OrderBy(c => c.Name)
                     .ToListAsync();
         }
         catch (Exception ex)
@@ -230,8 +234,8 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error creating course. Course: {Course}", entity.CourseName);
-            sentry.CaptureWithContext(ex, "Error creating course. Course: {0}", entity.CourseName);
+            logger.LogError(ex, "Error creating course. Course: {Course}", entity.Name);
+            sentry.CaptureWithContext(ex, "Error creating course. Course: {0}", entity.Name);
             return null;
         }
     }
@@ -246,9 +250,9 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
                 return null;
             }
 
-            existingEntity.CourseName = entity.CourseName;
-            existingEntity.CourseCode = entity.CourseCode;
-            existingEntity.CourseStatusId = entity.CourseStatusId;
+            existingEntity.Name = entity.Name;
+            existingEntity.Code = entity.Code;
+            existingEntity.StatusId = entity.StatusId;
             existingEntity.UpdatedAt = DateTime.UtcNow;
 
             await context.SaveChangesAsync();
@@ -287,12 +291,12 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
-                    .Where(u => u.CourseCode == code)
-                    .Select(u => u.Id)
+                    .Where(u => u.Code == code)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Courses
-                    .Where(u => u.CourseCode == code)
-                    .Select(u => u.Id)
+                    .Where(u => u.Code == code)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -310,12 +314,12 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
-                    .Where(u => u.CourseName == name)
-                    .Select(u => u.Id)
+                    .Where(u => u.Name == name)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Courses
-                    .Where(u => u.CourseName == name)
-                    .Select(u => u.Id)
+                    .Where(u => u.Name == name)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
         }
         catch (Exception ex)

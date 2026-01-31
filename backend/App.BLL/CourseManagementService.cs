@@ -76,11 +76,11 @@ public class CourseManagementService (
     
     public async Task<bool> AddCourse(UserEntity user, CourseEntity course, string creator)
     {
-        var courseExists = await DoesCourseExistByCodeAsync(course.CourseCode);
+        var courseExists = await DoesCourseExistByCodeAsync(course.Code);
 
         if (courseExists)
         {
-            logger.LogError($"Course with code {course.CourseCode} already exists");
+            logger.LogError($"Course with code {course.Code} already exists");
             return false;
         }
         
@@ -250,7 +250,7 @@ public class CourseManagementService (
         {
             new CourseStatusEntity
             {
-                CourseStatus = "available",
+                StatusName = "available",
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
@@ -258,7 +258,7 @@ public class CourseManagementService (
             },
             new CourseStatusEntity
             {
-                CourseStatus = "unavailable",
+                StatusName = "unavailable",
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
@@ -266,7 +266,7 @@ public class CourseManagementService (
             },
             new CourseStatusEntity
             {
-                CourseStatus = "temp-unavailable",
+                StatusName = "temp-unavailable",
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",

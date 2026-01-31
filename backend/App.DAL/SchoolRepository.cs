@@ -1,4 +1,8 @@
-﻿using App.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -52,7 +56,6 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
         }
     }
 
-    // TODO: INDEXING!
     public async Task<List<SchoolEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try

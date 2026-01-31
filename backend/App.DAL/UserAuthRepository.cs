@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -15,11 +19,13 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
             return includeDeleted ? 
                 await context.UserAuthData
                     .IgnoreQueryFilters()
+                    .Include(ua => ua.User)
                     .OrderBy(ua => ua.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.UserAuthData
+                    .Include(ua => ua.User)
                     .OrderBy(ua => ua.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)

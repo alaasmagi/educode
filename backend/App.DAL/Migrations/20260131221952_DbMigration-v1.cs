@@ -20,7 +20,7 @@ namespace App.DAL.EF.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    AttendanceType = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    TypeName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
@@ -38,7 +38,7 @@ namespace App.DAL.EF.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CourseStatus = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    StatusName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
@@ -77,7 +77,7 @@ namespace App.DAL.EF.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserType = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    TypeName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     AccessLevel = table.Column<int>(type: "integer", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -129,10 +129,10 @@ namespace App.DAL.EF.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CourseCode = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    CourseName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    Code = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    Name = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CrossUniRegistration = table.Column<bool>(type: "boolean", nullable: false),
-                    CourseStatusId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StatusId = table.Column<Guid>(type: "uuid", nullable: false),
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -144,8 +144,8 @@ namespace App.DAL.EF.Migrations
                 {
                     table.PrimaryKey("PK_Courses", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Courses_CourseStatuses_CourseStatusId",
-                        column: x => x.CourseStatusId,
+                        name: "FK_Courses_CourseStatuses_SchoolId",
+                        column: x => x.SchoolId,
                         principalSchema: "educode",
                         principalTable: "CourseStatuses",
                         principalColumn: "Id",
@@ -165,7 +165,7 @@ namespace App.DAL.EF.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserTypeId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TypeId = table.Column<Guid>(type: "uuid", nullable: false),
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: true),
                     Email = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     StudentCode = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
@@ -188,8 +188,8 @@ namespace App.DAL.EF.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Users_UserTypes_UserTypeId",
-                        column: x => x.UserTypeId,
+                        name: "FK_Users_UserTypes_TypeId",
+                        column: x => x.TypeId,
                         principalSchema: "educode",
                         principalTable: "UserTypes",
                         principalColumn: "Id",
@@ -233,7 +233,7 @@ namespace App.DAL.EF.Migrations
                     Identifier = table.Column<string>(type: "text", nullable: false),
                     CourseId = table.Column<Guid>(type: "uuid", nullable: false),
                     ClassroomId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AttendanceTypeId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TypeId = table.Column<Guid>(type: "uuid", nullable: false),
                     AutomatedRegistration = table.Column<bool>(type: "boolean", nullable: false),
                     StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -248,8 +248,8 @@ namespace App.DAL.EF.Migrations
                     table.PrimaryKey("PK_Attendances", x => x.Id);
                     table.UniqueConstraint("AK_Attendances_Identifier", x => x.Identifier);
                     table.ForeignKey(
-                        name: "FK_Attendances_AttendanceTypes_AttendanceTypeId",
-                        column: x => x.AttendanceTypeId,
+                        name: "FK_Attendances_AttendanceTypes_TypeId",
+                        column: x => x.TypeId,
                         principalSchema: "educode",
                         principalTable: "AttendanceTypes",
                         principalColumn: "Id",
@@ -401,6 +401,18 @@ namespace App.DAL.EF.Migrations
                 column: "AttendanceIdentifier");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AttendanceChecks_FullName",
+                schema: "educode",
+                table: "AttendanceChecks",
+                column: "FullName");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AttendanceChecks_StudentCode",
+                schema: "educode",
+                table: "AttendanceChecks",
+                column: "StudentCode");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AttendanceChecks_StudentCode_AttendanceIdentifier",
                 schema: "educode",
                 table: "AttendanceChecks",
@@ -412,12 +424,6 @@ namespace App.DAL.EF.Migrations
                 schema: "educode",
                 table: "AttendanceChecks",
                 column: "WorkplaceIdentifier");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Attendances_AttendanceTypeId",
-                schema: "educode",
-                table: "Attendances",
-                column: "AttendanceTypeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Attendances_ClassroomId",
@@ -439,11 +445,23 @@ namespace App.DAL.EF.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_AttendanceTypes_AttendanceType",
+                name: "IX_Attendances_TypeId",
+                schema: "educode",
+                table: "Attendances",
+                column: "TypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AttendanceTypes_TypeName",
                 schema: "educode",
                 table: "AttendanceTypes",
-                column: "AttendanceType",
+                column: "TypeName",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Classrooms_Classroom",
+                schema: "educode",
+                table: "Classrooms",
+                column: "Classroom");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Classrooms_SchoolEntityId",
@@ -458,17 +476,17 @@ namespace App.DAL.EF.Migrations
                 column: "SchoolId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Courses_CourseCode",
+                name: "IX_Courses_Code",
                 schema: "educode",
                 table: "Courses",
-                column: "CourseCode",
+                column: "Code",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Courses_CourseStatusId",
+                name: "IX_Courses_Name",
                 schema: "educode",
                 table: "Courses",
-                column: "CourseStatusId");
+                column: "Name");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Courses_SchoolId",
@@ -477,10 +495,10 @@ namespace App.DAL.EF.Migrations
                 column: "SchoolId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CourseStatuses_CourseStatus",
+                name: "IX_CourseStatuses_StatusName",
                 schema: "educode",
                 table: "CourseStatuses",
-                column: "CourseStatus",
+                column: "StatusName",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -509,6 +527,18 @@ namespace App.DAL.EF.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Schools_Domain",
+                schema: "educode",
+                table: "Schools",
+                column: "Domain");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Schools_Name",
+                schema: "educode",
+                table: "Schools",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Schools_Name_ShortName_Domain",
                 schema: "educode",
                 table: "Schools",
@@ -516,11 +546,23 @@ namespace App.DAL.EF.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Schools_ShortName",
+                schema: "educode",
+                table: "Schools",
+                column: "ShortName");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserAuthData_UserId",
                 schema: "educode",
                 table: "UserAuthData",
                 column: "UserId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                schema: "educode",
+                table: "Users",
+                column: "Email");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email_StudentCode",
@@ -542,16 +584,22 @@ namespace App.DAL.EF.Migrations
                 column: "SchoolId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_UserTypeId",
+                name: "IX_Users_StudentCode",
                 schema: "educode",
                 table: "Users",
-                column: "UserTypeId");
+                column: "StudentCode");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserTypes_UserType",
+                name: "IX_Users_TypeId",
+                schema: "educode",
+                table: "Users",
+                column: "TypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserTypes_TypeName",
                 schema: "educode",
                 table: "UserTypes",
-                column: "UserType",
+                column: "TypeName",
                 unique: true);
 
             migrationBuilder.CreateIndex(

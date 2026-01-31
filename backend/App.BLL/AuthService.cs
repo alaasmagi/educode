@@ -46,7 +46,7 @@ public class AuthService (
         List<Claim> claims = [
             new Claim(Constants.UserIdClaim, user.Id.ToString()),
             new Claim(Constants.AccessLevelClaim,
-                ((int)(user.UserType?.AccessLevel ?? EAccessLevel.NoAccess)).ToString())
+                ((int)(user.Type?.AccessLevel ?? EAccessLevel.NoAccess)).ToString())
         ];
         
         var tokenDescriptor = new SecurityTokenDescriptor

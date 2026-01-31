@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace App.DAL.EF.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260123074906_DbMigration-v1")]
+    [Migration("20260131221952_DbMigration-v1")]
     partial class DbMigrationv1
     {
         /// <inheritdoc />
@@ -71,6 +71,10 @@ namespace App.DAL.EF.Migrations
 
                     b.HasIndex("AttendanceIdentifier");
 
+                    b.HasIndex("FullName");
+
+                    b.HasIndex("StudentCode");
+
                     b.HasIndex("WorkplaceIdentifier");
 
                     b.HasIndex("StudentCode", "AttendanceIdentifier")
@@ -83,9 +87,6 @@ namespace App.DAL.EF.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AttendanceTypeId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("AutomatedRegistration")
@@ -118,6 +119,9 @@ namespace App.DAL.EF.Migrations
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TypeId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -128,14 +132,14 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AttendanceTypeId");
-
                     b.HasIndex("ClassroomId");
 
                     b.HasIndex("CourseId");
 
                     b.HasIndex("Identifier")
                         .IsUnique();
+
+                    b.HasIndex("TypeId");
 
                     b.ToTable("Attendances", "educode");
                 });
@@ -145,11 +149,6 @@ namespace App.DAL.EF.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<string>("AttendanceType")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -162,6 +161,11 @@ namespace App.DAL.EF.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -172,7 +176,7 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AttendanceType")
+                    b.HasIndex("TypeName")
                         .IsUnique();
 
                     b.ToTable("AttendanceTypes", "educode");
@@ -216,6 +220,8 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Classroom");
+
                     b.HasIndex("SchoolEntityId");
 
                     b.HasIndex("SchoolId");
@@ -229,18 +235,10 @@ namespace App.DAL.EF.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CourseCode")
+                    b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
-
-                    b.Property<string>("CourseName")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<Guid>("CourseStatusId")
-                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -256,7 +254,15 @@ namespace App.DAL.EF.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<Guid>("SchoolId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StatusId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -269,10 +275,10 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseCode")
+                    b.HasIndex("Code")
                         .IsUnique();
 
-                    b.HasIndex("CourseStatusId");
+                    b.HasIndex("Name");
 
                     b.HasIndex("SchoolId");
 
@@ -285,11 +291,6 @@ namespace App.DAL.EF.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CourseStatus")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -301,6 +302,11 @@ namespace App.DAL.EF.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("StatusName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -311,7 +317,7 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseStatus")
+                    b.HasIndex("StatusName")
                         .IsUnique();
 
                     b.ToTable("CourseStatuses", "educode");
@@ -464,6 +470,12 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Domain");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("ShortName");
+
                     b.HasIndex("Name", "ShortName", "Domain")
                         .IsUnique();
 
@@ -552,6 +564,9 @@ namespace App.DAL.EF.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<Guid>("TypeId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -560,16 +575,17 @@ namespace App.DAL.EF.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
-                    b.Property<Guid>("UserTypeId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
+
+                    b.HasIndex("Email");
 
                     b.HasIndex("FullName");
 
                     b.HasIndex("SchoolId");
 
-                    b.HasIndex("UserTypeId");
+                    b.HasIndex("StudentCode");
+
+                    b.HasIndex("TypeId");
 
                     b.HasIndex("Email", "StudentCode")
                         .IsUnique();
@@ -597,6 +613,11 @@ namespace App.DAL.EF.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -605,14 +626,9 @@ namespace App.DAL.EF.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
-                    b.Property<string>("UserType")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserType")
+                    b.HasIndex("TypeName")
                         .IsUnique();
 
                     b.ToTable("UserTypes", "educode");
@@ -667,7 +683,7 @@ namespace App.DAL.EF.Migrations
 
             modelBuilder.Entity("App.Domain.AttendanceCheckEntity", b =>
                 {
-                    b.HasOne("App.Domain.AttendanceEntity", "CourseAttendance")
+                    b.HasOne("App.Domain.AttendanceEntity", "Attendance")
                         .WithMany("AttendanceChecks")
                         .HasForeignKey("AttendanceIdentifier")
                         .HasPrincipalKey("Identifier")
@@ -679,21 +695,15 @@ namespace App.DAL.EF.Migrations
                         .HasForeignKey("WorkplaceIdentifier")
                         .HasPrincipalKey("Identifier");
 
-                    b.Navigation("CourseAttendance");
+                    b.Navigation("Attendance");
 
                     b.Navigation("Workplace");
                 });
 
             modelBuilder.Entity("App.Domain.AttendanceEntity", b =>
                 {
-                    b.HasOne("App.Domain.AttendanceTypeEntity", "AttendanceType")
-                        .WithMany()
-                        .HasForeignKey("AttendanceTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("App.Domain.ClassroomEntity", "Classroom")
-                        .WithMany("CourseAttendances")
+                        .WithMany("Attendances")
                         .HasForeignKey("ClassroomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -704,11 +714,17 @@ namespace App.DAL.EF.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("AttendanceType");
+                    b.HasOne("App.Domain.AttendanceTypeEntity", "Type")
+                        .WithMany()
+                        .HasForeignKey("TypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Classroom");
 
                     b.Navigation("Course");
+
+                    b.Navigation("Type");
                 });
 
             modelBuilder.Entity("App.Domain.ClassroomEntity", b =>
@@ -728,9 +744,9 @@ namespace App.DAL.EF.Migrations
 
             modelBuilder.Entity("App.Domain.CourseEntity", b =>
                 {
-                    b.HasOne("App.Domain.CourseStatusEntity", "CourseStatus")
+                    b.HasOne("App.Domain.CourseStatusEntity", "Status")
                         .WithMany()
-                        .HasForeignKey("CourseStatusId")
+                        .HasForeignKey("SchoolId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -740,15 +756,15 @@ namespace App.DAL.EF.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CourseStatus");
-
                     b.Navigation("School");
+
+                    b.Navigation("Status");
                 });
 
             modelBuilder.Entity("App.Domain.CourseTeacherEntity", b =>
                 {
                     b.HasOne("App.Domain.CourseEntity", "Course")
-                        .WithMany("CourseTeacherEntities")
+                        .WithMany("Teachers")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -791,15 +807,15 @@ namespace App.DAL.EF.Migrations
                         .HasForeignKey("SchoolId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("App.Domain.UserTypeEntity", "UserType")
+                    b.HasOne("App.Domain.UserTypeEntity", "Type")
                         .WithMany()
-                        .HasForeignKey("UserTypeId")
+                        .HasForeignKey("TypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("School");
 
-                    b.Navigation("UserType");
+                    b.Navigation("Type");
                 });
 
             modelBuilder.Entity("App.Domain.WorkplaceEntity", b =>
@@ -820,12 +836,12 @@ namespace App.DAL.EF.Migrations
 
             modelBuilder.Entity("App.Domain.ClassroomEntity", b =>
                 {
-                    b.Navigation("CourseAttendances");
+                    b.Navigation("Attendances");
                 });
 
             modelBuilder.Entity("App.Domain.CourseEntity", b =>
                 {
-                    b.Navigation("CourseTeacherEntities");
+                    b.Navigation("Teachers");
                 });
 
             modelBuilder.Entity("App.Domain.SchoolEntity", b =>

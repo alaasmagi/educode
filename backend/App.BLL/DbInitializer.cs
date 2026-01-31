@@ -15,17 +15,24 @@ public class DbInitializer
         _scopeFactory = scopeFactory;
     }
 
-    public void InitializeDb()
+    public async Task InitializeDb()
     {
-        using var scope = _scopeFactory.CreateScope();
-        var userService = scope.ServiceProvider.GetRequiredService<IUserManagementService>();
-        var courseService = scope.ServiceProvider.GetRequiredService<ICourseManagementService>();
-        var attendanceService = scope.ServiceProvider.GetRequiredService<IAttendanceManagementService>();
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var courseService = scope.ServiceProvider.GetRequiredService<ICourseManagementService>();
+            var attendanceService = scope.ServiceProvider.GetRequiredService<IAttendanceManagementService>();
+            var userService = scope.ServiceProvider.GetRequiredService<IUserManagementService>();
 
-        attendanceService.SeedAttendanceTypes();
-        courseService.SeedCourseStatuses();
-        userService.SeedUserTypes();
-        userService.SeedAdminUser();
+            attendanceService.SeedAttendanceTypes();
+            courseService.SeedCourseStatuses();
+            await userService.SeedUserTypes();
+        }
+        
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var userService = scope.ServiceProvider.GetRequiredService<IUserManagementService>();
+            await userService.SeedAdminUser();
+        }
         
         _logger.LogInformation("Database initialization completed.");
     }

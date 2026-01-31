@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿﻿using System.Text.Json;
 using App.BLL.Contracts;
 using App.Common;
 using App.DAL.Contracts;
@@ -230,14 +230,14 @@ public class UserManagementService(
         return true;
     }
     
-    public async Task SeedUserTypes()
+    public Task SeedUserTypes()
     {   
         var now = DateTime.UtcNow;
         var userTypes = new List<UserTypeEntity>
         {
             new UserTypeEntity
             {
-                UserType = "student",
+                TypeName = "student",
                 AccessLevel = EAccessLevel.PrimaryLevel,
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
@@ -246,7 +246,7 @@ public class UserManagementService(
             },
             new UserTypeEntity
             {
-                UserType = "teacher-assistant",
+                TypeName = "teacher-assistant",
                 AccessLevel = EAccessLevel.SecondaryLevel,
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
@@ -255,7 +255,7 @@ public class UserManagementService(
             },
             new UserTypeEntity
             {
-                UserType = "teacher",
+                TypeName = "teacher",
                 AccessLevel = EAccessLevel.TertiaryLevel,
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
@@ -264,7 +264,7 @@ public class UserManagementService(
             },
             new UserTypeEntity
             {
-                UserType = "school-administrator",
+                TypeName = "school-administrator",
                 AccessLevel = EAccessLevel.QuaternaryLevel,
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
@@ -273,7 +273,7 @@ public class UserManagementService(
             },
             new UserTypeEntity
             {
-                UserType = "system-administrator",
+                TypeName = "system-administrator",
                 AccessLevel = EAccessLevel.QuinaryLevel,
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
@@ -282,10 +282,8 @@ public class UserManagementService(
             }
         };
 
-        foreach (var userType in userTypes)
-        {
-            await userTypeRepository.CreateAsync(userType);
-        }
+        userTypeRepository.SeedUserTypes(userTypes);
+        return Task.CompletedTask;
     }
     
     public async Task SeedAdminUser()
@@ -294,7 +292,7 @@ public class UserManagementService(
         
         var adminUserTypes = await userTypeRepository.GetTypeByLevelAsync(EAccessLevel.QuinaryLevel);
         
-        if (adminUserTypes == null || adminUserTypes[0].Id == Guid.Empty)
+        if (adminUserTypes == null || adminUserTypes.Count == 0 || adminUserTypes[0].Id == Guid.Empty)
         {
             return;
         }
@@ -309,7 +307,7 @@ public class UserManagementService(
         var adminUser = new UserEntity
         {
             Email = envInitializer.DefaultAdminUser,
-            UserTypeId = adminUserTypes[0].Id,
+            TypeId = adminUserTypes[0].Id,
             FullName = envInitializer.DefaultAdminUser,
             CreatedBy = "aspnet-initializer",
             CreatedAt = now,

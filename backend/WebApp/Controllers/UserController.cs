@@ -64,7 +64,7 @@ namespace WebApp.Controllers
             
             var userTypes = await userTypeRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.UserTypeId);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.TypeId);
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(userEntity);
         }
@@ -85,7 +85,7 @@ namespace WebApp.Controllers
             
             var userTypes = await userTypeRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.UserTypeId);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.TypeId);
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             ViewData["CreatedAt"] = userEntity.CreatedAt;
             ViewData["CreatedBy"] = userEntity.CreatedBy;
@@ -120,7 +120,7 @@ namespace WebApp.Controllers
             
             var userTypes = await userTypeRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
-            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.UserType);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.Type);
             ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(userEntity);
         }

@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -16,11 +20,15 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
             return includeDeleted ? 
                 await context.CourseTeachers
                     .IgnoreQueryFilters()
+                    .Include(ct => ct.Course)
+                    .Include(ct => ct.Teacher)
                     .OrderBy(ct => ct.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.CourseTeachers
+                    .Include(ct => ct.Course)
+                    .Include(ct => ct.Teacher)
                     .OrderBy(ct => ct.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -57,7 +65,6 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
         }
     }
 
-    // TODO: INDEXING!
     public async Task<List<CourseTeacherEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -70,20 +77,20 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
                     .Include(ct => ct.Course)
                     .Include(ct => ct.Teacher)
                     .Where(ct =>
-                        ct.Course!.CourseName.ToLower().Contains(normalizedKeyword) ||
-                        ct.Course.CourseCode.ToLower().Contains(normalizedKeyword) ||
+                        ct.Course!.Name.ToLower().Contains(normalizedKeyword) ||
+                        ct.Course.Code.ToLower().Contains(normalizedKeyword) ||
                         ct.Teacher!.FullName.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(ct => ct.Course!.CourseName)
+                    .OrderBy(ct => ct.Course!.Name)
                     .ThenBy(ct => ct.Teacher!.FullName)
                     .ToListAsync() : 
                 await context.CourseTeachers
                     .Include(ct => ct.Course)
                     .Include(ct => ct.Teacher)
                     .Where(ct =>
-                        ct.Course!.CourseName.ToLower().Contains(normalizedKeyword) ||
-                        ct.Course.CourseCode.ToLower().Contains(normalizedKeyword) ||
+                        ct.Course!.Name.ToLower().Contains(normalizedKeyword) ||
+                        ct.Course.Code.ToLower().Contains(normalizedKeyword) ||
                         ct.Teacher!.FullName.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(ct => ct.Course!.CourseName)
+                    .OrderBy(ct => ct.Course!.Name)
                     .ThenBy(ct => ct.Teacher!.FullName)
                     .ToListAsync();
         }

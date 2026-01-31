@@ -25,14 +25,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<UserEntity>()
             .ToTable("Users")
             .HasQueryFilter(c => c.Deleted == false)
-            .HasOne(u => u.UserType)
+            .HasOne(u => u.Type)
             .WithMany()
-            .HasForeignKey(u => u.UserTypeId);
+            .HasForeignKey(u => u.TypeId);
         modelBuilder.Entity<UserEntity>()
             .HasIndex(u => new {u.Email, u.StudentCode})
             .IsUnique();
         modelBuilder.Entity<UserEntity>()
             .HasIndex(u => u.FullName);
+        modelBuilder.Entity<UserEntity>()
+            .HasIndex(u => u.Email);
+        modelBuilder.Entity<UserEntity>()
+            .HasIndex(u => u.StudentCode);
         modelBuilder.Entity<UserEntity>()
             .HasMany(u => u.RefreshTokens)
             .WithOne()
@@ -55,7 +59,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(u => u.UserId)
             .IsUnique();
         
-        // CourseAttendance relationship
+        // Attendance relationship
         modelBuilder.Entity<AttendanceEntity>()
             .ToTable("Attendances")
             .HasQueryFilter(c => c.Deleted == false);
@@ -70,12 +74,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(c => c.CourseId);
         modelBuilder.Entity<AttendanceEntity>()
             .HasOne(c => c.Classroom)
-            .WithMany(c => c.CourseAttendances)
+            .WithMany(c => c.Attendances)
             .HasForeignKey(c => c.ClassroomId);
         modelBuilder.Entity<AttendanceEntity>()
-            .HasOne(c => c.AttendanceType)
+            .HasOne(c => c.Type)
             .WithMany()
-            .HasForeignKey(c => c.AttendanceTypeId)
+            .HasForeignKey(c => c.TypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // AttendanceCheck relationship
@@ -86,7 +90,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(a => new { a.StudentCode, a.AttendanceIdentifier })
             .IsUnique();
          modelBuilder.Entity<AttendanceCheckEntity>()
-             .HasOne(a => a.CourseAttendance)
+             .HasIndex(a => a.AttendanceIdentifier);
+         modelBuilder.Entity<AttendanceCheckEntity>()
+             .HasIndex(a => a.FullName);
+         modelBuilder.Entity<AttendanceCheckEntity>()
+             .HasIndex(a => a.StudentCode);
+         modelBuilder.Entity<AttendanceCheckEntity>()
+             .HasOne(a => a.Attendance)
              .WithMany(c => c.AttendanceChecks)
              .HasForeignKey(a => a.AttendanceIdentifier)
              .HasPrincipalKey(c => c.Identifier)
@@ -101,17 +111,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<CourseEntity>()
             .ToTable("Courses")
             .HasQueryFilter(c => c.Deleted == false)
-            .HasOne(c => c.CourseStatus)
+            .HasOne(c => c.Status)
             .WithMany()
-            .HasForeignKey(c => c.CourseStatusId);
+            .HasForeignKey(c => c.SchoolId);
         modelBuilder.Entity<CourseEntity>()
-            .HasMany(c => c.CourseTeacherEntities)
+            .HasMany(c => c.Teachers)
             .WithOne(c => c.Course)
             .HasForeignKey(c => c.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<CourseEntity>()
-            .HasIndex(c => c.CourseCode)
+            .HasIndex(c => c.Code)
             .IsUnique();
+        modelBuilder.Entity<CourseEntity>()
+            .HasIndex(c => c.Name);
         modelBuilder.Entity<CourseEntity>()
             .HasOne(c => c.School)
             .WithMany()
@@ -123,7 +135,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ToTable("CourseStatuses")            
             .HasQueryFilter(c => c.Deleted == false);
         modelBuilder.Entity<CourseStatusEntity>()
-            .HasIndex(c => c.CourseStatus)
+            .HasIndex(c => c.StatusName)
             .IsUnique();
         
         // CourseTeacher relationship
@@ -131,7 +143,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ToTable("CourseTeachers")
             .HasQueryFilter(c => c.Deleted == false)
             .HasOne(c => c.Course)
-            .WithMany(c => c.CourseTeacherEntities)
+            .WithMany(c => c.Teachers)
             .HasForeignKey(c => c.CourseId);
         modelBuilder.Entity<CourseTeacherEntity>()
             .HasOne(c => c.Teacher)
@@ -143,7 +155,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ToTable("UserTypes")
             .HasQueryFilter(c => c.Deleted == false);
         modelBuilder.Entity<UserTypeEntity>()
-            .HasIndex(u => u.UserType)
+            .HasIndex(u => u.TypeName)
             .IsUnique();
         modelBuilder.Entity<UserTypeEntity>()
             .Property(u => u.AccessLevel)
@@ -154,7 +166,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ToTable("AttendanceTypes")
             .HasQueryFilter(c => c.Deleted == false);
         modelBuilder.Entity<AttendanceTypeEntity>()
-            .HasIndex(a => a.AttendanceType)
+            .HasIndex(a => a.TypeName)
             .IsUnique();
         
         // Workplace relationship
@@ -180,6 +192,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(s => new {s.Name, s.ShortName, s.Domain})
             .IsUnique();
         modelBuilder.Entity<SchoolEntity>()
+            .HasIndex(s => s.Name);
+        modelBuilder.Entity<SchoolEntity>()
+            .HasIndex(s => s.ShortName);
+        modelBuilder.Entity<SchoolEntity>()
+            .HasIndex(s => s.Domain);
+        modelBuilder.Entity<SchoolEntity>()
             .HasMany(s => s.Classrooms)
             .WithOne(s => s.School)
             .HasForeignKey(s => s.SchoolId)
@@ -200,9 +218,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ToTable("Classrooms")
             .HasQueryFilter(c => c.Deleted == false);
         modelBuilder.Entity<ClassroomEntity>()
-            .HasOne(w => w.School)
+            .HasOne(c => c.School)
             .WithMany()
-            .HasForeignKey(w => w.SchoolId)
+            .HasForeignKey(c => c.SchoolId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ClassroomEntity>()
+            .HasIndex(c => c.Classroom);
     }
 }

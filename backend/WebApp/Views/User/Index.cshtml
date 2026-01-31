@@ -28,7 +28,7 @@
 @foreach (var item in Model) {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.UserType!.UserType)
+                @Html.DisplayFor(modelItem => item.Type!.TypeName)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.School!.Name)

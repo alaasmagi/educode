@@ -14,8 +14,8 @@ public class AttendanceEntity : BaseEntity
     public Guid ClassroomId { get; set; }
     public ClassroomEntity? Classroom { get; set; }
     [Required]
-    public Guid AttendanceTypeId { get; set; }
-    public AttendanceTypeEntity? AttendanceType { get; set; }
+    public Guid TypeId { get; set; }
+    public AttendanceTypeEntity? Type { get; set; }
     [Required]
     public bool AutomatedRegistration { get; set; } = false;
     [Required]

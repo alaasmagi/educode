@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -53,7 +57,6 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
         }
     }
 
-    // TODO: INDEXING!
     public async Task<List<CourseStatusEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -64,13 +67,13 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
                 await context.CourseStatuses
                     .IgnoreQueryFilters()
                     .Where(cs =>
-                        cs.CourseStatus.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(cs => cs.CourseStatus)
+                        cs.StatusName.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(cs => cs.StatusName)
                     .ToListAsync() : 
                 await context.CourseStatuses
                     .Where(cs =>
-                        cs.CourseStatus.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(cs => cs.CourseStatus)
+                        cs.StatusName.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(cs => cs.StatusName)
                     .ToListAsync();
         }
         catch (Exception ex)
@@ -94,8 +97,8 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error creating course status. CourseStatus: {CourseStatus}", entity.CourseStatus);
-            sentry.CaptureWithContext(ex, "Database error creating course status. CourseStatus: {0}", entity.CourseStatus);
+            logger.LogError(ex, "Database error creating course status. CourseStatus: {CourseStatus}", entity.StatusName);
+            sentry.CaptureWithContext(ex, "Database error creating course status. CourseStatus: {0}", entity.StatusName);
             return null;
         }
     }
@@ -108,7 +111,7 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
             if (existingEntity == null)
                 return null;
             
-            existingEntity.CourseStatus = entity.CourseStatus;
+            existingEntity.StatusName = entity.StatusName;
             existingEntity.Deleted= entity.Deleted;
             existingEntity.UpdatedAt = DateTime.UtcNow;
             existingEntity.UpdatedBy = entity.UpdatedBy;

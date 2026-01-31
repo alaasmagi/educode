@@ -289,8 +289,8 @@ public class AttendanceManagementService(
             var newAttendance = new AttendanceEntity()
             {
                 CourseId = attendance.CourseId,
-                AttendanceTypeId = attendance.AttendanceTypeId,
-                AttendanceType = attendance.AttendanceType,
+                TypeId = attendance.TypeId,
+                Type = attendance.Type,
                 StartTime = date.ToDateTime(startTime),
                 EndTime = date.ToDateTime(endTime),
                 CreatedBy = attendance.CreatedBy,
@@ -465,7 +465,7 @@ public class AttendanceManagementService(
         {
             new AttendanceTypeEntity
             {
-                AttendanceType = "lecture",
+                TypeName = "lecture",
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
@@ -473,7 +473,7 @@ public class AttendanceManagementService(
             },
             new AttendanceTypeEntity
             {
-                AttendanceType = "practice",
+                TypeName = "practice",
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
@@ -481,7 +481,7 @@ public class AttendanceManagementService(
             },
             new AttendanceTypeEntity
             {
-                AttendanceType = "lecture-practice",
+                TypeName = "lecture-practice",
                 CreatedBy = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",

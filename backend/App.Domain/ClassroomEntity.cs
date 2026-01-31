@@ -11,5 +11,5 @@ public class ClassroomEntity : BaseEntity
     [Required]
     public Guid SchoolId { get; set; }
     public SchoolEntity? School { get; set; }
-    public ICollection<AttendanceEntity>? CourseAttendances { get; set; }
+    public ICollection<AttendanceEntity>? Attendances { get; set; }
 }

@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -76,9 +80,9 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return includeDeleted ? 
                 await context.UserTypes
                     .IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(ut => ut.UserType == userType) : 
+                    .FirstOrDefaultAsync(ut => ut.TypeName == userType) : 
                 await context.UserTypes
-                    .FirstOrDefaultAsync(ut => ut.UserType == userType);
+                    .FirstOrDefaultAsync(ut => ut.TypeName == userType);
         }
         catch (Exception ex)
         {
@@ -88,7 +92,6 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         }        
     }
     
-    // TODO: INDEXING!
     public async Task<List<UserTypeEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -99,13 +102,13 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
                 await context.UserTypes
                     .IgnoreQueryFilters()
                     .Where(ut =>
-                        ut.UserType.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(ut => ut.UserType)
+                        ut.TypeName.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(ut => ut.TypeName)
                     .ToListAsync() : 
                 await context.UserTypes
                     .Where(ut =>
-                        ut.UserType.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(ut => ut.UserType)
+                        ut.TypeName.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(ut => ut.TypeName)
                     .ToListAsync();
         }
         catch (Exception ex)
@@ -129,8 +132,8 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error creating user type. UserType: {UserType}", entity.UserType);
-            sentry.CaptureWithContext(ex, "Database error creating user type. UserType: {0}", entity.UserType);
+            logger.LogError(ex, "Database error creating user type. UserType: {UserType}", entity.TypeName);
+            sentry.CaptureWithContext(ex, "Database error creating user type. UserType: {0}", entity.TypeName);
             return null;
         }    
     }
@@ -143,7 +146,7 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             if (existingEntity == null)
                 return null;
             
-            existingEntity.UserType= entity.UserType;
+            existingEntity.TypeName= entity.TypeName;
             existingEntity.AccessLevel = entity.AccessLevel;
             existingEntity.Deleted= entity.Deleted;
             existingEntity.UpdatedAt = DateTime.UtcNow;

@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -53,7 +57,6 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }        
     }
 
-    // TODO: INDEXING!
     public async Task<List<AttendanceTypeEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -64,13 +67,13 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
                 await context.AttendanceTypes
                     .IgnoreQueryFilters()
                     .Where(at =>
-                        at.AttendanceType.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(at => at.AttendanceType)
+                        at.TypeName.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(at => at.TypeName)
                     .ToListAsync() : 
                 await context.AttendanceTypes
                     .Where(at =>
-                        at.AttendanceType.ToLower().Contains(normalizedKeyword))
-                    .OrderBy(at => at.AttendanceType)
+                        at.TypeName.ToLower().Contains(normalizedKeyword))
+                    .OrderBy(at => at.TypeName)
                     .ToListAsync();
         }
         catch (Exception ex)
@@ -94,8 +97,8 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Database error creating attendance type. AttendanceType: {AttendanceType}", entity.AttendanceType);
-            sentry.CaptureWithContext(ex, "Database error creating attendance type. AttendanceType: {0}", entity.AttendanceType);
+            logger.LogError(ex, "Database error creating attendance type. AttendanceType: {TypeName}", entity.TypeName);
+            sentry.CaptureWithContext(ex, "Database error creating attendance type. AttendanceType: {0}", entity.TypeName);
             return null;
         }        
     }
@@ -108,7 +111,7 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
             if (existingEntity == null)
                 return null;
             
-            existingEntity.AttendanceType = entity.AttendanceType;
+            existingEntity.TypeName = entity.TypeName;
             existingEntity.Deleted= entity.Deleted;
             existingEntity.UpdatedAt = DateTime.UtcNow;
             existingEntity.UpdatedBy = entity.UpdatedBy;

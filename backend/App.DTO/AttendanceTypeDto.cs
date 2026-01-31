@@ -5,7 +5,7 @@ namespace App.DTO;
 public class AttendanceTypeDto(AttendanceTypeEntity attendanceType)
 {
     public Guid Id { get; set; } = attendanceType.Id;
-    public string AttendanceType { get; set; } = attendanceType.AttendanceType;
+    public string AttendanceType { get; set; } = attendanceType.TypeName;
     
     public static List<AttendanceTypeDto> ToDtoList(List<AttendanceTypeEntity>? entities)
     {

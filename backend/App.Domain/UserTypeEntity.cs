@@ -8,7 +8,7 @@ public class UserTypeEntity : BaseEntity
 {
     [Required]
     [MaxLength(128)]
-    public string UserType { get; set; } = default!;
+    public string TypeName { get; set; } = default!;
     [Required] 
     public EAccessLevel AccessLevel { get; set; } = EAccessLevel.NoAccess;
 }

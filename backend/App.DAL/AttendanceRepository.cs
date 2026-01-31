@@ -1,4 +1,8 @@
-﻿using App.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -16,12 +20,18 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .Include(a => a.Type)
+                    .Include(a => a.Course)
+                    .Include(a => a.Classroom)
                     .OrderBy(a => a.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Attendances
                     .OrderBy(a => a.Id)
+                    .Include(a => a.Type)
+                    .Include(a => a.Course)
+                    .Include(a => a.Classroom)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -41,12 +51,18 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .Include(a => a.Type)
+                    .Include(a => a.Course)
+                    .Include(a => a.Classroom)
                     .Where(a => a.CourseId == courseId)
                     .OrderBy(a => a.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Attendances
+                    .Include(a => a.Type)
+                    .Include(a => a.Course)
+                    .Include(a => a.Classroom)
                     .Where(a => a.CourseId == courseId)
                     .OrderBy(a => a.Id)
                     .Skip((pageNr - 1) * pageSize)
@@ -70,12 +86,12 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
-                    .Include(a => a.AttendanceType)
+                    .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
                     .FirstOrDefaultAsync(a => a.Id == id) : 
                 await context.Attendances
-                    .Include(a => a.AttendanceType)
+                    .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
                     .FirstOrDefaultAsync(a => a.Id == id);
@@ -95,12 +111,12 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
-                    .Include(a => a.AttendanceType)
+                    .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
                     .FirstOrDefaultAsync(a => a.Identifier == identifier) : 
                 await context.Attendances
-                    .Include(a => a.AttendanceType)
+                    .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
                     .FirstOrDefaultAsync(a => a.Identifier == identifier);
@@ -119,8 +135,8 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
         {
             return await context.Attendances
                 .Where(ca => ca.StartTime <= DateTime.UtcNow && ca.EndTime >= DateTime.UtcNow &&
-                             ca.Course!.CourseTeacherEntities!.Any(ct => ct.TeacherId == userId))
-                .Include(a => a.AttendanceType)
+                             ca.Course!.Teachers!.Any(ct => ct.TeacherId == userId))
+                .Include(a => a.Type)
                 .Include(a => a.Course)
                 .Include(a => a.Classroom)
                 .FirstOrDefaultAsync();
@@ -138,9 +154,9 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
         try
         {
             return await context.Attendances
-                .Where(ca => ca.Course!.CourseTeacherEntities!
+                .Where(ca => ca.Course!.Teachers!
                     .Any(ct => ct.TeacherId == userId) && ca.StartTime <= DateTime.UtcNow) 
-                .Include(a => a.AttendanceType)
+                .Include(a => a.Type)
                 .Include(a => a.Course)
                 .Include(a => a.Classroom) 
                 .OrderByDescending(ca => ca.EndTime)
@@ -154,7 +170,6 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
         }
     }
     
-    // TODO: INDEXING!
     public async Task<List<AttendanceEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -167,21 +182,21 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
 
             return await query
                 .Include(a => a.Course)
-                .ThenInclude(c => c!.CourseTeacherEntities!)
+                .ThenInclude(c => c!.Teachers!)
                 .ThenInclude(ct => ct.Teacher)
                 .Include(a => a.Classroom)
                 .ThenInclude(cl => cl!.School)
-                .Include(a => a.AttendanceType)
+                .Include(a => a.Type)
                 .Where(a =>
-                    (a.Course != null && a.Course.CourseName.ToLower().Contains(normalizedKeyword)) ||
-                    (a.Course != null && a.Course.CourseCode.ToLower().Contains(normalizedKeyword)) ||
-                    (a.Course != null && a.Course.CourseTeacherEntities != null && 
-                     a.Course.CourseTeacherEntities.Any(ct => 
+                    (a.Course != null && a.Course.Name.ToLower().Contains(normalizedKeyword)) ||
+                    (a.Course != null && a.Course.Name.ToLower().Contains(normalizedKeyword)) ||
+                    (a.Course != null && a.Course.Teachers != null && 
+                     a.Course.Teachers.Any(ct => 
                          ct.Teacher != null && ct.Teacher.FullName.ToLower().Contains(normalizedKeyword))) ||
                     (a.Classroom != null && a.Classroom.Classroom.ToLower().Contains(normalizedKeyword)) ||
                     (a.Classroom != null && a.Classroom.School != null && 
                      a.Classroom.School.Name.ToLower().Contains(normalizedKeyword)) ||
-                    (a.AttendanceType != null && a.AttendanceType.AttendanceType.ToLower().Contains(normalizedKeyword)) ||
+                    (a.Type != null && a.Type.TypeName.ToLower().Contains(normalizedKeyword)) ||
                     a.Identifier.ToLower().Contains(normalizedKeyword))
                 .OrderByDescending(a => a.StartTime)
                 .ToListAsync();
@@ -227,7 +242,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             existingEntity.StartTime = entity.StartTime;
             existingEntity.EndTime = entity.EndTime;
             existingEntity.ClassroomId = entity.ClassroomId;
-            existingEntity.AttendanceTypeId = entity.AttendanceTypeId;
+            existingEntity.TypeId = entity.TypeId;
             existingEntity.Deleted= entity.Deleted;
             existingEntity.UpdatedAt = DateTime.UtcNow;
             existingEntity.UpdatedBy = entity.UpdatedBy;
@@ -273,11 +288,11 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
                 await context.Attendances
                     .IgnoreQueryFilters()
                     .Where(u => u.Identifier == identifier)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Attendances
                     .Where(u => u.Identifier == identifier)
-                    .Select(u => u.Id)
+                    .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
         }
         catch (Exception ex)

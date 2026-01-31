@@ -37,6 +37,25 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
         }
     }
 
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Workplaces
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.Workplaces
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting workplaces");
+            sentry.CaptureWithContext(ex, "Error counting workplaces");
+            return 0;
+        }
+    }
+
     public async Task<WorkplaceEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try

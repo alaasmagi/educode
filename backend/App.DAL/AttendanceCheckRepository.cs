@@ -42,6 +42,25 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }    
     }
     
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.AttendanceChecks
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.AttendanceChecks
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting attendance checks");
+            sentry.CaptureWithContext(ex, "Error counting attendance checks");
+            return 0;
+        }
+    }
+    
     public async Task<List<AttendanceCheckEntity>?> GetAllByAttendanceAsync(Guid attendanceId)
     {
         try

@@ -54,6 +54,25 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         }    
     }
 
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.UserTypes
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.UserTypes
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting user types");
+            sentry.CaptureWithContext(ex, "Error counting user types");
+            return 0;
+        }
+    }
+
     public async Task<UserTypeEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try

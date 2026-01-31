@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -147,6 +147,25 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             logger.LogError(ex, "Error getting user counts for course. Course ID: {UserId}", id);
             sentry.CaptureWithContext(ex, "rror getting user counts for course. Course ID: {0}", id);
             return null;
+        }
+    }
+
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Courses
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.Courses
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting courses");
+            sentry.CaptureWithContext(ex, "Error counting courses");
+            return 0;
         }
     }
 

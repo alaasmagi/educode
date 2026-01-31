@@ -38,6 +38,25 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }
     }
 
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.AttendanceTypes
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.AttendanceTypes
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting attendance types");
+            sentry.CaptureWithContext(ex, "Error counting attendance types");
+            return 0;
+        }
+    }
+
     public async Task<AttendanceTypeEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try

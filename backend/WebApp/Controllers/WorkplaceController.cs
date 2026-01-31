@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using WebApp.ViewModels;
 
 namespace WebApp.Controllers
 {
@@ -13,10 +14,23 @@ namespace WebApp.Controllers
         ICacheRepository cache) : Controller
     {
         // GET: Workplace
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10)
         {
-            var result = await workplaceRepository.GetAllAsync(1, 100, true);
-            return View(result);
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            var items = await workplaceRepository.GetAllAsync(pageNumber, pageSize, true);
+            var totalCount = await workplaceRepository.CountAsync(true);
+            
+            var paginatedList = new PaginatedList<WorkplaceEntity>(
+                items ?? new List<WorkplaceEntity>(),
+                totalCount,
+                pageNumber,
+                pageSize
+            );
+            
+            return View(paginatedList);
         }
 
         // GET: Workplace/Details/5
@@ -52,7 +66,7 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                await workplaceRepository.UpdateAsync(workplaceEntity);
+                await workplaceRepository.CreateAsync(workplaceEntity);
                 return RedirectToAction(nameof(Index));
             }
             

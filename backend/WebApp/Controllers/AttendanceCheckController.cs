@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
+using WebApp.ViewModels;
 
 namespace WebApp.Controllers
 {
@@ -14,10 +15,23 @@ namespace WebApp.Controllers
         ICacheRepository cache) : Controller
     {
         // GET: AttendanceCheck
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10)
         {
-            var result = await attendanceCheckRepository.GetAllAsync(1, 100, true);
-            return View(result);
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            var items = await attendanceCheckRepository.GetAllAsync(pageNumber, pageSize, true);
+            var totalCount = await attendanceCheckRepository.CountAsync(true);
+            
+            var paginatedList = new PaginatedList<AttendanceCheckEntity>(
+                items ?? new List<AttendanceCheckEntity>(),
+                totalCount,
+                pageNumber,
+                pageSize
+            );
+            
+            return View(paginatedList);
         }
 
         // GET: AttendanceCheck/Details/ID
@@ -55,7 +69,7 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                await attendanceCheckRepository.UpdateAsync(attendanceCheckEntity);
+                await attendanceCheckRepository.CreateAsync(attendanceCheckEntity);
                 return RedirectToAction(nameof(Index));
             }
             

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
+using WebApp.ViewModels;
 
 namespace WebApp.Controllers
 {
@@ -14,10 +15,23 @@ namespace WebApp.Controllers
         ICacheRepository cache) : Controller
     {
         // GET: CourseTeacher
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10)
         {
-            var result = await courseTeacherRepository.GetAllAsync(1, 100, true);
-            return View(result);
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            var items = await courseTeacherRepository.GetAllAsync(pageNumber, pageSize, true);
+            var totalCount = await courseTeacherRepository.CountAsync(true);
+            
+            var paginatedList = new PaginatedList<CourseTeacherEntity>(
+                items ?? new List<CourseTeacherEntity>(),
+                totalCount,
+                pageNumber,
+                pageSize
+            );
+            
+            return View(paginatedList);
         }
 
         // GET: CourseTeacher/Details/5
@@ -55,7 +69,7 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                await courseTeacherRepository.UpdateAsync(courseTeacherEntity);
+                await courseTeacherRepository.CreateAsync(courseTeacherEntity);
                 return RedirectToAction(nameof(Index));
             }
             

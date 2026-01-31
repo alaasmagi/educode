@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -41,6 +41,25 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             logger.LogError(ex, "Error retrieving attendances. Page: {PageNr}, Size: {PageSize}", pageNr, pageSize);
             sentry.CaptureWithContext(ex, "Error retrieving attendances. Page: {0}, Size: {1}", pageNr, pageSize);
             return null;
+        }
+    }
+    
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Attendances
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.Attendances
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting attendances");
+            sentry.CaptureWithContext(ex, "Error counting attendances");
+            return 0;
         }
     }
     

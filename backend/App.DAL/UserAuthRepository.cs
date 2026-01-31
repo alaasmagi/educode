@@ -38,6 +38,25 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
             return null;
         }    }
 
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.UserAuthData
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.UserAuthData
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting user auth data");
+            sentry.CaptureWithContext(ex, "Error counting user auth data");
+            return 0;
+        }
+    }
+
     public async Task<UserAuthEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
     {
         try

@@ -1,8 +1,14 @@
 @using App.BLL
-@model IEnumerable<App.Domain.SchoolEntity>
+@model WebApp.ViewModels.PaginatedList<App.Domain.SchoolEntity>
 
 @{
     ViewData["Title"] = "Index";
+    ViewData["PageIndex"] = Model.PageIndex;
+    ViewData["TotalPages"] = Model.TotalPages;
+    ViewData["HasPreviousPage"] = Model.HasPreviousPage;
+    ViewData["HasNextPage"] = Model.HasNextPage;
+    ViewData["PageSize"] = Model.PageSize;
+    ViewData["TotalCount"] = Model.TotalCount;
 }
 
 <h1>Index</h1>
@@ -24,7 +30,7 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
+@foreach (var item in Model.Items) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.Name)
@@ -50,3 +56,6 @@
 }
     </tbody>
 </table>
+
+@await Html.PartialAsync("_Pagination")
+

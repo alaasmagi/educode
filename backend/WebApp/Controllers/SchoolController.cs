@@ -1,7 +1,8 @@
-﻿using App.DAL.Contracts;
+﻿﻿using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApp.ViewModels;
 
 namespace WebApp.Controllers
 {
@@ -11,10 +12,23 @@ namespace WebApp.Controllers
         ICacheRepository cache) : Controller
     {
         // GET: School
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10)
         {
-            var result = await schoolRepository.GetAllAsync(1, 100, true);
-            return View(result);
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            var items = await schoolRepository.GetAllAsync(pageNumber, pageSize, true);
+            var totalCount = await schoolRepository.CountAsync(true);
+            
+            var paginatedList = new PaginatedList<SchoolEntity>(
+                items ?? new List<SchoolEntity>(),
+                totalCount,
+                pageNumber,
+                pageSize
+            );
+            
+            return View(paginatedList);
         }
 
         // GET: School/Details/5
@@ -50,7 +64,7 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                await schoolRepository.UpdateAsync(schoolEntity);
+                await schoolRepository.CreateAsync(schoolEntity);
                 return RedirectToAction(nameof(Index));
             }
 

@@ -38,6 +38,25 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         }
     }
     
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.RefreshTokens
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.RefreshTokens
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting refresh tokens");
+            sentry.CaptureWithContext(ex, "Error counting refresh tokens");
+            return 0;
+        }
+    }
+    
     public async Task<RefreshTokenEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
     {
         try

@@ -42,6 +42,25 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
         }
     }
 
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.CourseTeachers
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.CourseTeachers
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting course teachers");
+            sentry.CaptureWithContext(ex, "Error counting course teachers");
+            return 0;
+        }
+    }
+
     public async Task<CourseTeacherEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try

@@ -38,6 +38,25 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
         }
     }
 
+    public async Task<int> CountAsync(bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.CourseStatuses
+                    .IgnoreQueryFilters()
+                    .CountAsync() : 
+                await context.CourseStatuses
+                    .CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error counting course statuses");
+            sentry.CaptureWithContext(ex, "Error counting course statuses");
+            return 0;
+        }
+    }
+
     public async Task<CourseStatusEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try

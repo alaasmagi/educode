@@ -154,6 +154,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
         }
     }
     
+    // TODO: INDEXING!
     public async Task<List<AttendanceEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try

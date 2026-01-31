@@ -33,7 +33,7 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
             return null;
         }
     }
-
+    
     public async Task<RefreshTokenEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
     {
         try

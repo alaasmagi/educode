@@ -9,109 +9,6 @@ namespace App.DAL.EF;
 
 public class CourseRepository(AppDbContext context, ILogger<CourseRepository> logger, SentryService sentry) : ICourseRepository
 {
-   public async Task<List<CourseEntity>?> GetCoursesByUser(Guid userId, int pageNr, int pageSize)
-    {
-        var result = await context.Courses
-            .Where(ca => ca.CourseTeacherEntities!
-                .Any(ct => ct.TeacherId == userId))
-            .OrderBy(c => c.Id)
-            .Skip((pageNr - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-        
-        return result.Count > 0 ? result : null; 
-    }
-   
-    public async Task<List<AttendanceStudentCountDto>?> GetAllUserCountsByCourseId(Guid courseId)
-    {
-        var courseExists = await context.Courses.AnyAsync(c => c.Id == courseId);
-        if (!courseExists)
-            return null;
-
-        var attendances = await context.Attendances
-            .Where(ca => ca.CourseId == courseId)
-            .ToListAsync();
-
-        var result = new List<AttendanceStudentCountDto>();
-
-        foreach (var attendance in attendances)
-        {
-            var count = await context.AttendanceChecks
-                .CountAsync(ac => ac.AttendanceIdentifier == attendance.Identifier);
-
-            result.Add(new AttendanceStudentCountDto
-            {
-                AttendanceDate = attendance.StartTime,
-                StudentCount = count
-            });
-        }
-
-        return result;
-    }
-
-    public async Task<bool> CourseAvailabilityCheckByCourseCode(string courseCode)
-    {
-        return await context.Courses.AnyAsync(c => c.CourseCode == courseCode);
-    }
-    
-    public async Task<bool> CourseAvailabilityCheckById(Guid id)
-    {
-        return await context.Courses.AnyAsync(c => c.Id == id);
-    }
-    
-    public async Task<CourseEntity?> GetCourseById(Guid courseId)
-    {
-        return await context.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
-    }
-    
-    public async Task<CourseEntity?> GetCourseByName(string courseName)
-    {
-        return await context.Courses.FirstOrDefaultAsync(c => c.CourseName == courseName);
-    }
-    
-    public async Task<CourseEntity?> GetCourseByCode(string courseCode)
-    {
-        return await context.Courses.FirstOrDefaultAsync(c => c.CourseCode == courseCode);
-    }
-
-    public async Task<int> CourseAccessibilityCheck(Guid courseId, Guid userId)
-    {
-        return await context.CourseTeachers
-            .CountAsync(ct => ct.TeacherId == userId && ct.CourseId == courseId);
-    }
-    public async Task<List<CourseStatusEntity>?> GetAllCourseStatuses()
-    {
-        return await context.CourseStatuses.ToListAsync();
-    }
-    
-    public async Task<bool> CourseOnlyTeacherCheck(Guid userId, Guid courseId)
-    {
-        var courseTeachers = await context.CourseTeachers.Where(c => c.CourseId == courseId).ToListAsync();
-
-        if (courseTeachers.Count == 1 && courseTeachers[0].TeacherId == userId)
-        {
-            return true;
-        }
-
-        return false;
-    }
-    
-    public void SeedCourseStatuses(List<CourseStatusEntity> courseStatuses)
-    {
-        if (!context.CourseStatuses.Any())
-        {
-            context.CourseStatuses.AddRange(courseStatuses);
-            context.SaveChanges();
-        }
-    }
-    
-    public async Task DeleteCoursesByUserAsync(Guid userId)
-    {
-        await context.Courses
-            .Where(ca => ca.CourseTeacherEntities!.Any(ct => ct.TeacherId == userId))
-            .ExecuteDeleteAsync();
-    }
-
     public async Task<List<CourseEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {
         try
@@ -139,6 +36,112 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         {
             logger.LogError(ex, "Error getting courses. PageNr: {PageNr}, PageSize: {PageSize}", pageNr, pageSize);
             sentry.CaptureWithContext(ex, "Error getting courses. PageNr: {0}, PageSize: {1}", pageNr, pageSize);
+            return null;
+        }
+    }
+    
+    public async Task<List<CourseEntity>?> GetAllByUser(Guid userId, int pageNr, int pageSize, bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Courses
+                    .IgnoreQueryFilters()
+                    .Include(c => c.CourseStatus)
+                    .Include(c => c.CourseTeacherEntities!)
+                    .ThenInclude(ct => ct.Teacher)
+                    .Where(ca => ca.CourseTeacherEntities!
+                        .Any(ct => ct.TeacherId == userId))                   
+                    .OrderBy(c => c.CourseName)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync() : 
+                await context.Courses.IgnoreQueryFilters()
+                    .Include(c => c.CourseStatus)
+                    .Include(c => c.CourseTeacherEntities!)
+                    .ThenInclude(ct => ct.Teacher)
+                    .Where(ca => ca.CourseTeacherEntities!
+                        .Any(ct => ct.TeacherId == userId))
+                    .OrderBy(c => c.CourseName)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting courses by user. User ID: {UserId}, PageNr: {PageNr}, " +
+                                                                        "PageSize: {PageSize}", userId, pageNr, pageSize);
+            sentry.CaptureWithContext(ex, "Error getting courses by user. User ID: {0}, PageNr: {1}, PageSize: {2}", 
+                                                                                                userId, pageNr, pageSize);
+            return null;
+        }
+    }
+    
+    public async Task<List<CourseEntity>?> GetAllSingleUserByUser(Guid userId, int pageNr, int pageSize, bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ?
+                await context.Courses
+                    .IgnoreQueryFilters()
+                    .Include(c => c.CourseStatus)
+                    .Include(c => c.CourseTeacherEntities!)
+                    .ThenInclude(ct => ct.Teacher)
+                    .Where(ca => ca.CourseTeacherEntities!.Count == 1 && 
+                                 ca.CourseTeacherEntities!.Any(ct => ct.TeacherId == userId))
+                    .OrderBy(c => c.CourseName)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync() :
+                await context.Courses
+                    .Include(c => c.CourseStatus)
+                    .Include(c => c.CourseTeacherEntities!)
+                    .ThenInclude(ct => ct.Teacher)
+                    .Where(ca => ca.CourseTeacherEntities!.Count == 1 && 
+                                 ca.CourseTeacherEntities!.Any(ct => ct.TeacherId == userId))
+                    .OrderBy(c => c.CourseName)
+                    .Skip((pageNr - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting single user courses by user. User ID: {UserId}, PageNr: {PageNr}, " + 
+                                                                        "PageSize: {PageSize}", userId, pageNr, pageSize);
+            sentry.CaptureWithContext(ex, "Error getting single user courses by user. User ID: {0}, PageNr: {1}, " +
+                                                                                    "PageSize: {2}", userId, pageNr, pageSize);
+            return null;
+        }
+    }
+    
+    public async Task<List<AttendanceStudentCountDto>?> GetUserCounts(Guid id)
+    {
+        try
+        {
+            var attendances = await context.Attendances
+                .Where(ca => ca.CourseId == id)
+                .ToListAsync();
+            
+            var result = new List<AttendanceStudentCountDto>();
+            foreach (var attendance in attendances)
+            {
+                var count = await context.AttendanceChecks
+                    .CountAsync(ac => ac.AttendanceIdentifier == attendance.Identifier);
+
+                result.Add(new AttendanceStudentCountDto
+                {
+                    AttendanceId = attendance.Id,
+                    AttendanceDate = attendance.StartTime,
+                    StudentCount = count
+                });
+            }
+
+            return result; 
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting user counts for course. Course ID: {UserId}", id);
+            sentry.CaptureWithContext(ex, "rror getting user counts for course. Course ID: {0}", id);
             return null;
         }
     }
@@ -276,4 +279,63 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return null;
         }
     }
+    
+    public async Task<Guid?> CheckAvailabilityByCodeAsync(string code, bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Courses
+                    .IgnoreQueryFilters()
+                    .Where(u => u.CourseCode == code)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync() :
+                await context.Courses
+                    .Where(u => u.CourseCode == code)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking course availability. Course code: {CourseCode}", code);
+            sentry.CaptureWithContext(ex, "Error checking course availability. Course code: {0}", code);
+            return null;
+        }
+    }
+    
+    public async Task<Guid?> CheckAvailabilityByNameAsync(string name, bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Courses
+                    .IgnoreQueryFilters()
+                    .Where(u => u.CourseName == name)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync() :
+                await context.Courses
+                    .Where(u => u.CourseName == name)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking course availability. Course name: {CourseName}", name);
+            sentry.CaptureWithContext(ex, "Error checking course availability. Course name: {0}", name);
+            return null;
+        }
+    }
+    
+    
+    // TODO: Move to BLL
+    public void SeedCourseStatuses(List<CourseStatusEntity> courseStatuses)
+    {
+        if (!context.CourseStatuses.Any())
+        {
+            context.CourseStatuses.AddRange(courseStatuses);
+            context.SaveChanges();
+        }
+    }
+    
+
 }

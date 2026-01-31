@@ -52,6 +52,7 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
         }
     }
 
+    // TODO: INDEXING!
     public async Task<List<ClassroomEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try

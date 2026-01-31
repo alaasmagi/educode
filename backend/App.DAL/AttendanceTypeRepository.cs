@@ -53,6 +53,7 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
         }        
     }
 
+    // TODO: INDEXING!
     public async Task<List<AttendanceTypeEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try

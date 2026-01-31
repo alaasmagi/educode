@@ -56,6 +56,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
         }    
     }
 
+    // TODO: INDEXING!
     public async Task<List<UserEntity>?> SearchAsync(string keyword, Guid? resourceFilterId, bool includeDeleted)
     {
         try
@@ -157,7 +158,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
         }
     }
 
-    public async Task<Guid?> CheckAvailabilityAsync(string email, bool includeDeleted)
+    public async Task<Guid?> CheckAvailabilityByEmailAsync(string email, bool includeDeleted)
     {
         try
         {

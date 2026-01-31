@@ -65,15 +65,6 @@ public class AttendanceCheckController(
             UpdatedBy = model.Client,
         };
 
-        if (model.WorkplaceIdentifier != null)
-        {
-            string workplaceIdentifier = model.WorkplaceIdentifier;
-            if(!await attendanceManagementService.DoesWorkplaceExist(workplaceIdentifier))
-            {
-                return NotFound(new {message = "Workplace was not found ", messageCode = "workplace-not-found"});
-            }
-        }
-
         if (!await attendanceManagementService.AddAttendanceCheckAsync(newAttendanceCheck, model.Client, model.WorkplaceIdentifier ?? null))
         {
             return BadRequest(new {message = "Attendance check already exists", 

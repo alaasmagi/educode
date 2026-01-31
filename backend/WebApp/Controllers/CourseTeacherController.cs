@@ -1,20 +1,23 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class CourseTeacherController(AppDbContext context, RedisRepository redis) : Controller
+    public class CourseTeacherController(
+        ICourseTeacherRepository courseTeacherRepository,
+        ICourseRepository courseRepository,
+        IUserRepository userRepository,
+        ICacheRepository cache) : Controller
     {
         // GET: CourseTeacher
         public async Task<IActionResult> Index()
         {
-           var appDbContext = context.CourseTeachers.Include(c => c.Course).Include(c => c.Teacher);
-            return View(await appDbContext.IgnoreQueryFilters().ToListAsync());
+            var result = await courseTeacherRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: CourseTeacher/Details/5
@@ -25,11 +28,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseTeacherEntity = await context.CourseTeachers
-                .IgnoreQueryFilters()
-                .Include(c => c.Course)
-                .Include(c => c.Teacher)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var courseTeacherEntity = await courseTeacherRepository.GetByIdAsync(id.Value, true);
             if (courseTeacherEntity == null)
             {
                 return NotFound();
@@ -39,10 +38,12 @@ namespace WebApp.Controllers
         }
 
         // GET: CourseTeacher/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode");
-            ViewData["TeacherId"] = new SelectList(context.Users, "Id", "Email");
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode");
+            ViewData["TeacherId"] = new SelectList(users, "Id", "Email");
             return View();
         }
 
@@ -54,14 +55,14 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                courseTeacherEntity.UpdatedAt = DateTime.UtcNow;
-                courseTeacherEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(courseTeacherEntity);
-                await context.SaveChangesAsync();
+                await courseTeacherRepository.UpdateAsync(courseTeacherEntity);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
-            ViewData["TeacherId"] = new SelectList(context.Users, "Id", "Email", courseTeacherEntity.TeacherId);
+            
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
+            ViewData["TeacherId"] = new SelectList(users, "Id", "Email", courseTeacherEntity.TeacherId);
             return View(courseTeacherEntity);
         }
 
@@ -73,15 +74,16 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseTeacherEntity = await context.CourseTeachers
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var courseTeacherEntity = await courseTeacherRepository.GetByIdAsync(id.Value, true);
             if (courseTeacherEntity == null)
             {
                 return NotFound();
             }
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
-            ViewData["TeacherId"] = new SelectList(context.Users, "Id", "Email", courseTeacherEntity.TeacherId);
+            
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
+            ViewData["TeacherId"] = new SelectList(users, "Id", "Email", courseTeacherEntity.TeacherId);
             return View(courseTeacherEntity);
         }
 
@@ -98,31 +100,24 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{courseTeacherEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{courseTeacherEntity.CourseId.ToString()}*");
+                await cache.DeletePatternAsync($"*{courseTeacherEntity.TeacherId.ToString()}*");
+                var result = await courseTeacherRepository.UpdateAsync(courseTeacherEntity);
+
+                if (result == null)
                 {
-                    courseTeacherEntity.CreatedAt = DateTime.SpecifyKind(courseTeacherEntity.CreatedAt, DateTimeKind.Utc);
-                    courseTeacherEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{courseTeacherEntity.Id.ToString()}*");
-                    await redis.DeleteKeysByPatternAsync($"*{courseTeacherEntity.CourseId.ToString()}*");
-                    await redis.DeleteKeysByPatternAsync($"*{courseTeacherEntity.TeacherId.ToString()}*");
-                    context.Update(courseTeacherEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CourseTeacherEntityExists(courseTeacherEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
-            ViewData["TeacherId"] = new SelectList(context.Users, "Id", "Email", courseTeacherEntity.TeacherId);
+            
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseTeacherEntity.CourseId);
+            ViewData["TeacherId"] = new SelectList(users, "Id", "Email", courseTeacherEntity.TeacherId);
             return View(courseTeacherEntity);
         }
 
@@ -134,11 +129,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseTeacherEntity = await context.CourseTeachers
-                .IgnoreQueryFilters()
-                .Include(c => c.Course)
-                .Include(c => c.Teacher)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var courseTeacherEntity = await courseTeacherRepository.GetByIdAsync(id.Value, true);
             if (courseTeacherEntity == null)
             {
                 return NotFound();
@@ -151,24 +142,17 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var courseTeacherEntity = await context.CourseTeachers
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var courseTeacherEntity = await courseTeacherRepository.GetByIdAsync(id);
             if (courseTeacherEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{courseTeacherEntity.Id.ToString()}*");
-                await redis.DeleteKeysByPatternAsync($"*{courseTeacherEntity.CourseId.ToString()}*");
-                await redis.DeleteKeysByPatternAsync($"*{courseTeacherEntity.TeacherId.ToString()}*");
-                context.CourseTeachers.Remove(courseTeacherEntity);
+                await courseTeacherRepository.RemoveAsync(courseTeacherEntity);
+                await cache.DeletePatternAsync($"*{courseTeacherEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{courseTeacherEntity.CourseId.ToString()}*");
+                await cache.DeletePatternAsync($"*{courseTeacherEntity.TeacherId.ToString()}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool CourseTeacherEntityExists(Guid id)
-        {
-            return context.CourseTeachers.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }
+

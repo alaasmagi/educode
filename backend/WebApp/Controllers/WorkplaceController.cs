@@ -1,6 +1,5 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -8,12 +7,16 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class WorkplaceController(AppDbContext context, RedisRepository redis) : Controller
+    public class WorkplaceController(
+        IWorkplaceRepository workplaceRepository,
+        IClassroomRepository classroomRepository,
+        ICacheRepository cache) : Controller
     {
         // GET: Workplace
         public async Task<IActionResult> Index()
         {
-           return View(await context.Workplaces.Include(w => w.Classroom).IgnoreQueryFilters().ToListAsync());
+            var result = await workplaceRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: Workplace/Details/5
@@ -24,10 +27,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var workplaceEntity = await context.Workplaces
-                .IgnoreQueryFilters()
-                .Include(m => m.Classroom)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var workplaceEntity = await workplaceRepository.GetByIdAsync(id.Value, true);
             if (workplaceEntity == null)
             {
                 return NotFound();
@@ -37,9 +37,10 @@ namespace WebApp.Controllers
         }
 
         // GET: Workplace/Create
-        public IActionResult Create()
-        { 
-            ViewData["Classroom"] = new SelectList(context.Classrooms, "Id", "Classroom");
+        public async Task<IActionResult> Create()
+        {
+            var classrooms = await classroomRepository.GetAllAsync(1, 100);
+            ViewData["Classroom"] = new SelectList(classrooms, "Id", "Classroom");
             return View();
         }
 
@@ -51,13 +52,12 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                workplaceEntity.UpdatedAt = DateTime.UtcNow;
-                workplaceEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(workplaceEntity);
-                await context.SaveChangesAsync();
+                await workplaceRepository.UpdateAsync(workplaceEntity);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["Classroom"] = new SelectList(context.Classrooms, "Id", "Classroom");
+            
+            var classrooms = await classroomRepository.GetAllAsync(1, 100);
+            ViewData["Classroom"] = new SelectList(classrooms, "Id", "Classroom");
             return View(workplaceEntity);
         }
 
@@ -69,15 +69,14 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var workplaceEntity = await context.Workplaces
-                .Include(w => w.Classroom)
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(w => w.Id == id);
+            var workplaceEntity = await workplaceRepository.GetByIdAsync(id.Value, true);
             if (workplaceEntity == null)
             {
                 return NotFound();
             }
-            ViewData["Classroom"] = new SelectList(context.Classrooms, "Id", "Classroom");
+            
+            var classrooms = await classroomRepository.GetAllAsync(1, 100);
+            ViewData["Classroom"] = new SelectList(classrooms, "Id", "Classroom");
             return View(workplaceEntity);
         }
 
@@ -94,28 +93,20 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{workplaceEntity.Id.ToString()}*");
+                var result = await workplaceRepository.UpdateAsync(workplaceEntity);
+
+                if (result == null)
                 {
-                    workplaceEntity.CreatedAt = DateTime.SpecifyKind(workplaceEntity.CreatedAt, DateTimeKind.Utc);
-                    workplaceEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{workplaceEntity.Id.ToString()}*");
-                    context.Update(workplaceEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!WorkplaceEntityExists(workplaceEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["Classroom"] = new SelectList(context.Classrooms, "Id", "Classroom");
+            
+            var classrooms = await classroomRepository.GetAllAsync(1, 100);
+            ViewData["Classroom"] = new SelectList(classrooms, "Id", "Classroom");
             return View(workplaceEntity);
         }
 
@@ -127,15 +118,14 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var workplaceEntity = await context.Workplaces
-                .IgnoreQueryFilters()
-                .Include(m => m.Classroom)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var workplaceEntity = await workplaceRepository.GetByIdAsync(id.Value, true);
             if (workplaceEntity == null)
             {
                 return NotFound();
             }
-            ViewData["Classroom"] = new SelectList(context.Classrooms, "Id", "Classroom");
+            
+            var classrooms = await classroomRepository.GetAllAsync(1, 100);
+            ViewData["Classroom"] = new SelectList(classrooms, "Id", "Classroom");
             return View(workplaceEntity);
         }
 
@@ -143,22 +133,15 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var workplaceEntity = await context.Workplaces
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(w => w.Id == id);
+            var workplaceEntity = await workplaceRepository.GetByIdAsync(id);
             if (workplaceEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{workplaceEntity.Id.ToString()}*");
-                context.Workplaces.Remove(workplaceEntity);
+                await workplaceRepository.RemoveAsync(workplaceEntity);
+                await cache.DeletePatternAsync($"*{workplaceEntity.Id.ToString()}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool WorkplaceEntityExists(Guid id)
-        {
-            return context.Workplaces.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }
+

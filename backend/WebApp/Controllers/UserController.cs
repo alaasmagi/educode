@@ -1,23 +1,25 @@
-using App.BLL;
+using App.DAL.Contracts;
 using App.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class UserController(AppDbContext context, RedisRepository redis, EnvInitializer envInitializer)
-        : Controller
+    public class UserController(
+        IUserRepository userRepository,
+        IUserTypeRepository userTypeRepository,
+        ISchoolRepository schoolRepository,
+        ICacheRepository cache,
+        EnvInitializer envInitializer) : Controller
     {
         // GET: User
         public async Task<IActionResult> Index()
         {
-            var users = context.Users.Include(u => u.UserType).Include(u=>u.School);
-            return View(await users.IgnoreQueryFilters().ToListAsync());
+            var result = await userRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: User/Details/5
@@ -28,11 +30,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userEntity = await context.Users
-                .IgnoreQueryFilters()
-                .Include(u => u.UserType)
-                .Include(u => u.School)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var userEntity = await userRepository.GetByIdAsync(id.Value, true);
             if (userEntity == null)
             {
                 return NotFound();
@@ -43,10 +41,12 @@ namespace WebApp.Controllers
         }
 
         // GET: User/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["UserType"] = new SelectList(context.UserTypes, "Id", "UserType");
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name");
+            var userTypes = await userTypeRepository.GetAllAsync(1, 100);
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType");
+            ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View();
         }
 
@@ -58,15 +58,14 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                userEntity.UpdatedAt = DateTime.UtcNow;
-                userEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(userEntity);
-                await context.SaveChangesAsync();
+                await userRepository.UpdateAsync(userEntity);
                 return RedirectToAction(nameof(Index));
             }
             
-            ViewData["UserType"] = new SelectList(context.UserTypes, "Id", "UserType", userEntity.UserTypeId);
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name");
+            var userTypes = await userTypeRepository.GetAllAsync(1, 100);
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.UserTypeId);
+            ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(userEntity);
         }
 
@@ -78,15 +77,16 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userEntity = await context.Users
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+            var userEntity = await userRepository.GetByIdAsync(id.Value, true);
             if (userEntity == null)
             {
                 return NotFound();
             }
-            ViewData["UserType"] = new SelectList(context.UserTypes, "Id", "UserType", userEntity.UserTypeId);
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name");
+            
+            var userTypes = await userTypeRepository.GetAllAsync(1, 100);
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.UserTypeId);
+            ViewData["School"] = new SelectList(schools, "Id", "Name");
             ViewData["CreatedAt"] = userEntity.CreatedAt;
             ViewData["CreatedBy"] = userEntity.CreatedBy;
             return View(userEntity);
@@ -105,30 +105,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{userEntity.Id}*");
+                await cache.DeletePatternAsync($"*{userEntity.Email}*");
+                var result = await userRepository.UpdateAsync(userEntity);
+
+                if (result == null)
                 {
-                    userEntity.CreatedAt = DateTime.SpecifyKind(userEntity.CreatedAt, DateTimeKind.Utc);
-                    userEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{userEntity.Id}*");
-                    await redis.DeleteKeysByPatternAsync($"*{userEntity.Email}*");
-                    context.Update(userEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!UserEntityExists(userEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserType"] = new SelectList(context.UserTypes, "Id", "UserType", userEntity.UserType);
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name");
+            
+            var userTypes = await userTypeRepository.GetAllAsync(1, 100);
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["UserType"] = new SelectList(userTypes, "Id", "UserType", userEntity.UserType);
+            ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(userEntity);
         }
 
@@ -140,11 +133,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userEntity = await context.Users
-                .IgnoreQueryFilters()
-                .Include(u => u.UserType)
-                .Include(u => u.School)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var userEntity = await userRepository.GetByIdAsync(id.Value, true);
             if (userEntity == null)
             {
                 return NotFound();
@@ -157,23 +146,16 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var userEntity = await context.Users
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+            var userEntity = await userRepository.GetByIdAsync(id);
             if (userEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{userEntity.Id}*");
-                await redis.DeleteKeysByPatternAsync($"*{userEntity.Email}*");
-                context.Users.Remove(userEntity);
+                await userRepository.RemoveAsync(userEntity);
+                await cache.DeletePatternAsync($"*{userEntity.Id}*");
+                await cache.DeletePatternAsync($"*{userEntity.Email}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool UserEntityExists(Guid id)
-        {
-            return context.Users.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }
+

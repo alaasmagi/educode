@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace App.DAL.EF;
 
-public abstract class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> logger, SentryService sentry) : ISchoolRepository
+public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> logger, SentryService sentry) : ISchoolRepository
 { 
     public async Task<List<SchoolEntity>?> GetAllAsync(int pageNr, int pageSize, bool includeDeleted)
     {

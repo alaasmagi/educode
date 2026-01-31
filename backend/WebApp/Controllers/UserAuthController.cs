@@ -1,20 +1,22 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class UserAuthController(AppDbContext context, RedisRepository redis) : Controller
+    public class UserAuthController(
+        IUserAuthRepository userAuthRepository,
+        IUserRepository userRepository,
+        ICacheRepository cache) : Controller
     {
         // GET: UserAuth
         public async Task<IActionResult> Index()
         {
-            var appDbContext = context.UserAuthData.Include(u => u.User);
-            return View(await appDbContext.IgnoreQueryFilters().ToListAsync());
+            var result = await userAuthRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: UserAuth/Details/5
@@ -25,10 +27,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userAuthEntity = await context.UserAuthData
-                .IgnoreQueryFilters()
-                .Include(u => u.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var userAuthEntity = await userAuthRepository.GetByIdAsync(id.Value, true);
             if (userAuthEntity == null)
             {
                 return NotFound();
@@ -38,9 +37,10 @@ namespace WebApp.Controllers
         }
 
         // GET: UserAuth/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["UserId"] = new SelectList(context.Users, "Id", "Email");
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["UserId"] = new SelectList(users, "Id", "Email");
             return View();
         }
 
@@ -52,13 +52,12 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                userAuthEntity.UpdatedAt = DateTime.UtcNow;
-                userAuthEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(userAuthEntity);
-                await context.SaveChangesAsync();
+                await userAuthRepository.UpdateAsync(userAuthEntity);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(context.Users, "Id", "Email", userAuthEntity.UserId);
+            
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["UserId"] = new SelectList(users, "Id", "Email", userAuthEntity.UserId);
             return View(userAuthEntity);
         }
 
@@ -70,14 +69,14 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userAuthEntity = await context.UserAuthData
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+            var userAuthEntity = await userAuthRepository.GetByIdAsync(id.Value, true);
             if (userAuthEntity == null)
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(context.Users, "Id", "Email");
+            
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["UserId"] = new SelectList(users, "Id", "Email");
             return View(userAuthEntity);
         }
 
@@ -94,29 +93,21 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{userAuthEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{userAuthEntity.UserId.ToString()}*");
+                var result = await userAuthRepository.UpdateAsync(userAuthEntity);
+
+                if (result == null)
                 {
-                    userAuthEntity.CreatedAt = DateTime.SpecifyKind(userAuthEntity.CreatedAt, DateTimeKind.Utc);
-                    userAuthEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{userAuthEntity.Id.ToString()}*");
-                    await redis.DeleteKeysByPatternAsync($"*{userAuthEntity.UserId.ToString()}*");
-                    context.Update(userAuthEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!UserAuthEntityExists(userAuthEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(context.Users, "Id", "Email", userAuthEntity.UserId);
+            
+            var users = await userRepository.GetAllAsync(1, 100);
+            ViewData["UserId"] = new SelectList(users, "Id", "Email", userAuthEntity.UserId);
             return View(userAuthEntity);
         }
 
@@ -128,10 +119,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userAuthEntity = await context.UserAuthData
-                .IgnoreQueryFilters()
-                .Include(u => u.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var userAuthEntity = await userAuthRepository.GetByIdAsync(id.Value, true);
             if (userAuthEntity == null)
             {
                 return NotFound();
@@ -144,23 +132,16 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var userAuthEntity = await context.UserAuthData
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+            var userAuthEntity = await userAuthRepository.GetByIdAsync(id);
             if (userAuthEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{userAuthEntity.Id.ToString()}*");
-                await redis.DeleteKeysByPatternAsync($"*{userAuthEntity.UserId.ToString()}*");
-                context.UserAuthData.Remove(userAuthEntity);
+                await userAuthRepository.RemoveAsync(userAuthEntity);
+                await cache.DeletePatternAsync($"*{userAuthEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{userAuthEntity.UserId.ToString()}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool UserAuthEntityExists(Guid id)
-        {
-            return context.UserAuthData.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }
+

@@ -34,7 +34,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }    
     }
     
-    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendanceAysnc(Guid attendanceId)
+    public async Task<List<AttendanceCheckEntity>?> GetAllByAttendanceAsync(Guid attendanceId)
     {
         try
         {
@@ -71,7 +71,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         }
     }
     
-    public async Task<int?> GetUserCountsAsync(Guid attendanceId)
+    public async Task<int?> GetUserCountAsync(Guid attendanceId)
     {
         try
         {

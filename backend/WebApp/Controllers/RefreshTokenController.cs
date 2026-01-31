@@ -1,18 +1,20 @@
-﻿using App.DAL.EF;
+﻿using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class RefreshTokenController(AppDbContext context, RedisRepository redis) : Controller
+    public class RefreshTokenController(
+        IRefreshTokenRepository refreshTokenRepository,
+        ICacheRepository cache) : Controller
     {
         // GET: RefreshToken
         public async Task<IActionResult> Index()
         {
-            return View(await context.RefreshTokens.IgnoreQueryFilters().ToListAsync());
+            var result = await refreshTokenRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: RefreshToken/Details/5
@@ -23,9 +25,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var refreshTokenEntity = await context.RefreshTokens
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var refreshTokenEntity = await refreshTokenRepository.GetByIdAsync(id.Value, true);
             if (refreshTokenEntity == null)
             {
                 return NotFound();
@@ -35,7 +35,7 @@ namespace WebApp.Controllers
         }
 
         // GET: RefreshToken/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             return View();
         }
@@ -50,11 +50,7 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                refreshTokenEntity.Id = Guid.NewGuid();
-                refreshTokenEntity.CreatedAt = DateTime.UtcNow;
-                refreshTokenEntity.UpdatedAt = DateTime.UtcNow;
-                context.Add(refreshTokenEntity);
-                await context.SaveChangesAsync();
+                await refreshTokenRepository.UpdateAsync(refreshTokenEntity);
                 return RedirectToAction(nameof(Index));
             }
 
@@ -69,9 +65,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var refreshTokenEntity = await context.RefreshTokens
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(r => r.Id == id);
+            var refreshTokenEntity = await refreshTokenRepository.GetByIdAsync(id.Value, true);
             if (refreshTokenEntity == null)
             {
                 return NotFound();
@@ -95,16 +89,15 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{refreshTokenEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{refreshTokenEntity.Token}*");
+                var result = await refreshTokenRepository.UpdateAsync(refreshTokenEntity);
+
+                if (result == null)
                 {
-                    refreshTokenEntity.CreatedAt = DateTime.SpecifyKind(refreshTokenEntity.CreatedAt, DateTimeKind.Utc);
-                    refreshTokenEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{refreshTokenEntity.Id.ToString()}*");
-                    await redis.DeleteKeysByPatternAsync($"*{refreshTokenEntity.Token}*");
-                    context.Update(refreshTokenEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException) {}
 
                 return RedirectToAction(nameof(Index));
             }
@@ -120,9 +113,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var refreshTokenEntity = await context.RefreshTokens
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var refreshTokenEntity = await refreshTokenRepository.GetByIdAsync(id.Value, true);
             if (refreshTokenEntity == null)
             {
                 return NotFound();
@@ -135,18 +126,16 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var refreshTokenEntity = await context.RefreshTokens
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(r => r.Id == id);
+            var refreshTokenEntity = await refreshTokenRepository.GetByIdAsync(id);
             if (refreshTokenEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{refreshTokenEntity.Id.ToString()}*");
-                await redis.DeleteKeysByPatternAsync($"*{refreshTokenEntity.Token}*");
-                context.RefreshTokens.Remove(refreshTokenEntity);
+                await refreshTokenRepository.RemoveAsync(refreshTokenEntity);
+                await cache.DeletePatternAsync($"*{refreshTokenEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{refreshTokenEntity.Token}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
     }
 }
+

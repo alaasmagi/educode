@@ -1,24 +1,23 @@
-﻿using App.BLL;
-using App.Common;
-using App.DAL.EF;
+﻿using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class SchoolController(AppDbContext context, RedisRepository redis, EnvInitializer envInitializer)
-        : Controller
+    public class SchoolController(
+        ISchoolRepository schoolRepository,
+        ICacheRepository cache) : Controller
     {
-        // GET: CourseStatus
+        // GET: School
         public async Task<IActionResult> Index()
         {
-           return View(await context.Schools.IgnoreQueryFilters().ToListAsync());
+            var result = await schoolRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
-        // GET: CourseStatus/Details/5
+        // GET: School/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -26,9 +25,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var schoolEntity = await context.Schools
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var schoolEntity = await schoolRepository.GetByIdAsync(id.Value, true);
             if (schoolEntity == null)
             {
                 return NotFound();
@@ -37,13 +34,13 @@ namespace WebApp.Controllers
             return View(schoolEntity);
         }
 
-        // GET: CourseStatus/Create
-        public IActionResult Create()
+        // GET: School/Create
+        public async Task<IActionResult> Create()
         {
             return View();
         }
 
-        // POST: CourseStatus/Create
+        // POST: School/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
@@ -53,18 +50,14 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                schoolEntity.Id = Guid.NewGuid();
-                schoolEntity.CreatedAt = DateTime.UtcNow;
-                schoolEntity.UpdatedAt = DateTime.UtcNow;
-                context.Add(schoolEntity);
-                await context.SaveChangesAsync();
+                await schoolRepository.UpdateAsync(schoolEntity);
                 return RedirectToAction(nameof(Index));
             }
 
             return View(schoolEntity);
         }
 
-        // GET: CourseStatus/Edit/5
+        // GET: School/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -72,9 +65,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var schoolEntity = await context.Schools
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(s => s.Id == id);
+            var schoolEntity = await schoolRepository.GetByIdAsync(id.Value, true);
             if (schoolEntity == null)
             {
                 return NotFound();
@@ -83,7 +74,7 @@ namespace WebApp.Controllers
             return View(schoolEntity);
         }
 
-        // POST: CourseStatus/Edit/5
+        // POST: School/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
@@ -98,15 +89,14 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{schoolEntity.Id.ToString()}*");
+                var result = await schoolRepository.UpdateAsync(schoolEntity);
+
+                if (result == null)
                 {
-                    schoolEntity.CreatedAt = DateTime.SpecifyKind(schoolEntity.CreatedAt, DateTimeKind.Utc);
-                    schoolEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{schoolEntity.Id.ToString()}*");
-                    context.Update(schoolEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException){}
 
                 return RedirectToAction(nameof(Index));
             }
@@ -114,7 +104,7 @@ namespace WebApp.Controllers
             return View(schoolEntity);
         }
 
-        // GET: CourseStatus/Delete/5
+        // GET: School/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -122,9 +112,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var schoolEntity = await context.Schools
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var schoolEntity = await schoolRepository.GetByIdAsync(id.Value, true);
             if (schoolEntity == null)
             {
                 return NotFound();
@@ -133,21 +121,19 @@ namespace WebApp.Controllers
             return View(schoolEntity);
         }
 
-        // POST: CourseStatus/Delete/5
+        // POST: School/Delete/5
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var schoolEntity = await context.Schools
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(s => s.Id == id);
+            var schoolEntity = await schoolRepository.GetByIdAsync(id);
             if (schoolEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{schoolEntity.Id.ToString()}*");
-                context.Schools.Remove(schoolEntity);
+                await schoolRepository.RemoveAsync(schoolEntity);
+                await cache.DeletePatternAsync($"*{schoolEntity.Id.ToString()}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
     }
 }
+

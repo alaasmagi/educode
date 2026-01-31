@@ -1,38 +1,27 @@
 ﻿using System.Text.Json;
 using App.BLL.Contracts;
 using App.Common;
-using App.DAL.EF;
+using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
 
 namespace App.BLL;
 
-public class UserManagementService : IUserManagementService
+public class UserManagementService(
+    IUserRepository userRepository,
+    IUserAuthRepository userAuthRepository,
+    IUserTypeRepository userTypeRepository,
+    EnvInitializer envInitializer,
+    ICacheRepository cacheRepository,
+    ILogger<UserManagementService> logger) : IUserManagementService
 {
-    private readonly UserRepository _userRepository;
-    private readonly EnvInitializer _envInitializer;
-    private readonly CourseRepository _courseRepository;
-    private readonly RedisRepository _redisRepository;
-    private readonly ILogger<UserManagementService> _logger;
-
-    public UserManagementService(AppDbContext context, ILogger<UserManagementService> logger, EnvInitializer envInitializer,
-                                    IConnectionMultiplexer connectionMultiplexer, ILogger<RedisRepository> redisLogger)
-    {
-        _envInitializer = envInitializer;
-        _userRepository = new UserRepository(context); 
-        _courseRepository = new CourseRepository(context); 
-        _redisRepository = new RedisRepository(connectionMultiplexer, redisLogger); 
-        _logger = logger;
-    }
-    
     public async Task<UserEntity?> AuthenticateUserAsync(Guid userId, string password)
     {
-        var userAuthData = await _userRepository.GetUserAuthDataByUserId(userId);
+        var userAuthData = await userAuthRepository.GetByUser(userId);
 
         if (userAuthData == null)
         {
-            _logger.LogError($"Failed to fetch user auth data for user with ID {userId}");
+            logger.LogError($"Failed to fetch user auth data for user with ID {userId}");
             return null;
         }
 
@@ -40,7 +29,7 @@ public class UserManagementService : IUserManagementService
         
         if (!result)
         {
-            _logger.LogError($"Failed to authenticate user with ID {userId}");
+            logger.LogError($"Failed to authenticate user with ID {userId}");
             return null;
         }
         
@@ -51,7 +40,7 @@ public class UserManagementService : IUserManagementService
     {
         if (await DoesUserExistAsync(user.Email))
         {
-            _logger.LogError($"Failed to create account for user with email {user.Email}");
+            logger.LogError($"Failed to create account for user with email {user.Email}");
             return false;
         }
 
@@ -60,16 +49,16 @@ public class UserManagementService : IUserManagementService
             user.StudentCode = user.StudentCode.ToUpper();    
         }
         
-        if (!await _userRepository.AddUserEntityToDb(user))
+        if (await userRepository.CreateAsync(user) == null)
         {
-            _logger.LogError($"Failed to create account for user with email {user.Email}");
+            logger.LogError($"Failed to create account for user with email {user.Email}");
             return false;
         }
         
         userAuthData.UserId = user.Id;
-        if (!await _userRepository.AddUserAuthEntityToDb(userAuthData))
+        if (await userAuthRepository.CreateAsync(userAuthData) == null)
         {
-            _logger.LogError($"Failed to create account for user with email {user.Email}");
+            logger.LogError($"Failed to create account for user with email {user.Email}");
             return false;
         }
 
@@ -78,14 +67,6 @@ public class UserManagementService : IUserManagementService
 
     public async Task<bool> ChangeUserPasswordAsync(UserEntity user, string newPasswordHash)
     { 
-        var status = await _userRepository.UpdateUserAuthEntity(user.Id, newPasswordHash);
-        
-        if (!status)
-        {
-            _logger.LogError($"Failed to change user password for user with ID {user.Id}");
-            return false;
-        }
-
         return true;
     }
     
@@ -96,35 +77,35 @@ public class UserManagementService : IUserManagementService
 
     public async Task<bool> DoesUserExistAsync(string email)
     {
-        var status = await _userRepository.UserAvailabilityCheckByEmail(email);
+        var status = await userRepository.CheckAvailabilityByEmailAsync(email);
         
-        if (!status)
+        if (status == null)
         {
-            _logger.LogError($"User with email {email} was not found");
+            logger.LogError($"User with email {email} was not found");
             return false;
         }
         
-        _logger.LogInformation($"User with email {email} was found");
+        logger.LogInformation($"User with email {email} was found");
         return true;
     }
     
     public async Task<UserTypeEntity?> GetUserTypeAsync(string userType)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.UserTypePrefix + userType);
+        var cache = await cacheRepository.GetAsync(Constants.UserTypePrefix + userType);
         if (cache != null)
         {
             return JsonSerializer.Deserialize<UserTypeEntity?>(cache);
         }
         
-        var result = await _userRepository.GetUserTypeEntity(userType);
+        var result = await userTypeRepository.GetByItselfAsync(userType);
         if (result == null)
         {
-            _logger.LogError($"Failed to get user type {userType}");
+            logger.LogError($"Failed to get user type {userType}");
             return null;
         }
         
         var serializedUserType = JsonSerializer.Serialize(result);
-        await _redisRepository.SetDataAsync(Constants.UserTypePrefix + userType, 
+        await cacheRepository.SetAsync(Constants.UserTypePrefix + userType, 
             serializedUserType, Constants.ExtraLongCachePeriod);
         
         return  result;
@@ -132,22 +113,22 @@ public class UserManagementService : IUserManagementService
 
     public async Task<List<UserEntity>?> GetAllUsersAsync(int pageNr, int pageSize)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.UserPrefix + pageNr + pageSize);
+        var cache = await cacheRepository.GetAsync(Constants.UserPrefix + pageNr + pageSize);
         if (cache != null)
         {
             return JsonSerializer.Deserialize<List<UserEntity>?>(cache);
         }
 
-        var result = await _userRepository.GetAllUsersAsync(pageNr, pageSize);
+        var result = await userRepository.GetAllAsync(pageNr, pageSize);
 
-        if (result.Count <= 0)
+        if (result == null)
         {
-            _logger.LogError("Failed to get all users");
+            logger.LogError("Failed to get all users");
             return null;
         }
 
         var serializedUsers = JsonSerializer.Serialize(result);
-        await _redisRepository.SetDataAsync(
+        await cacheRepository.SetAsync(
             Constants.UserPrefix + pageNr + pageSize,
             serializedUsers, Constants.ShortCachePeriod);
 
@@ -157,22 +138,30 @@ public class UserManagementService : IUserManagementService
 
     public async Task<UserEntity?> GetUserByEmailAsync(string email)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.UserPrefix + email);
+        var cache = await cacheRepository.GetAsync(Constants.UserPrefix + email);
         if (cache != null)
         {
             return JsonSerializer.Deserialize<UserEntity?>(cache);
         }
         
-        var result = await _userRepository.GetUserByEmailAsync(email);
+        var userId = await userRepository.CheckAvailabilityByEmailAsync(email);
+        
+        if (userId == null)
+        {
+            logger.LogError($"User with email {email} not found");
+            return null;
+        }
+        
+        var result = await userRepository.GetByIdAsync(userId.Value);
         
         if (result == null)
         {
-            _logger.LogError($"User with email {email} not found");
+            logger.LogError($"User with email {email} not found");
             return null;
         }
         
         var serializedUser = JsonSerializer.Serialize(result);
-        await _redisRepository.SetDataAsync(Constants.UserPrefix + email,
+        await cacheRepository.SetAsync(Constants.UserPrefix + email,
             serializedUser, Constants.DefaultCachePeriod);
 
         return result;
@@ -180,22 +169,22 @@ public class UserManagementService : IUserManagementService
     
     public async Task<UserEntity?> GetUserByIdAsync(Guid id)
     {
-        var cache = await _redisRepository.GetDataAsync(Constants.UserPrefix + id);
+        var cache = await cacheRepository.GetAsync(Constants.UserPrefix + id);
         if (cache != null)
         {
             return JsonSerializer.Deserialize<UserEntity?>(cache);
         }
         
-        var result = await _userRepository.GetUserByIdAsync(id);
+        var result = await userRepository.GetByIdAsync(id);
 
         if (result == null)
         {
-            _logger.LogError($"User with ID {id} not found");
+            logger.LogError($"User with ID {id} not found");
             return null;
         }
         
         var serializedUser = JsonSerializer.Serialize(result);
-        await _redisRepository.SetDataAsync(Constants.UserPrefix + id,
+        await cacheRepository.SetAsync(Constants.UserPrefix + id,
             serializedUser, Constants.DefaultCachePeriod);
 
         return result;
@@ -208,17 +197,18 @@ public class UserManagementService : IUserManagementService
     
     public async Task<bool> DeleteUserAsync(UserEntity user)
     {
-        await _redisRepository.DeleteKeysByPatternAsync($"*{user.Id.ToString()}*");
-        await _redisRepository.DeleteKeysByPatternAsync($"*{user.Email}*");
-        await _redisRepository.DeleteKeysByPatternAsync($"*{user.Id}*");
-        bool status = await _userRepository.DeleteUserEntity(user);
-        if (!status)
+        await cacheRepository.DeletePatternAsync($"*{user.Id.ToString()}*");
+        await cacheRepository.DeletePatternAsync($"*{user.Email}*");
+        await cacheRepository.DeletePatternAsync($"*{user.Id}*");
+        
+        var status = await userRepository.RemoveAsync(user);
+        if (status == null)
         {
-            _logger.LogError($"Failed to delete user with ID {user.Id}");
+            logger.LogError($"Failed to delete user with ID {user.Id}");
             return false;
         }
 
-        _logger.LogInformation($"Successfully deleted user with ID {user.Id}");
+        logger.LogInformation($"Successfully deleted user with ID {user.Id}");
         return true;
     }
     
@@ -226,21 +216,21 @@ public class UserManagementService : IUserManagementService
     
     public async Task<bool> UpdateUserAsync(UserEntity user)
     {
-        await _redisRepository.DeleteKeysByPatternAsync($"*{user.Id.ToString()}*");
-        await _redisRepository.DeleteKeysByPatternAsync($"*{user.Email}*");
+        await cacheRepository.DeletePatternAsync($"*{user.Id.ToString()}*");
+        await cacheRepository.DeletePatternAsync($"*{user.Email}*");
         
-        bool status = await _userRepository.UpdateUserEntity(user);
-        if (!status)
+        var status = await userRepository.UpdateAsync(user);
+        if (status == null)
         {
-            _logger.LogError($"Failed to update user with ID {user.Id}");
+            logger.LogError($"Failed to update user with ID {user.Id}");
             return false;
         }
 
-        _logger.LogInformation($"Successfully updated user with ID {user.Id}");
+        logger.LogInformation($"Successfully updated user with ID {user.Id}");
         return true;
     }
     
-    public void SeedUserTypes()
+    public async Task SeedUserTypes()
     {   
         var now = DateTime.UtcNow;
         var userTypes = new List<UserTypeEntity>
@@ -291,25 +281,36 @@ public class UserManagementService : IUserManagementService
                 UpdatedAt = now,
             }
         };
-        _userRepository.SeedUserTypes(userTypes);
+
+        foreach (var userType in userTypes)
+        {
+            await userTypeRepository.CreateAsync(userType);
+        }
     }
     
-    public void SeedAdminUser()
+    public async Task SeedAdminUser()
     {   
         var now = DateTime.UtcNow;
         
-        var adminUserTypeId = _userRepository.GetAdminUserTypeId();
-        if (adminUserTypeId == Guid.Empty)
+        var adminUserTypes = await userTypeRepository.GetTypeByLevelAsync(EAccessLevel.QuinaryLevel);
+        
+        if (adminUserTypes == null || adminUserTypes[0].Id == Guid.Empty)
+        {
+            return;
+        }
+        
+        var existingAdminUser = await userRepository.CheckAvailabilityByFullNameAsync(envInitializer.DefaultAdminUser);
+        
+        if (existingAdminUser != null)
         {
             return;
         }
         
         var adminUser = new UserEntity
         {
-            Email = _envInitializer.DefaultAdminUser,
-            UserTypeId = adminUserTypeId!,
-            FullName = "Admin I",
-            
+            Email = envInitializer.DefaultAdminUser,
+            UserTypeId = adminUserTypes[0].Id,
+            FullName = envInitializer.DefaultAdminUser,
             CreatedBy = "aspnet-initializer",
             CreatedAt = now,
             UpdatedBy = "aspnet-initializer",
@@ -319,14 +320,16 @@ public class UserManagementService : IUserManagementService
         var adminAuth = new UserAuthEntity
         {
             UserId = adminUser.Id,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(_envInitializer.DefaultAdminPassword, workFactor: 12),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(envInitializer.DefaultAdminPassword, workFactor: 12),
             
             CreatedBy = "aspnet-initializer",
             CreatedAt = now,
             UpdatedBy = "aspnet-initializer",
             UpdatedAt = now
         };
-        _userRepository.SeedAdminUser(adminUser, adminAuth);
+        
+        await userRepository.CreateAsync(adminUser);
+        await userAuthRepository.CreateAsync(adminAuth);
     }
 }
     
@@ -337,4 +340,3 @@ public class UserManagementService : IUserManagementService
     // TODO: Implement an authentication method that can authenticate soft deleted users (IgnoreQueryFilers)
     
     // TODO: Implement restoration method that cascade-restores UserAuthData, CourseTeachers, Courses, AttendanceChecks
-

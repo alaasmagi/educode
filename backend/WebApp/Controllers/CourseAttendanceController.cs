@@ -1,21 +1,24 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class CourseAttendanceController(AppDbContext context, RedisRepository redis) : Controller
+    public class CourseAttendanceController(
+        IAttendanceRepository attendanceRepository,
+        IAttendanceTypeRepository attendanceTypeRepository,
+        ICourseRepository courseRepository,
+        ICacheRepository cache) : Controller
     {
 
         // GET: CourseAttendance
         public async Task<IActionResult> Index()
         {
-            var appDbContext = context.Attendances.Include(c => c.AttendanceType).Include(c => c.Course);
-            return View(await appDbContext.IgnoreQueryFilters().ToListAsync());
+            var result = await attendanceRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: CourseAttendance/Details/5
@@ -26,11 +29,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseAttendanceEntity = await context.Attendances
-                .IgnoreQueryFilters()
-                .Include(c => c.AttendanceType)
-                .Include(c => c.Course)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var courseAttendanceEntity = await attendanceRepository.GetByIdAsync(id.Value, true);
             if (courseAttendanceEntity == null)
             {
                 return NotFound();
@@ -40,10 +39,12 @@ namespace WebApp.Controllers
         }
 
         // GET: CourseAttendance/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType");
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode");
+            var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType");
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode");
             return View();
         }
 
@@ -55,14 +56,14 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                attendanceEntity.UpdatedAt = DateTime.UtcNow;
-                attendanceEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(attendanceEntity);
-                await context.SaveChangesAsync();
+                await attendanceRepository.UpdateAsync(attendanceEntity);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", attendanceEntity.CourseId);
+            
+            var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", attendanceEntity.CourseId);
             return View(attendanceEntity);
         }
 
@@ -74,15 +75,16 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseAttendanceEntity = await context.Attendances
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var courseAttendanceEntity = await attendanceRepository.GetByIdAsync(id.Value, true);
             if (courseAttendanceEntity == null)
             {
                 return NotFound();
             }
-            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType", courseAttendanceEntity.AttendanceTypeId);
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", courseAttendanceEntity.CourseId);
+            
+            var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", courseAttendanceEntity.AttendanceTypeId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", courseAttendanceEntity.CourseId);
             return View(courseAttendanceEntity);
         }
 
@@ -99,30 +101,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{attendanceEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{attendanceEntity.Identifier}*");
+                var result = await attendanceRepository.UpdateAsync(attendanceEntity);
+
+                if (result == null)
                 {
-                    attendanceEntity.CreatedAt = DateTime.SpecifyKind(attendanceEntity.CreatedAt, DateTimeKind.Utc);
-                    attendanceEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{attendanceEntity.Id.ToString()}*");
-                    await redis.DeleteKeysByPatternAsync($"*{attendanceEntity.Identifier}*");                     
-                    context.Update(attendanceEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CourseAttendanceEntityExists(attendanceEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AttendanceTypeId"] = new SelectList(context.AttendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
-            ViewData["CourseId"] = new SelectList(context.Courses, "Id", "CourseCode", attendanceEntity.CourseId);
+            
+            var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
+            var courses = await courseRepository.GetAllAsync(1, 100);
+            ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "AttendanceType", attendanceEntity.AttendanceTypeId);
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseCode", attendanceEntity.CourseId);
             return View(attendanceEntity);
         }
 
@@ -134,11 +129,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseAttendanceEntity = await context.Attendances
-                .IgnoreQueryFilters()
-                .Include(c => c.AttendanceType)
-                .Include(c => c.Course)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var courseAttendanceEntity = await attendanceRepository.GetByIdAsync(id.Value, true);
             if (courseAttendanceEntity == null)
             {
                 return NotFound();
@@ -151,23 +142,16 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var courseAttendanceEntity = await context.Attendances
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var courseAttendanceEntity = await attendanceRepository.GetByIdAsync(id);
             if (courseAttendanceEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{courseAttendanceEntity.Id.ToString()}*");
-                await redis.DeleteKeysByPatternAsync($"*{courseAttendanceEntity.Identifier}*");
-                context.Attendances.Remove(courseAttendanceEntity);
+                await attendanceRepository.RemoveAsync(courseAttendanceEntity);
+                await cache.DeletePatternAsync($"*{courseAttendanceEntity.Id.ToString()}*");
+                await cache.DeletePatternAsync($"*{courseAttendanceEntity.Identifier}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool CourseAttendanceEntityExists(Guid id)
-        {
-            return context.Attendances.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }
+

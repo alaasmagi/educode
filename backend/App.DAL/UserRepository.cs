@@ -181,25 +181,26 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
         }
     }
     
-    
-    // TODO: MOVE THE MAIN SEEDING LOGIC TO THE SERVICE
-    public void SeedAdminUser(UserEntity adminUser, UserAuthEntity adminAuth)
+    public async Task<Guid?> CheckAvailabilityByFullNameAsync(string fullName, bool includeDeleted)
     {
-        var adminExists = context.Users
-            .Any(u => u.UserTypeId == adminUser.UserTypeId);
-        
-        if (adminExists)
+        try
         {
-            return;
+            return includeDeleted ? 
+                await context.Users
+                    .IgnoreQueryFilters()
+                    .Where(u => u.FullName == fullName)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync() :
+                await context.Users
+                    .Where(u => u.FullName == fullName)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync();
         }
-        
-        context.Users.Add(adminUser);        
-        context.SaveChanges();
-
-        
-        context.UserAuthData.Add(adminAuth);
-        context.SaveChanges();
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking user availability. FullName: {FullName}", fullName);
+            sentry.CaptureWithContext(ex, "Error checking user availability. FullName: {0}", fullName);
+            return null;
+        }
     }
-    
-
 }

@@ -1,19 +1,22 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class ClassroomController(AppDbContext context, RedisRepository redis) : Controller
+    public class ClassroomController(
+        IClassroomRepository classroomRepository,
+        ISchoolRepository schoolRepository,
+        ICacheRepository cache) : Controller
     {
         // GET: Classroom
         public async Task<IActionResult> Index()
         {
-            return View(await context.Classrooms.Include(c => c.School).IgnoreQueryFilters().ToListAsync());
+            var result = await classroomRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: Classroom/Details/5
@@ -24,10 +27,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var classroomEntity = await context.Classrooms
-                .Include(c => c.School)
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var classroomEntity = await classroomRepository.GetByIdAsync(id.Value, true);
             if (classroomEntity == null)
             {
                 return NotFound();
@@ -37,9 +37,10 @@ namespace WebApp.Controllers
         }
 
         // GET: Classroom/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name");
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View();
         }
 
@@ -51,13 +52,12 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                classroomEntity.UpdatedAt = DateTime.UtcNow;
-                classroomEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(classroomEntity);
-                await context.SaveChangesAsync();
+                await classroomRepository.UpdateAsync(classroomEntity);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name");
+            
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(classroomEntity);
         }
 
@@ -69,16 +69,14 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var classroomEntity = await context.Classrooms
-                .Include(c => c.School)
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var classroomEntity = await classroomRepository.GetByIdAsync(id.Value, true);
             if (classroomEntity == null)
             {
                 return NotFound();
             }
             
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name");
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["School"] = new SelectList(schools, "Id", "Name");
             return View(classroomEntity);
         }
 
@@ -95,28 +93,20 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{classroomEntity.Id.ToString()}*");
+                var result = await classroomRepository.UpdateAsync(classroomEntity);
+
+                if (result == null)
                 {
-                    classroomEntity.CreatedAt = DateTime.SpecifyKind(classroomEntity.CreatedAt, DateTimeKind.Utc);
-                    classroomEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{classroomEntity.Id.ToString()}*");
-                    context.Update(classroomEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ClassroomEntityExists(classroomEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["School"] = new SelectList(context.Schools, "Id", "Name", classroomEntity.SchoolId);
+            
+            var schools = await schoolRepository.GetAllAsync(1, 100);
+            ViewData["School"] = new SelectList(schools, "Id", "Name", classroomEntity.SchoolId);
             return View(classroomEntity);
         }
 
@@ -128,10 +118,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var classroomEntity = await context.Classrooms
-                .Include(c => c.School)
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var classroomEntity = await classroomRepository.GetByIdAsync(id.Value, true);
             if (classroomEntity == null)
             {
                 return NotFound();
@@ -144,23 +131,14 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var classroomEntity = await context.Classrooms
-                .Include(c => c.School)
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var classroomEntity = await classroomRepository.GetByIdAsync(id);
             if (classroomEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{classroomEntity.Id.ToString()}*");
-                context.Classrooms.Remove(classroomEntity);
+                await classroomRepository.RemoveAsync(classroomEntity);
+                await cache.DeletePatternAsync($"*{classroomEntity.Id.ToString()}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ClassroomEntityExists(Guid id)
-        {
-            return context.Classrooms.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }

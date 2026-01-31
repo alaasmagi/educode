@@ -1,4 +1,5 @@
 using System.Net;
+using App.DAL.Contracts;
 using App.DAL.EF;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -46,11 +47,20 @@ builder.Services.AddDbContextPool<AppDbContext>(options =>
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(envInitializer.RedisConnection));
 
-builder.Services.AddSingleton<RedisRepository>(sp =>
+builder.Services.AddScoped<IDatabase>(sp =>
 {
     var mux = sp.GetRequiredService<IConnectionMultiplexer>();
+    return mux.GetDatabase();
+});
+
+builder.Services.AddScoped<SentryService>();
+
+builder.Services.AddScoped<RedisRepository>(sp =>
+{
+    var database = sp.GetRequiredService<IDatabase>();
     var logger = sp.GetRequiredService<ILogger<RedisRepository>>();
-    return new RedisRepository(mux, logger);
+    var sentry = sp.GetRequiredService<SentryService>();
+    return new RedisRepository(database, logger, sentry);
 });
 
 builder.Logging.ClearProviders();
@@ -65,6 +75,22 @@ builder.Services.AddScoped<ICourseManagementService, CourseManagementService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddSingleton<DbInitializer>();
+
+// Register repositories
+builder.Services.AddScoped<IAttendanceCheckRepository, AttendanceCheckRepository>();
+builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+builder.Services.AddScoped<IAttendanceTypeRepository, AttendanceTypeRepository>();
+builder.Services.AddScoped<IClassroomRepository, ClassroomRepository>();
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+builder.Services.AddScoped<ICourseStatusRepository, CourseStatusRepository>();
+builder.Services.AddScoped<ICourseTeacherRepository, CourseTeacherRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
+builder.Services.AddScoped<IUserAuthRepository, UserAuthRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserTypeRepository, UserTypeRepository>();
+builder.Services.AddScoped<IWorkplaceRepository, WorkplaceRepository>();
+builder.Services.AddScoped<ICacheRepository, RedisRepository>();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

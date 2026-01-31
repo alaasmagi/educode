@@ -1,18 +1,20 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class UserTypeController(AppDbContext context, RedisRepository redis) : Controller
+    public class UserTypeController(
+        IUserTypeRepository userTypeRepository,
+        ICacheRepository cache) : Controller
     {
         // GET: UserType
         public async Task<IActionResult> Index()
         {
-            return View(await context.UserTypes.IgnoreQueryFilters().ToListAsync());
+            var result = await userTypeRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: UserType/Details/5
@@ -23,9 +25,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userTypeEntity = await context.UserTypes
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var userTypeEntity = await userTypeRepository.GetByIdAsync(id.Value, true);
             if (userTypeEntity == null)
             {
                 return NotFound();
@@ -35,7 +35,7 @@ namespace WebApp.Controllers
         }
 
         // GET: UserType/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             return View();
         }
@@ -48,10 +48,7 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                userTypeEntity.UpdatedAt = DateTime.UtcNow;
-                userTypeEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(userTypeEntity);
-                await context.SaveChangesAsync();
+                await userTypeRepository.UpdateAsync(userTypeEntity);
                 return RedirectToAction(nameof(Index));
             }
             return View(userTypeEntity);
@@ -65,9 +62,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userTypeEntity = await context.UserTypes
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+            var userTypeEntity = await userTypeRepository.GetByIdAsync(id.Value, true);
             if (userTypeEntity == null)
             {
                 return NotFound();
@@ -88,25 +83,15 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{userTypeEntity.Id.ToString()}*");
+                var result = await userTypeRepository.UpdateAsync(userTypeEntity);
+
+                if (result == null)
                 {
-                    userTypeEntity.CreatedAt = DateTime.SpecifyKind(userTypeEntity.CreatedAt, DateTimeKind.Utc);
-                    userTypeEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{userTypeEntity.Id.ToString()}*");
-                    context.Update(userTypeEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!UserTypeEntityExists(userTypeEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
             return View(userTypeEntity);
@@ -120,9 +105,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var userTypeEntity = await context.UserTypes
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var userTypeEntity = await userTypeRepository.GetByIdAsync(id.Value, true);
             if (userTypeEntity == null)
             {
                 return NotFound();
@@ -135,22 +118,15 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var userTypeEntity = await context.UserTypes
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+            var userTypeEntity = await userTypeRepository.GetByIdAsync(id);
             if (userTypeEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{userTypeEntity.Id.ToString()}*");
-                context.UserTypes.Remove(userTypeEntity);
+                await userTypeRepository.RemoveAsync(userTypeEntity);
+                await cache.DeletePatternAsync($"*{userTypeEntity.Id.ToString()}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool UserTypeEntityExists(Guid id)
-        {
-            return context.UserTypes.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }
+

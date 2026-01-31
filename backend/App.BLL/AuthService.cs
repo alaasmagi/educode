@@ -5,15 +5,19 @@ using System.Text;
 using System.Text.Json;
 using App.BLL.Contracts;
 using App.Common;
-using App.DAL.EF;
+using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace App.BLL;
 
-public class AuthService(EnvInitializer envInitializer, RedisRepository redisRepository, 
-    RefreshTokenRepository refreshTokenRepository, ILogger<AuthService> logger) : IAuthService
+public class AuthService (
+    EnvInitializer envInitializer, 
+    ICacheRepository cacheRepository, 
+    IRefreshTokenRepository refreshTokenRepository, 
+    IUserRepository userRepository,
+    ILogger<AuthService> logger) : IAuthService
 {
     public string GenerateJwtToken(UserEntity user)
     {
@@ -61,7 +65,7 @@ public class AuthService(EnvInitializer envInitializer, RedisRepository redisRep
     
     public async Task<string?> GenerateRefreshToken(Guid userId, string creatorIp, string creator)
     {
-        var refreshTokenExpirationDays = _envInitializer.RefreshTokenExpirationDays;
+        var refreshTokenExpirationDays = envInitializer.RefreshTokenExpirationDays;
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         
         var tokenData = new RefreshTokenEntity
@@ -75,14 +79,14 @@ public class AuthService(EnvInitializer envInitializer, RedisRepository redisRep
             UpdatedBy = Constants.BackendPrefix
         };
         
-        if (!await refreshTokenRepository.AddRefreshTokenEntityToDb(tokenData))
+        if (await refreshTokenRepository.CreateAsync(tokenData) == null)
         {
             logger.LogError($"Refresh token creation failed for user with ID: {userId}");
             return null;
         }
         
         var json = JsonSerializer.Serialize(tokenData);
-        await redisRepository.SetDataAsync(Constants.RefreshTokenPrefix + token, json, Constants.DefaultCachePeriod);
+        await cacheRepository.SetAsync(Constants.RefreshTokenPrefix + token, json, Constants.DefaultCachePeriod);
         logger.LogInformation($"Refresh token creation successfully for user with ID: {userId}");
         return token;
     }
@@ -103,10 +107,10 @@ public class AuthService(EnvInitializer envInitializer, RedisRepository redisRep
             return (null, null);
         }
 
-        var user = await _userRepository.GetUserByIdAsync(userId.Value);
+        var user = await userRepository.GetByIdAsync(userId.Value);
         var newJwtToken = GenerateJwtToken(user!);
         
-        await redisRepository.DeleteKeysByPatternAsync($"*{refreshToken}*");
+        await cacheRepository.DeletePatternAsync($"*{refreshToken}*");
         var newRefreshToken = await GenerateRefreshToken(userId.Value, ipAddress, creator);
         
         logger.LogInformation($"JWT and refresh tokens successfully refreshed for user with ID: {userId}");
@@ -128,7 +132,7 @@ public class AuthService(EnvInitializer envInitializer, RedisRepository redisRep
     
     public async Task<bool> VerifyRefreshToken(string refreshToken, Guid userId, string ipAddress)
     {
-        var cache = await redisRepository.GetDataAsync(Constants.RefreshTokenPrefix + refreshToken);
+        var cache = await cacheRepository.GetAsync(Constants.RefreshTokenPrefix + refreshToken);
         
         RefreshTokenEntity? tokenEntity;
         if (cache != null)
@@ -142,7 +146,7 @@ public class AuthService(EnvInitializer envInitializer, RedisRepository redisRep
         }
         else
         {
-            tokenEntity = await refreshTokenRepository.GetRefreshToken(refreshToken);
+            tokenEntity = await refreshTokenRepository.GetByItself(refreshToken);
             
             if (tokenEntity == null)
             {
@@ -150,7 +154,7 @@ public class AuthService(EnvInitializer envInitializer, RedisRepository redisRep
             }
             
             var json = JsonSerializer.Serialize(tokenEntity);
-            await redisRepository.SetDataAsync(Constants.RefreshTokenPrefix + tokenEntity.Token, json, Constants.DefaultCachePeriod);
+            await cacheRepository.SetAsync(Constants.RefreshTokenPrefix + tokenEntity.Token, json, Constants.DefaultCachePeriod);
         }
 
         if (tokenEntity.UserId != userId || tokenEntity.Token != refreshToken || tokenEntity.ClientIp != ipAddress)
@@ -163,14 +167,14 @@ public class AuthService(EnvInitializer envInitializer, RedisRepository redisRep
 
     public async Task<bool> DeleteRefreshToken(string refreshToken)
     {
-        var token = await refreshTokenRepository.GetRefreshToken(refreshToken);
-        if (token == null || !await refreshTokenRepository.DeleteRefreshTokenEntity(token))
+        var token = await refreshTokenRepository.GetByItself(refreshToken);
+        if (token == null || await refreshTokenRepository.RemoveAsync(token) == null)
         {
             logger.LogError($"Refresh token deletion failed");
             return false;
         }
 
-        await redisRepository.DeleteKeysByPatternAsync($"*{refreshToken}*");
+        await cacheRepository.DeletePatternAsync($"*{refreshToken}*");
         logger.LogInformation($"Refresh token deletion successfully");
         return true;
     }

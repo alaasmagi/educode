@@ -1,18 +1,20 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class CourseStatusController(AppDbContext context, RedisRepository redis) : Controller
+    public class CourseStatusController(
+        ICourseStatusRepository courseStatusRepository,
+        ICacheRepository cache) : Controller
     {
         // GET: CourseStatus
         public async Task<IActionResult> Index()
         {
-            return View(await context.CourseStatuses.IgnoreQueryFilters().ToListAsync());
+            var result = await courseStatusRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: CourseStatus/Details/5
@@ -23,9 +25,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseStatusEntity = await context.CourseStatuses
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var courseStatusEntity = await courseStatusRepository.GetByIdAsync(id.Value, true);
             if (courseStatusEntity == null)
             {
                 return NotFound();
@@ -35,7 +35,7 @@ namespace WebApp.Controllers
         }
 
         // GET: CourseStatus/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             return View();
         }
@@ -48,11 +48,7 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                courseStatusEntity.Id = Guid.NewGuid();
-                courseStatusEntity.CreatedAt = DateTime.UtcNow;
-                courseStatusEntity.UpdatedAt = DateTime.UtcNow;
-                context.Add(courseStatusEntity);
-                await context.SaveChangesAsync();
+                await courseStatusRepository.UpdateAsync(courseStatusEntity);
                 return RedirectToAction(nameof(Index));
             }
             return View(courseStatusEntity);
@@ -66,9 +62,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseStatusEntity = await context.CourseStatuses
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var courseStatusEntity = await courseStatusRepository.GetByIdAsync(id.Value, true);
             if (courseStatusEntity == null)
             {
                 return NotFound();
@@ -89,25 +83,15 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{courseStatusEntity.Id.ToString()}*");
+                var result = await courseStatusRepository.UpdateAsync(courseStatusEntity);
+
+                if (result == null)
                 {
-                    courseStatusEntity.CreatedAt = DateTime.SpecifyKind(courseStatusEntity.CreatedAt, DateTimeKind.Utc);
-                    courseStatusEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{courseStatusEntity.Id.ToString()}*");
-                    context.Update(courseStatusEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CourseStatusEntityExists(courseStatusEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
             return View(courseStatusEntity);
@@ -121,9 +105,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var courseStatusEntity = await context.CourseStatuses
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var courseStatusEntity = await courseStatusRepository.GetByIdAsync(id.Value, true);
             if (courseStatusEntity == null)
             {
                 return NotFound();
@@ -136,22 +118,15 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var courseStatusEntity = await context.CourseStatuses
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var courseStatusEntity = await courseStatusRepository.GetByIdAsync(id);
             if (courseStatusEntity != null)
             {
-                await redis.DeleteKeysByPatternAsync($"*{courseStatusEntity.Id.ToString()}*");
-                context.CourseStatuses.Remove(courseStatusEntity);
+                await courseStatusRepository.RemoveAsync(courseStatusEntity);
+                await cache.DeletePatternAsync($"*{courseStatusEntity.Id.ToString()}*");
             }
 
-            await context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool CourseStatusEntityExists(Guid id)
-        {
-            return context.CourseStatuses.IgnoreQueryFilters().Any(e => e.Id == id);
         }
     }
 }
+

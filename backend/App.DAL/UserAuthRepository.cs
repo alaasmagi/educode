@@ -52,6 +52,27 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
             return null;
         }
     }
+    
+    public async Task<UserAuthEntity?> GetByUser(Guid userId, bool includeDeleted = false)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.UserAuthData
+                    .Include(ua => ua.User)
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(ua => ua.UserId == userId) : 
+                await context.UserAuthData
+                    .Include(ua => ua.User)
+                    .FirstOrDefaultAsync(ua => ua.UserId == userId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user auth data. User ID: {UserId}", userId);
+            sentry.CaptureWithContext(ex, "Error retrieving user auth data. User ID: {0}", userId);
+            return null;
+        }
+    }
 
     public async Task<UserAuthEntity?> CreateAsync(UserAuthEntity entity)
     {

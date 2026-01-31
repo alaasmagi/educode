@@ -13,8 +13,6 @@ public interface ICourseManagementService
     Task<List<CourseEntity>?> GetCoursesByUserAsync(Guid userId, int pageNr, int pageSize);
     Task<List<AttendanceStudentCountDto>?> GetAttendancesUserCountsByCourseAsync(Guid courseId);
     Task<CourseEntity?> GetCourseByIdAsync(Guid courseId, string email);
-    Task<bool> IsCourseAccessibleToUser(CourseEntity courseEntity, string email);
-    Task<bool> DoesCourseExistByCodeAsync(string courseCode);
     Task<bool> DoesCourseExistByIdAsync(Guid id);
     void SeedCourseStatuses();
 }

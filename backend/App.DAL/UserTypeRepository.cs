@@ -69,7 +69,7 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         }    
     }
     
-    public async Task<UserTypeEntity?> GetByTypeAsync(string userType, bool includeDeleted)
+    public async Task<UserTypeEntity?> GetByItselfAsync(string userType, bool includeDeleted)
     {
         try
         {

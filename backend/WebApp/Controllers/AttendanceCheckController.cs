@@ -1,20 +1,24 @@
+using App.DAL.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
 
 namespace WebApp.Controllers
 {
     [Authorize(Policy = nameof(EAccessLevel.QuinaryLevel))]
-    public class AttendanceCheckController(AppDbContext context, RedisRepository redis) : Controller
+    public class AttendanceCheckController(
+        IAttendanceCheckRepository attendanceCheckRepository, 
+        IAttendanceRepository attendanceRepository,
+        IWorkplaceRepository workplaceRepository, 
+        ICacheRepository cache) : Controller
     {
         // GET: AttendanceCheck
         public async Task<IActionResult> Index()
         {
-            var appDbContext = context.AttendanceChecks.Include(a => a.Workplace);
-            return View(await appDbContext.IgnoreQueryFilters().ToListAsync());
+            var result = await attendanceCheckRepository.GetAllAsync(1, 100, true);
+            return View(result);
         }
 
         // GET: AttendanceCheck/Details/ID
@@ -24,11 +28,8 @@ namespace WebApp.Controllers
             {
                 return NotFound();
             }
-
-            var attendanceCheckEntity = await context.AttendanceChecks
-                .IgnoreQueryFilters()
-                .Include(a => a.Workplace)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            
+            var attendanceCheckEntity =  await attendanceCheckRepository.GetByIdAsync(id.Value, true);
             if (attendanceCheckEntity == null)
             {
                 return NotFound();
@@ -38,10 +39,12 @@ namespace WebApp.Controllers
         }
 
         // GET: AttendanceCheck/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["WorkplaceId"] = new SelectList(context.Workplaces, "Id", "ClassRoom");
-            ViewData["CourseAttendanceId"] = new SelectList(context.Attendances, "Id", "Id");
+            var workplaces = await workplaceRepository.GetAllAsync(1, 100);
+            var attendances = await attendanceRepository.GetAllAsync(1, 100);
+            ViewData["WorkplaceId"] = new SelectList(workplaces, "Id", "ClassRoom");
+            ViewData["CourseAttendanceId"] = new SelectList(attendances, "Id", "Id");
             return View();
         }
 
@@ -53,13 +56,12 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                attendanceCheckEntity.UpdatedAt = DateTime.UtcNow;
-                attendanceCheckEntity.CreatedAt = DateTime.UtcNow;
-                context.Add(attendanceCheckEntity);
-                await context.SaveChangesAsync();
+                await attendanceCheckRepository.UpdateAsync(attendanceCheckEntity);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["WorkplaceId"] = new SelectList(context.Workplaces, "Id", "ClassRoom", attendanceCheckEntity.WorkplaceIdentifier);
+            
+            var workplaces = await workplaceRepository.GetAllAsync(1, 100);
+            ViewData["WorkplaceId"] = new SelectList(workplaces, "Id", "ClassRoom", attendanceCheckEntity.WorkplaceIdentifier);
             return View(attendanceCheckEntity);
         }
 
@@ -71,15 +73,16 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var attendanceCheckEntity = await context.AttendanceChecks
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(a => a.Id == id);
+            var attendanceCheckEntity = await attendanceCheckRepository.GetByIdAsync(id.Value, true);
             if (attendanceCheckEntity == null)
             {
                 return NotFound();
             }
-            ViewData["WorkplaceIdentifier"] = new SelectList(context.Workplaces, "Id", "ClassRoom", attendanceCheckEntity.WorkplaceIdentifier);
-            ViewData["AttendanceIdentifier"] = new SelectList(context.Attendances, "Id", "Id", attendanceCheckEntity.AttendanceIdentifier);
+            
+            var workplaces = await workplaceRepository.GetAllAsync(1, 100);
+            var attendances = await attendanceRepository.GetAllAsync(1, 100);
+            ViewData["WorkplaceIdentifier"] = new SelectList(workplaces, "Id", "ClassRoom", attendanceCheckEntity.WorkplaceIdentifier);
+            ViewData["AttendanceIdentifier"] = new SelectList(attendances, "Id", "Id", attendanceCheckEntity.AttendanceIdentifier);
             return View(attendanceCheckEntity);
         }
 
@@ -96,28 +99,20 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                await cache.DeletePatternAsync($"*{attendanceCheckEntity.Id.ToString()}*");
+                var result = await attendanceCheckRepository.UpdateAsync(attendanceCheckEntity);
+
+                if (result == null)
                 {
-                    attendanceCheckEntity.CreatedAt = DateTime.SpecifyKind(attendanceCheckEntity.CreatedAt, DateTimeKind.Utc);
-                    attendanceCheckEntity.UpdatedAt = DateTime.UtcNow;
-                    await redis.DeleteKeysByPatternAsync($"*{attendanceCheckEntity.Id.ToString()}*");
-                    context.Update(attendanceCheckEntity);
-                    await context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!AttendanceCheckEntityExists(attendanceCheckEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["WorkplaceId"] = new SelectList(context.Workplaces, "Id", "ClassRoom", attendanceCheckEntity.WorkplaceIdentifier);
+            
+            var workplaces = await workplaceRepository.GetAllAsync(1, 100);
+            ViewData["WorkplaceId"] = new SelectList(workplaces, "Id", "ClassRoom", attendanceCheckEntity.WorkplaceIdentifier);
             return View(attendanceCheckEntity);
         }
 
@@ -129,10 +124,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var attendanceCheckEntity = await context.AttendanceChecks
-                .IgnoreQueryFilters()
-                .Include(a => a.Workplace)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var attendanceCheckEntity = await attendanceCheckRepository.GetByIdAsync(id.Value, true);
             if (attendanceCheckEntity == null)
             {
                 return NotFound();
@@ -145,21 +137,14 @@ namespace WebApp.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var attendanceCheckEntity = await context.AttendanceChecks
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(a => a.Id == id);
+            var attendanceCheckEntity = await attendanceCheckRepository.GetByIdAsync(id);
             if (attendanceCheckEntity != null)
             {
-                context.AttendanceChecks.Remove(attendanceCheckEntity);
-                await redis.DeleteKeysByPatternAsync($"*{attendanceCheckEntity.Id.ToString()}*");
+                await attendanceCheckRepository.RemoveAsync(attendanceCheckEntity);
+                await cache.DeletePatternAsync($"*{attendanceCheckEntity.Id.ToString()}*");
             }
-            await context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
 
-        private bool AttendanceCheckEntityExists(Guid id)
-        {
-            return context.AttendanceChecks.IgnoreQueryFilters().Any(e => e.Id == id);
+            return RedirectToAction(nameof(Index));
         }
     }
 }

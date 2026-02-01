@@ -20,6 +20,7 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
             return includeDeleted ? 
                 await context.CourseTeachers
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(ct => ct.Course)
                     .Include(ct => ct.Teacher)
                     .OrderBy(ct => ct.Id)
@@ -27,6 +28,7 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.CourseTeachers
+                    .AsNoTracking()
                     .Include(ct => ct.Course)
                     .Include(ct => ct.Teacher)
                     .OrderBy(ct => ct.Id)
@@ -49,8 +51,10 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
             return includeDeleted ? 
                 await context.CourseTeachers
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.CourseTeachers
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -70,10 +74,12 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
                     .Include(ct => ct.Teacher)
                     .Include(ct => ct.Course)
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ct => ct.Id == id) : 
                 await context.CourseTeachers
                     .Include(ct => ct.Teacher)
                     .Include(ct => ct.Course)
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ct => ct.Id == id);
         }
         catch (Exception ex)
@@ -93,6 +99,7 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
             return includeDeleted ? 
                 await context.CourseTeachers
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(ct => ct.Course)
                     .Include(ct => ct.Teacher)
                     .Where(ct =>
@@ -103,6 +110,7 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
                     .ThenBy(ct => ct.Teacher!.FullName)
                     .ToListAsync() : 
                 await context.CourseTeachers
+                    .AsNoTracking()
                     .Include(ct => ct.Course)
                     .Include(ct => ct.Teacher)
                     .Where(ct =>
@@ -144,18 +152,17 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
     {
         try
         {
-            var existingEntity = await context.CourseTeachers.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.CourseTeachers.IgnoreQueryFilters().AsNoTracking().AnyAsync(ct => ct.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.CourseId = entity.CourseId;
-            existingEntity.TeacherId = entity.TeacherId;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.CourseTeachers.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -175,6 +182,12 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.CourseTeachers.Attach(entity);
+            }
+        
             context.CourseTeachers.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

@@ -20,11 +20,13 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
             return includeDeleted ? 
                 await context.AttendanceTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .OrderBy(at => at.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.AttendanceTypes
+                    .AsNoTracking()
                     .OrderBy(at => at.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -45,8 +47,10 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
             return includeDeleted ? 
                 await context.AttendanceTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.AttendanceTypes
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -64,8 +68,10 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
             return includeDeleted ? 
                 await context.AttendanceTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(at => at.Id == id) : 
                 await context.AttendanceTypes
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(at => at.Id == id);
         }
         catch (Exception ex)
@@ -85,11 +91,13 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
             return includeDeleted ? 
                 await context.AttendanceTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(at =>
                         at.TypeName.ToLower().Contains(normalizedKeyword))
                     .OrderBy(at => at.TypeName)
                     .ToListAsync() : 
                 await context.AttendanceTypes
+                    .AsNoTracking()
                     .Where(at =>
                         at.TypeName.ToLower().Contains(normalizedKeyword))
                     .OrderBy(at => at.TypeName)
@@ -126,17 +134,17 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
     {
         try
         {
-            var existingEntity = await context.AttendanceTypes.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.AttendanceTypes.IgnoreQueryFilters().AsNoTracking().AnyAsync(at => at.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.TypeName = entity.TypeName;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.AttendanceTypes.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -156,6 +164,12 @@ public class AttendanceTypeRepository(AppDbContext context, ILogger<AttendanceTy
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.AttendanceTypes.Attach(entity);
+            }
+        
             context.AttendanceTypes.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

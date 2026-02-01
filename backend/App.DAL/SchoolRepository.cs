@@ -19,11 +19,13 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
             return includeDeleted ? 
                 await context.Schools
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .OrderBy(s => s.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Schools
+                    .AsNoTracking()
                     .OrderBy(s => s.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -44,8 +46,10 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
             return includeDeleted ? 
                 await context.Schools
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.Schools
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -63,8 +67,10 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
             return includeDeleted ? 
                 await context.Schools
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(s => s.Id == id) : 
                 await context.Schools
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(s => s.Id == id);
         }
         catch (Exception ex)
@@ -84,6 +90,7 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
             return includeDeleted ? 
                 await context.Schools
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(s =>
                         s.Name.ToLower().Contains(normalizedKeyword) ||
                         s.ShortName.ToLower().Contains(normalizedKeyword) ||
@@ -91,6 +98,7 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
                     .OrderBy(s => s.Name)
                     .ToListAsync() : 
                 await context.Schools
+                    .AsNoTracking()
                     .Where(s =>
                         s.Name.ToLower().Contains(normalizedKeyword) ||
                         s.ShortName.ToLower().Contains(normalizedKeyword) || 
@@ -129,20 +137,17 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
     {
         try
         {
-            var existingEntity = await context.Schools.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.Schools.IgnoreQueryFilters().AsNoTracking().AnyAsync(s => s.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.Name = entity.Name;
-            existingEntity.ShortName = entity.ShortName;
-            existingEntity.Domain = entity.Domain;
-            existingEntity.StudentCodePattern = entity.StudentCodePattern;
-            existingEntity.Deleted = entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.Schools.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -162,6 +167,12 @@ public class SchoolRepository(AppDbContext context, ILogger<SchoolRepository> lo
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Schools.Attach(entity);
+            }
+        
             context.Schools.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

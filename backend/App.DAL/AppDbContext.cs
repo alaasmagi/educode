@@ -1,5 +1,7 @@
 using App.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
 namespace App.DAL.EF;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
@@ -17,6 +19,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SchoolEntity> Schools { get; set; }
     public DbSet<ClassroomEntity> Classrooms { get; set; }
     public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
+    
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder
+            .Properties<DateTime>()
+            .HaveConversion<UtcDateTimeConverter>();
+    }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("educode");
@@ -226,3 +236,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(c => c.Classroom);
     }
 }
+
+/// <summary>
+/// Value converter to ensure all DateTime values are stored and retrieved as UTC
+/// </summary>
+public class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
+{
+    public UtcDateTimeConverter() : base(
+        // Convert to database: ensure UTC
+        toDb => toDb.Kind == DateTimeKind.Utc 
+            ? toDb 
+            : DateTime.SpecifyKind(toDb, DateTimeKind.Utc),
+        // Convert from database: ensure UTC
+        fromDb => DateTime.SpecifyKind(fromDb, DateTimeKind.Utc))
+    {
+    }
+}
+

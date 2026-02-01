@@ -20,6 +20,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             return includeDeleted ? 
                 await context.AttendanceChecks
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(ac => ac.Attendance)
                     .Include(ac => ac.Workplace)
                     .OrderBy(ac => ac.Id)
@@ -27,6 +28,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.AttendanceChecks
+                    .AsNoTracking()
                     .OrderBy(ac => ac.Id)
                     .Include(ac => ac.Attendance)
                     .Include(ac => ac.Workplace)
@@ -49,8 +51,10 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             return includeDeleted ? 
                 await context.AttendanceChecks
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.AttendanceChecks
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -66,6 +70,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         try
         {
             return await context.AttendanceChecks
+                .AsNoTracking()
                 .Where(c => c.Attendance!.Id == attendanceId)
                 .OrderBy(c => c.Id)
                 .ToListAsync();
@@ -84,6 +89,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         try
         {
             return await context.AttendanceChecks
+                .AsNoTracking()
                 .Where(c => c.AttendanceIdentifier == attendanceIdentifier)
                 .OrderBy(c => c.Id)
                 .Skip((pageNr - 1) * pageSize)
@@ -103,6 +109,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
         try
         {
             return await context.AttendanceChecks
+                .AsNoTracking()
                 .Where(a => a.Id == attendanceId)
                 .CountAsync();
         }
@@ -121,10 +128,12 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             return includeDeleted ? 
                 await context.AttendanceChecks
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(ac => ac.Attendance)
                     .Include(ac => ac.Workplace)
                     .FirstOrDefaultAsync(ac => ac.Id == id) : 
                 await context.AttendanceChecks
+                    .AsNoTracking()
                     .Include(ac => ac.Attendance)
                     .Include(ac => ac.Workplace)
                     .FirstOrDefaultAsync(ac => ac.Id == id);
@@ -146,6 +155,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
             return includeDeleted ? 
                 await context.AttendanceChecks
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(ac =>
                         ac.AttendanceIdentifier.ToLower().Contains(normalizedKeyword) ||
                         ac.FullName.ToLower().Contains(normalizedKeyword) ||
@@ -153,6 +163,7 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
                     .OrderBy(ac => ac.AttendanceIdentifier)
                     .ToListAsync() : 
                 await context.AttendanceChecks
+                    .AsNoTracking()
                     .Where(ac =>
                         ac.AttendanceIdentifier.ToLower().Contains(normalizedKeyword) ||
                         ac.FullName.ToLower().Contains(normalizedKeyword) ||
@@ -191,22 +202,17 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
     {
         try
         {
-            var existingEntity = await context.AttendanceChecks.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.AttendanceChecks.IgnoreQueryFilters().AsNoTracking().AnyAsync(ac => ac.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.AttendanceIdentifier = entity.AttendanceIdentifier;
-            existingEntity.FullName = entity.FullName;
-            existingEntity.StudentCode = entity.StudentCode;
-            existingEntity.Attendance = entity.Attendance;
-            existingEntity.Workplace = entity.Workplace;
-            existingEntity.WorkplaceIdentifier = entity.WorkplaceIdentifier;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.AttendanceChecks.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -226,6 +232,12 @@ public class AttendanceCheckRepository(AppDbContext context, ILogger<AttendanceC
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.AttendanceChecks.Attach(entity);
+            }
+        
             context.AttendanceChecks.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

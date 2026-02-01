@@ -19,12 +19,14 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
             return includeDeleted ? 
                 await context.UserAuthData
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(ua => ua.User)
                     .OrderBy(ua => ua.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.UserAuthData
+                    .AsNoTracking()
                     .Include(ua => ua.User)
                     .OrderBy(ua => ua.Id)
                     .Skip((pageNr - 1) * pageSize)
@@ -45,8 +47,10 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
             return includeDeleted ? 
                 await context.UserAuthData
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.UserAuthData
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -65,9 +69,11 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
                 await context.UserAuthData
                     .Include(ua => ua.User)
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ua => ua.Id == id) : 
                 await context.UserAuthData
                     .Include(ua => ua.User)
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ua => ua.Id == id);
         }
         catch (Exception ex)
@@ -87,10 +93,12 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
                     .Include(ua => ua.User)
                         .ThenInclude(u => u!.Type)
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ua => ua.UserId == userId) : 
                 await context.UserAuthData
                     .Include(ua => ua.User)
                         .ThenInclude(u => u!.Type)
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ua => ua.UserId == userId);
         }
         catch (Exception ex)
@@ -124,19 +132,17 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
     {
         try
         {
-            var existingEntity = await context.UserAuthData.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.UserAuthData.IgnoreQueryFilters().AsNoTracking().AnyAsync(ua => ua.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.UserId = entity.UserId;
-            existingEntity.PasswordHash = entity.PasswordHash;
-            existingEntity.Verified = entity.Verified;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.UserAuthData.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -156,6 +162,12 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.UserAuthData.Attach(entity);
+            }
+        
             context.UserAuthData.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

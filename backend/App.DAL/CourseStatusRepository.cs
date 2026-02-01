@@ -20,11 +20,13 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
             return includeDeleted ? 
                 await context.CourseStatuses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .OrderBy(cs => cs.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.CourseStatuses
+                    .AsNoTracking()
                     .OrderBy(cs => cs.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -45,8 +47,10 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
             return includeDeleted ? 
                 await context.CourseStatuses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.CourseStatuses
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -64,8 +68,10 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
             return includeDeleted ? 
                 await context.CourseStatuses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(cs => cs.Id == id) : 
                 await context.CourseStatuses
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(cs => cs.Id == id);
         }
         catch (Exception ex)
@@ -85,11 +91,13 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
             return includeDeleted ? 
                 await context.CourseStatuses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(cs =>
                         cs.StatusName.ToLower().Contains(normalizedKeyword))
                     .OrderBy(cs => cs.StatusName)
                     .ToListAsync() : 
                 await context.CourseStatuses
+                    .AsNoTracking()
                     .Where(cs =>
                         cs.StatusName.ToLower().Contains(normalizedKeyword))
                     .OrderBy(cs => cs.StatusName)
@@ -126,17 +134,17 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
     {
         try
         {
-            var existingEntity = await context.CourseStatuses.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.CourseStatuses.IgnoreQueryFilters().AsNoTracking().AnyAsync(cs => cs.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.StatusName = entity.StatusName;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.CourseStatuses.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -156,6 +164,12 @@ public class CourseStatusRepository(AppDbContext context, ILogger<CourseStatusRe
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.CourseStatuses.Attach(entity);
+            }
+        
             context.CourseStatuses.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

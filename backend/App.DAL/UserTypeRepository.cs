@@ -19,11 +19,13 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return includeDeleted ? 
                 await context.UserTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .OrderBy(ut => ut.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.UserTypes
+                    .AsNoTracking()
                     .OrderBy(ut => ut.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -43,6 +45,7 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
         {
             return await context.UserTypes
                 .IgnoreQueryFilters()
+                .AsNoTracking()
                 .Where(ut => ut.AccessLevel == level)
                 .ToListAsync();
         }
@@ -61,8 +64,10 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return includeDeleted ? 
                 await context.UserTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.UserTypes
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -80,8 +85,10 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return includeDeleted ? 
                 await context.UserTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ut => ut.Id == id) : 
                 await context.UserTypes
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ut => ut.Id == id);
         }
         catch (Exception ex)
@@ -99,8 +106,10 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return includeDeleted ? 
                 await context.UserTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ut => ut.TypeName == userType) : 
                 await context.UserTypes
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(ut => ut.TypeName == userType);
         }
         catch (Exception ex)
@@ -120,11 +129,13 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
             return includeDeleted ? 
                 await context.UserTypes
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(ut =>
                         ut.TypeName.ToLower().Contains(normalizedKeyword))
                     .OrderBy(ut => ut.TypeName)
                     .ToListAsync() : 
                 await context.UserTypes
+                    .AsNoTracking()
                     .Where(ut =>
                         ut.TypeName.ToLower().Contains(normalizedKeyword))
                     .OrderBy(ut => ut.TypeName)
@@ -161,18 +172,17 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
     {
         try
         {
-            var existingEntity = await context.UserTypes.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.UserTypes.IgnoreQueryFilters().AsNoTracking().AnyAsync(ut => ut.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.TypeName= entity.TypeName;
-            existingEntity.AccessLevel = entity.AccessLevel;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.UserTypes.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -192,6 +202,12 @@ public class UserTypeRepository(AppDbContext context, ILogger<UserTypeRepository
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.UserTypes.Attach(entity);
+            }
+        
             context.UserTypes.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

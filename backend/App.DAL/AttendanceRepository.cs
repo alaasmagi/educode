@@ -20,6 +20,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
@@ -28,6 +29,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Attendances
+                    .AsNoTracking()
                     .OrderBy(a => a.Id)
                     .Include(a => a.Type)
                     .Include(a => a.Course)
@@ -51,8 +53,10 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.Attendances
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -70,6 +74,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
@@ -79,6 +84,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Attendances
+                    .AsNoTracking()
                     .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
@@ -105,11 +111,13 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
                     .FirstOrDefaultAsync(a => a.Id == id) : 
                 await context.Attendances
+                    .AsNoTracking()
                     .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
@@ -130,11 +138,13 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
                     .FirstOrDefaultAsync(a => a.Identifier == identifier) : 
                 await context.Attendances
+                    .AsNoTracking()
                     .Include(a => a.Type)
                     .Include(a => a.Course)
                     .Include(a => a.Classroom)
@@ -153,6 +163,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
         try
         {
             return await context.Attendances
+                .AsNoTracking()
                 .Where(ca => ca.StartTime <= DateTime.UtcNow && ca.EndTime >= DateTime.UtcNow &&
                              ca.Course!.Teachers!.Any(ct => ct.TeacherId == userId))
                 .Include(a => a.Type)
@@ -173,6 +184,7 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
         try
         {
             return await context.Attendances
+                .AsNoTracking()
                 .Where(ca => ca.Course!.Teachers!
                     .Any(ct => ct.TeacherId == userId) && ca.StartTime <= DateTime.UtcNow) 
                 .Include(a => a.Type)
@@ -196,8 +208,8 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             var normalizedKeyword = keyword.ToLower().Trim();
 
             var query = includeDeleted 
-                ? context.Attendances.IgnoreQueryFilters() 
-                : context.Attendances;
+                ? context.Attendances.IgnoreQueryFilters().AsNoTracking() 
+                : context.Attendances.AsNoTracking();
 
             return await query
                 .Include(a => a.Course)
@@ -251,23 +263,17 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
     {
         try
         {
-            var existingEntity = await context.Attendances.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.Attendances.IgnoreQueryFilters().AsNoTracking().AnyAsync(a => a.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.AutomatedRegistration = entity.AutomatedRegistration;
-            existingEntity.CourseId = entity.CourseId;
-            existingEntity.Identifier = entity.Identifier;
-            existingEntity.StartTime = entity.StartTime;
-            existingEntity.EndTime = entity.EndTime;
-            existingEntity.ClassroomId = entity.ClassroomId;
-            existingEntity.TypeId = entity.TypeId;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.Attendances.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -287,6 +293,12 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Attendances.Attach(entity);
+            }
+        
             context.Attendances.Remove(entity);
             await context.SaveChangesAsync();
             return entity;
@@ -306,10 +318,12 @@ public class AttendanceRepository(AppDbContext context, ILogger<AttendanceTypeRe
             return includeDeleted ? 
                 await context.Attendances
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(u => u.Identifier == identifier)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Attendances
+                    .AsNoTracking()
                     .Where(u => u.Identifier == identifier)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();

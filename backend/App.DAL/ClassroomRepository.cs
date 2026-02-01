@@ -19,11 +19,13 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
             return includeDeleted ? 
                 await context.Classrooms
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .OrderBy(c => c.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Classrooms
+                    .AsNoTracking()
                     .OrderBy(c => c.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -44,8 +46,10 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
             return includeDeleted ? 
                 await context.Classrooms
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.Classrooms
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -63,8 +67,10 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
             return includeDeleted ? 
                 await context.Classrooms
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Id == id) : 
                 await context.Classrooms
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Id == id);
         }
         catch (Exception ex)
@@ -84,6 +90,7 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
             return includeDeleted ? 
                 await context.Classrooms
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(c => c.School)
                     .Where(c =>
                         c.Classroom.ToLower().Contains(normalizedKeyword) ||
@@ -92,6 +99,7 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
                     .ThenBy(c => c.Classroom)
                     .ToListAsync() : 
                 await context.Classrooms
+                    .AsNoTracking()
                     .Include(c => c.School)
                     .Where(c =>
                         c.Classroom.ToLower().Contains(normalizedKeyword) ||
@@ -131,18 +139,17 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
     {
         try
         {
-            var existingEntity = await context.Classrooms.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.Classrooms.IgnoreQueryFilters().AsNoTracking().AnyAsync(c => c.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.Classroom = entity.Classroom;
-            existingEntity.SchoolId = entity.SchoolId;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.Classrooms.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -162,6 +169,12 @@ public class ClassroomRepository(AppDbContext context, ILogger<ClassroomReposito
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Classrooms.Attach(entity);
+            }
+        
             context.Classrooms.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

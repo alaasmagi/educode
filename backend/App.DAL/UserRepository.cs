@@ -19,6 +19,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
             return includeDeleted ? 
                 await context.Users
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(u => u.Type)
                     .Include(u => u.School)
                     .OrderBy(u => u.Id)
@@ -26,6 +27,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Users
+                    .AsNoTracking()
                     .Include(u => u.Type)
                     .Include(u => u.School)
                     .OrderBy(u => u.Id)
@@ -48,8 +50,10 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
             return includeDeleted ? 
                 await context.Users
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.Users
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -69,10 +73,12 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
                     .Include(u => u.Type)
                     .Include(u => u.School)
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.Id == id) : 
                 await context.Users
                     .Include(u => u.Type)
                     .Include(u => u.School)
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.Id == id);
         }
         catch (Exception ex)
@@ -92,6 +98,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
             return includeDeleted ? 
                 await context.Users
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(u =>
                         u.Email.ToLower().Contains(normalizedKeyword) ||
                         u.FullName.ToLower().Contains(normalizedKeyword) ||
@@ -99,6 +106,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
                     .OrderBy(u => u.Type)
                     .ToListAsync() : 
                 await context.Users
+                    .AsNoTracking()
                     .Where(u =>
                         u.Email.ToLower().Contains(normalizedKeyword) ||
                         u.FullName.ToLower().Contains(normalizedKeyword) ||
@@ -137,22 +145,17 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
     {
         try
         {
-            var existingEntity = await context.Users.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.Users.IgnoreQueryFilters().AsNoTracking().AnyAsync(u => u.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.Email= entity.Email;
-            existingEntity.FullName= entity.FullName;
-            existingEntity.StudentCode= entity.StudentCode;
-            existingEntity.PhotoPath= entity.PhotoPath;
-            existingEntity.SchoolId= entity.SchoolId;
-            existingEntity.TypeId= entity.TypeId;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.Users.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -172,6 +175,12 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Users.Attach(entity);
+            }
+        
             context.Users.Remove(entity);
             await context.SaveChangesAsync();
             return entity;
@@ -191,10 +200,12 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
             return includeDeleted ? 
                 await context.Users
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(u => u.Email == email)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Users
+                    .AsNoTracking()
                     .Where(u => u.Email == email)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
@@ -214,10 +225,12 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
             return includeDeleted ? 
                 await context.Users
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(u => u.FullName == fullName)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Users
+                    .AsNoTracking()
                     .Where(u => u.FullName == fullName)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();

@@ -19,11 +19,13 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
             return includeDeleted ? 
                 await context.Workplaces
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .OrderBy(w => w.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.Workplaces
+                    .AsNoTracking()
                     .OrderBy(w => w.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -44,8 +46,10 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
             return includeDeleted ? 
                 await context.Workplaces
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.Workplaces
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -63,8 +67,10 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
             return includeDeleted ? 
                 await context.Workplaces
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(w => w.Id == id) : 
                 await context.Workplaces
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(w => w.Id == id);
         }
         catch (Exception ex)
@@ -84,6 +90,7 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
             return includeDeleted ?
                 await context.Workplaces
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(w => w.Classroom)
                     .Where(w =>
                         w.Classroom!.Classroom.ToLower().Contains(normalizedKeyword) &&
@@ -91,6 +98,7 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
                     .OrderBy(w => w.ComputerCode)
                     .ToListAsync() :
                 await context.Workplaces
+                    .AsNoTracking()
                     .Include(w => w.Classroom)
                     .Where(w =>
                         w.Classroom!.Classroom.ToLower().Contains(normalizedKeyword) &&
@@ -130,19 +138,17 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
     {
         try
         {
-            var existingEntity = await context.Workplaces.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.Workplaces.IgnoreQueryFilters().AsNoTracking().AnyAsync(w => w.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.Identifier = entity.Identifier;
-            existingEntity.ComputerCode = entity.ComputerCode;
-            existingEntity.ClassroomId = entity.ClassroomId;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.Workplaces.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -162,6 +168,12 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Workplaces.Attach(entity);
+            }
+        
             context.Workplaces.Remove(entity);
             await context.SaveChangesAsync();
             return entity;
@@ -181,10 +193,12 @@ public class WorkplaceRepository(AppDbContext context, ILogger<WorkplaceReposito
             return includeDeleted ? 
                 await context.Workplaces
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(u => u.Identifier == identifier)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Workplaces
+                    .AsNoTracking()
                     .Where(u => u.Identifier == identifier)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();

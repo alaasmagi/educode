@@ -8,7 +8,6 @@ using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
 using Konscious.Security.Cryptography;
-using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,6 +20,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -27,7 +28,8 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
-                await context.Courses.IgnoreQueryFilters()
+                await context.Courses
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -51,6 +53,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -60,7 +63,8 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
-                await context.Courses.IgnoreQueryFilters()
+                await context.Courses
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -88,6 +92,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ?
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -98,6 +103,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
                     .Take(pageSize)
                     .ToListAsync() :
                 await context.Courses
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -123,6 +129,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         try
         {
             var attendances = await context.Attendances
+                .AsNoTracking()
                 .Where(ca => ca.CourseId == id)
                 .ToListAsync();
             
@@ -130,6 +137,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             foreach (var attendance in attendances)
             {
                 var count = await context.AttendanceChecks
+                    .AsNoTracking()
                     .CountAsync(ac => ac.AttendanceIdentifier == attendance.Identifier);
 
                 result.Add(new AttendanceStudentCountDto
@@ -157,8 +165,10 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.Courses
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -176,12 +186,14 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.School)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
                     .FirstOrDefaultAsync(c => c.Id == id) : 
                 await context.Courses
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.School)
                     .Include(c => c.Teachers!)
@@ -205,6 +217,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ?
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -218,6 +231,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
                     .OrderBy(c => c.Name)
                     .ToListAsync() : 
                 await context.Courses
+                    .AsNoTracking()
                     .Include(c => c.Status)
                     .Include(c => c.Teachers!)
                     .ThenInclude(ct => ct.Teacher)
@@ -263,20 +277,17 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
     {
         try
         {
-            var existingEntity = await context.Courses.FirstOrDefaultAsync(c => c.Id == entity.Id);
-            if (existingEntity == null)
-            {
+            var exists = await context.Courses.IgnoreQueryFilters().AsNoTracking().AnyAsync(c => c.Id == entity.Id);
+            if (!exists)
                 return null;
-            }
-
-            existingEntity.Name = entity.Name;
-            existingEntity.Code = entity.Code;
-            existingEntity.StatusId = entity.StatusId;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-
+        
+            entity.UpdatedAt = DateTime.UtcNow;
+            
+            context.Courses.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-
-            return existingEntity;
+            return entity;
         }
         catch (Exception ex)
         {
@@ -290,9 +301,14 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Courses.Attach(entity);
+            }
+        
             context.Courses.Remove(entity);
             await context.SaveChangesAsync();
-
             return entity;
         }
         catch (Exception ex)
@@ -310,10 +326,12 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(u => u.Code == code)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Courses
+                    .AsNoTracking()
                     .Where(u => u.Code == code)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();
@@ -333,10 +351,12 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
             return includeDeleted ? 
                 await context.Courses
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Where(u => u.Name == name)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync() :
                 await context.Courses
+                    .AsNoTracking()
                     .Where(u => u.Name == name)
                     .Select(u => (Guid?)u.Id)
                     .FirstOrDefaultAsync();

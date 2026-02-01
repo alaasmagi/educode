@@ -20,11 +20,13 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
             return includeDeleted ? 
                 await context.RefreshTokens
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .OrderBy(rt => rt.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync() : 
                 await context.RefreshTokens
+                    .AsNoTracking()
                     .OrderBy(rt => rt.Id)
                     .Skip((pageNr - 1) * pageSize)
                     .Take(pageSize)
@@ -45,8 +47,10 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
             return includeDeleted ? 
                 await context.RefreshTokens
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .CountAsync() : 
                 await context.RefreshTokens
+                    .AsNoTracking()
                     .CountAsync();
         }
         catch (Exception ex)
@@ -64,8 +68,10 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
             return includeDeleted ? 
                 await context.RefreshTokens
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(rt => rt.Id == id) : 
                 await context.RefreshTokens
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(rt => rt.Id == id);
         }
         catch (Exception ex)
@@ -81,6 +87,7 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         try
         {
             return await context.RefreshTokens
+                .AsNoTracking()
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
         }
         catch (Exception ex)
@@ -114,22 +121,17 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
     {
         try
         {
-            var existingEntity = await context.RefreshTokens.FindAsync(entity.Id);
-            if (existingEntity == null)
+            var exists = await context.RefreshTokens.IgnoreQueryFilters().AsNoTracking().AnyAsync(rt => rt.Id == entity.Id);
+            if (!exists)
                 return null;
+        
+            entity.UpdatedAt = DateTime.UtcNow;
             
-            existingEntity.UserId = entity.UserId;
-            existingEntity.Token = entity.Token;
-            existingEntity.Client = entity.Client;
-            existingEntity.ClientIp = entity.ClientIp;
-            existingEntity.ExpirationTime = entity.ExpirationTime;
-            existingEntity.PushNotificationToken = entity.PushNotificationToken;
-            existingEntity.Deleted= entity.Deleted;
-            existingEntity.UpdatedAt = DateTime.UtcNow;
-            existingEntity.UpdatedBy = entity.UpdatedBy;
-
+            context.RefreshTokens.Attach(entity);
+            context.Entry(entity).State = EntityState.Modified;
+        
             await context.SaveChangesAsync();
-            return existingEntity;
+            return entity;
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -149,6 +151,12 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
     {
         try
         {
+            var entry = context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                context.RefreshTokens.Attach(entity);
+            }
+        
             context.RefreshTokens.Remove(entity);
             await context.SaveChangesAsync();
             return entity;

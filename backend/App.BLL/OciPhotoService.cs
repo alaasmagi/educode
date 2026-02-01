@@ -8,11 +8,12 @@ using Oci.ObjectstorageService.Requests;
 
 namespace App.BLL;
 
-public class OciPhotoService : IPhotoService
+public class OciPhotoService : IPhotoService, IDisposable
 {
     private readonly ObjectStorageClient _client;
     private readonly string _namespace;
     private readonly string _bucketName;
+    private bool _disposed;
     
     public OciPhotoService(EnvInitializer env)
     {
@@ -82,5 +83,12 @@ public class OciPhotoService : IPhotoService
         {
             return false;
         }
+    }
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _client.Dispose();
+        _disposed = true;
     }
 }

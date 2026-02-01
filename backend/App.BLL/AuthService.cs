@@ -7,15 +7,17 @@ using App.BLL.Contracts;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
+using Konscious.Security.Cryptography;
+using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace App.BLL;
 
 public class AuthService (
-    EnvInitializer envInitializer, 
-    ICacheRepository cacheRepository, 
-    IRefreshTokenRepository refreshTokenRepository, 
+    EnvInitializer envInitializer,
+    ICacheRepository cacheRepository,
+    IRefreshTokenRepository refreshTokenRepository,
     IUserRepository userRepository,
     ILogger<AuthService> logger) : IAuthService
 {
@@ -177,5 +179,50 @@ public class AuthService (
         await cacheRepository.DeletePatternAsync($"*{refreshToken}*");
         logger.LogInformation($"Refresh token deletion successfully");
         return true;
+    }
+
+    public string HashPassword(string input)
+    {
+        var salt = new byte[16];
+        RandomNumberGenerator.Fill(salt);
+        
+        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(input))
+        {
+            Salt = salt,
+            DegreeOfParallelism = 2,
+            Iterations = 3,
+            MemorySize = 65536
+        };
+        
+        var hash = argon2.GetBytes(32);
+        
+        var result = new byte[salt.Length + hash.Length];
+        Buffer.BlockCopy(salt, 0, result, 0, salt.Length);
+        Buffer.BlockCopy(hash, 0, result, salt.Length, hash.Length);
+        
+        return Convert.ToBase64String(result);
+    }
+    
+    public bool VerifyPassword(string input, string storedHash)
+    {
+        var hashBytes = Convert.FromBase64String(storedHash);
+        
+        var salt = new byte[16];
+        Buffer.BlockCopy(hashBytes, 0, salt, 0, 16);
+        
+        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(input))
+        {
+            Salt = salt,
+            DegreeOfParallelism = 2,
+            Iterations = 3,
+            MemorySize = 65536
+        };
+        
+        var newHash = argon2.GetBytes(32);
+        
+        return CryptographicOperations.FixedTimeEquals(
+            hashBytes.AsSpan(16), 
+            newHash
+        );
     }
 }

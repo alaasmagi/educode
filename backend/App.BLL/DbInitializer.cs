@@ -2,7 +2,7 @@ using App.BLL.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace App.Common;
+namespace App.BLL;
 
 public class DbInitializer
 {

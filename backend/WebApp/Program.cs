@@ -35,15 +35,20 @@ builder.WebHost.UseSentry(options =>
     options.Dsn = envInitializer.SentryDsn;
     options.Environment = builder.Environment.EnvironmentName; 
     options.Release = "1.0.0"; 
-    options.TracesSampleRate = 1.0;
+    options.TracesSampleRate = 0.1;
 });
 
 builder.Services.AddDbContextPool<AppDbContext>(options =>
+{
     options.UseNpgsql(envInitializer.PgDbConnection, npgsqlOptions =>
     {
-        npgsqlOptions.CommandTimeout(60);
+        npgsqlOptions.CommandTimeout(30);
+        npgsqlOptions.MinBatchSize(10);
+        npgsqlOptions.MaxBatchSize(128);
         npgsqlOptions.EnableRetryOnFailure(3);
-    }), poolSize: 500);
+    });
+    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+}, poolSize: 128);
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(envInitializer.RedisConnection));
 
@@ -173,25 +178,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
                 return Task.CompletedTask;
             },
-            OnTokenValidated = context =>
-            {
-                var userId = context.Principal?.FindFirst("UserId")?.Value;
-                var accessLevel = context.Principal?.FindFirst("AccessLevel")?.Value;
-                Log.Information($"JWT token validated. UserId: {userId}, AccessLevel: {accessLevel}, Path: {context.Request.Path}");
-                return Task.CompletedTask;
-            },
-            OnAuthenticationFailed = context =>
-            {
-                Log.Error($"JWT authentication failed for path {context.Request.Path}: {context.Exception.Message}");
-                return Task.CompletedTask;
-            },
-            OnForbidden = context =>
-            {
-                var userId = context.Principal?.FindFirst("UserId")?.Value;
-                var accessLevel = context.Principal?.FindFirst("AccessLevel")?.Value;
-                Log.Warning($"Access forbidden for path {context.Request.Path}. UserId: {userId}, AccessLevel: {accessLevel}");
-                return Task.CompletedTask;
-            }
+            OnTokenValidated = context => Task.CompletedTask,
+            OnAuthenticationFailed = context => Task.CompletedTask,
+            OnForbidden = context => Task.CompletedTask
         };
     });
 
@@ -259,9 +248,11 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
-
-builder.Services.AddDistributedMemoryCache();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = envInitializer.RedisConnection;
+    options.InstanceName = "EduCode:Session:";
+});
 
 builder.Services.AddSession(options =>
 {

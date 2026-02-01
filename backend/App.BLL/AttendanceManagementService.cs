@@ -18,7 +18,7 @@ public class AttendanceManagementService(
 {
     public async Task<AttendanceEntity?> GetCurrentAttendanceAsync(Guid userId)
     {
-        var cache = await cacheRepository.GetAsync(Constants.CurrentAttendancePrefix + 
+        var cache = await cacheRepository.GetAsync(Constants.CurrentAttendancePrefix +
                                                                                         Constants.UserPrefix + userId);
         if (cache != null)
         {
@@ -33,7 +33,7 @@ public class AttendanceManagementService(
         }
         
         var serializedAttendance = JsonSerializer.Serialize(currentAttendance);
-        await cacheRepository.SetAsync(Constants.CurrentAttendancePrefix + 
+        await cacheRepository.SetAsync(Constants.CurrentAttendancePrefix +
                                             Constants.UserPrefix + userId, serializedAttendance,Constants.ExtraShortCachePeriod);
         
         return currentAttendance;

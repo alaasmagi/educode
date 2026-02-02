@@ -15,6 +15,8 @@ public class OciPhotoService : IPhotoService, IDisposable
     private readonly string _bucketName;
     private bool _disposed;
     
+    private static readonly SemaphoreSlim PhotoUploadSemaphore = new(8, 8);
+    
     public OciPhotoService(EnvInitializer env)
     {
         var provider = new SimpleAuthenticationDetailsProvider
@@ -33,40 +35,49 @@ public class OciPhotoService : IPhotoService, IDisposable
 
     public async Task<string?> UploadPhotoAsync(string folderName, Guid ownerId, Stream photoStream, string contentType)
     {
-        string prefix = folderName.EndsWith("/") ? folderName : folderName + "/";
-        string extension = Helpers.GetExtensionFromContentType(contentType);
-        
-        string objectName = $"{prefix}{ownerId:N}{extension}"; 
+        await PhotoUploadSemaphore.WaitAsync();
+        try
+        {
+            string prefix = folderName.EndsWith("/") ? folderName : folderName + "/";
+            string extension = Helpers.GetExtensionFromContentType(contentType);
+            
+            string objectName = $"{prefix}{ownerId:N}{extension}"; 
 
-        if (photoStream.CanSeek)
-        {
-            photoStream.Seek(0, SeekOrigin.Begin);
-        }
-        else if (photoStream.Length <= 0)
-        {
-            return null;
-        }
-        
-        var request = new PutObjectRequest
-        {
-            NamespaceName = _namespace,
-            BucketName = _bucketName,
-            ObjectName = objectName,
-            PutObjectBody = photoStream,
-            ContentLength = photoStream.Length,
-            ContentType = contentType,
-            OpcMeta = new Dictionary<string, string>
+            if (photoStream.CanSeek)
             {
-                { "uploaded-at", DateTime.UtcNow.ToString("o") }
+                photoStream.Seek(0, SeekOrigin.Begin);
             }
-        };
-        
-        await _client.PutObject(request);
-        return objectName; 
+            else if (photoStream.Length <= 0)
+            {
+                return null;
+            }
+            
+            var request = new PutObjectRequest
+            {
+                NamespaceName = _namespace,
+                BucketName = _bucketName,
+                ObjectName = objectName,
+                PutObjectBody = photoStream,
+                ContentLength = photoStream.Length,
+                ContentType = contentType,
+                OpcMeta = new Dictionary<string, string>
+                {
+                    { "uploaded-at", DateTime.UtcNow.ToString("o") }
+                }
+            };
+            
+            await _client.PutObject(request);
+            return objectName; 
+        }
+        finally
+        {
+            PhotoUploadSemaphore.Release();
+        }
     }
     
     public async Task<bool> RemovePhotoAsync(string photoPath)
     {
+        await PhotoUploadSemaphore.WaitAsync();
         try
         {
             var request = new DeleteObjectRequest
@@ -82,6 +93,10 @@ public class OciPhotoService : IPhotoService, IDisposable
         catch (OciException ex)
         {
             return false;
+        }
+        finally
+        {
+            PhotoUploadSemaphore.Release();
         }
     }
     

@@ -10,6 +10,6 @@ public interface IAuthService
     Guid? GetUserIdFromJwt(string jwtToken);
     Task<bool> VerifyRefreshToken(string refreshToken, Guid userId, string ipAddress);
     Task<bool> DeleteRefreshToken(string refreshToken);
-    string HashPassword(string input);
-    bool VerifyPassword(string input, string storedHash);
+    Task<string> HashPasswordAsync(string input);
+    Task<bool> VerifyPasswordAsync(string input, string storedHash);
 }

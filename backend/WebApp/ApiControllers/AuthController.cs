@@ -1,5 +1,4 @@
-﻿using App.BLL;
-using App.BLL.Contracts;
+﻿using App.BLL.Contracts;
 using App.Common;
 using App.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -154,7 +153,7 @@ public class AuthController(
         
         newUserAuth.CreatedBy = requestModel.Client;
         newUserAuth.UpdatedBy = requestModel.Client;
-        newUserAuth.PasswordHash = authService.HashPassword(requestModel.Password);
+        newUserAuth.PasswordHash = await authService.HashPasswordAsync(requestModel.Password);
 
         if (!await userManagementService.CreateAccountAsync(newUser, newUserAuth))
         {
@@ -184,7 +183,7 @@ public class AuthController(
         }
 
         // TODO: Refactor and move the logic to service layer
-        var newPasswordHash = authService.HashPassword(model.NewPassword);
+        var newPasswordHash = await authService.HashPasswordAsync(model.NewPassword);
 
         if (!await userManagementService.ChangeUserPasswordAsync(user, newPasswordHash))
         {

@@ -26,7 +26,7 @@ public class UserManagementService(
             return null;
         }
 
-        var result = authService.VerifyPassword(password, userAuthData.PasswordHash);
+        var result = await authService.VerifyPasswordAsync(password, userAuthData.PasswordHash);
         
         if (!result)
         {
@@ -309,7 +309,7 @@ public class UserManagementService(
         var adminAuth = new UserAuthEntity
         {
             UserId = adminUser.Id,
-            PasswordHash = authService.HashPassword(envInitializer.DefaultAdminPassword),
+            PasswordHash = await authService.HashPasswordAsync(envInitializer.DefaultAdminPassword),
             
             CreatedBy = "aspnet-initializer",
             CreatedAt = now,

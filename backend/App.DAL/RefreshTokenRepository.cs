@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -82,7 +78,7 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         }    
     }
     
-    public async Task<RefreshTokenEntity?> GetByItself(string refreshToken)
+    public async Task<RefreshTokenEntity?> GetByItselfAsync(string refreshToken)
     {
         try
         {

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
@@ -84,7 +80,7 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
         }
     }
     
-    public async Task<UserAuthEntity?> GetByUser(Guid userId, bool includeDeleted = false)
+    public async Task<UserAuthEntity?> GetByUserAsync(Guid userId, bool includeDeleted = false)
     {
         try
         {

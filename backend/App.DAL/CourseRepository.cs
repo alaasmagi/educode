@@ -1,8 +1,4 @@
-﻿﻿﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using App.Common;
+﻿using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
 using App.DTO;
@@ -46,7 +42,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         }
     }
     
-    public async Task<List<CourseEntity>?> GetAllByUser(Guid userId, int pageNr, int pageSize, bool includeDeleted)
+    public async Task<List<CourseEntity>?> GetAllByUserAsync(Guid userId, int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -85,7 +81,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         }
     }
     
-    public async Task<List<CourseEntity>?> GetAllSingleUserByUser(Guid userId, int pageNr, int pageSize, bool includeDeleted)
+    public async Task<List<CourseEntity>?> GetAllSingleUserByUserAsync(Guid userId, int pageNr, int pageSize, bool includeDeleted)
     {
         try
         {
@@ -124,7 +120,7 @@ public class CourseRepository(AppDbContext context, ILogger<CourseRepository> lo
         }
     }
     
-    public async Task<List<AttendanceStudentCountDto>?> GetUserCounts(Guid id)
+    public async Task<List<AttendanceStudentCountDto>?> GetUserCountsAsync(Guid id)
     {
         try
         {

@@ -178,7 +178,7 @@ public class CourseManagementService (
             return JsonSerializer.Deserialize<List<CourseEntity>?>(cache);
         }
         
-        var coursesByUser = await courseRepository.GetAllByUser(userId, pageNr, pageSize);
+        var coursesByUser = await courseRepository.GetAllByUserAsync(userId, pageNr, pageSize);
         if (coursesByUser == null)
         {
             logger.LogError($"Failed to get courses by user with ID {userId}");
@@ -201,7 +201,7 @@ public class CourseManagementService (
             return JsonSerializer.Deserialize<List<AttendanceStudentCountDto>>(cache);
         }
         
-        var studentCounts = await courseRepository.GetUserCounts(courseId);
+        var studentCounts = await courseRepository.GetUserCountsAsync(courseId);
         if (studentCounts == null)
         {
             logger.LogError($"Failed to get attendances user counts by course with ID {courseId}");

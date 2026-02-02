@@ -154,7 +154,7 @@ public class AuthController(
         
         newUserAuth.CreatedBy = requestModel.Client;
         newUserAuth.UpdatedBy = requestModel.Client;
-        newUserAuth.PasswordHash = userManagementService.GetPasswordHash(requestModel.Password);
+        newUserAuth.PasswordHash = authService.HashPassword(requestModel.Password);
 
         if (!await userManagementService.CreateAccountAsync(newUser, newUserAuth))
         {
@@ -183,7 +183,8 @@ public class AuthController(
             return Unauthorized(new { message = "Invalid email", messageCode = "invalid-email" });
         }
 
-        var newPasswordHash = userManagementService.GetPasswordHash(model.NewPassword);
+        // TODO: Refactor and move the logic to service layer
+        var newPasswordHash = authService.HashPassword(model.NewPassword);
 
         if (!await userManagementService.ChangeUserPasswordAsync(user, newPasswordHash))
         {

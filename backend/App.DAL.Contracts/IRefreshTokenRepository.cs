@@ -4,5 +4,5 @@ namespace App.DAL.Contracts;
 
 public interface IRefreshTokenRepository : IRepository<RefreshTokenEntity>
 {
-    Task<RefreshTokenEntity?> GetByItself(string refreshToken);
+    Task<RefreshTokenEntity?> GetByItselfAsync(string refreshToken);
 }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using App.Common;
+﻿using App.Common;
 using App.DAL.Contracts;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;

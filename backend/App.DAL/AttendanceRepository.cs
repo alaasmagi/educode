@@ -1,8 +1,4 @@
-﻿﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using App.Common;
+﻿using App.Common;
 using App.DAL.Contracts;
 using App.Domain;
 using Microsoft.EntityFrameworkCore;

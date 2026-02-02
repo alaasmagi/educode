@@ -1,4 +1,4 @@
-﻿﻿using System.Text.Json;
+﻿using System.Text.Json;
 using App.BLL.Contracts;
 using App.Common;
 using App.DAL.Contracts;
@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace App.BLL;
 
 public class UserManagementService(
+    IAuthService authService,
     IUserRepository userRepository,
     IUserAuthRepository userAuthRepository,
     IUserTypeRepository userTypeRepository,
@@ -17,7 +18,7 @@ public class UserManagementService(
 {
     public async Task<UserEntity?> AuthenticateUserAsync(Guid userId, string password)
     {
-        var userAuthData = await userAuthRepository.GetByUser(userId);
+        var userAuthData = await userAuthRepository.GetByUserAsync(userId);
 
         if (userAuthData == null)
         {
@@ -25,7 +26,7 @@ public class UserManagementService(
             return null;
         }
 
-        var result = VerifyPasswordHash(password, userAuthData.PasswordHash);
+        var result = authService.VerifyPassword(password, userAuthData.PasswordHash);
         
         if (!result)
         {
@@ -68,11 +69,6 @@ public class UserManagementService(
     public async Task<bool> ChangeUserPasswordAsync(UserEntity user, string newPasswordHash)
     { 
         return true;
-    }
-    
-    private static bool VerifyPasswordHash(string enteredPassword, string storedHash)
-    {
-        return BCrypt.Net.BCrypt.Verify(enteredPassword, storedHash);
     }
 
     public async Task<bool> DoesUserExistAsync(string email)
@@ -188,11 +184,6 @@ public class UserManagementService(
             serializedUser, Constants.DefaultCachePeriod);
 
         return result;
-    }
-    
-    public string GetPasswordHash(string password)
-    {
-        return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
     }
     
     public async Task<bool> DeleteUserAsync(UserEntity user)
@@ -318,7 +309,7 @@ public class UserManagementService(
         var adminAuth = new UserAuthEntity
         {
             UserId = adminUser.Id,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(envInitializer.DefaultAdminPassword, workFactor: 12),
+            PasswordHash = authService.HashPassword(envInitializer.DefaultAdminPassword),
             
             CreatedBy = "aspnet-initializer",
             CreatedAt = now,

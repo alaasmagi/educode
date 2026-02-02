@@ -147,7 +147,7 @@ public class AuthService (
         }
         else
         {
-            tokenEntity = await refreshTokenRepository.GetByItself(refreshToken);
+            tokenEntity = await refreshTokenRepository.GetByItselfAsync(refreshToken);
             
             if (tokenEntity == null)
             {
@@ -168,7 +168,7 @@ public class AuthService (
 
     public async Task<bool> DeleteRefreshToken(string refreshToken)
     {
-        var token = await refreshTokenRepository.GetByItself(refreshToken);
+        var token = await refreshTokenRepository.GetByItselfAsync(refreshToken);
         if (token == null || await refreshTokenRepository.RemoveAsync(token) == null)
         {
             logger.LogError($"Refresh token deletion failed");
@@ -184,21 +184,19 @@ public class AuthService (
     {
         var salt = new byte[16];
         RandomNumberGenerator.Fill(salt);
-        
-        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(input))
-        {
-            Salt = salt,
-            DegreeOfParallelism = 2,
-            Iterations = 3,
-            MemorySize = 65536
-        };
-        
+    
+        var argon2 = new Argon2id(Encoding.UTF8.GetBytes(input));
+        argon2.Salt = salt;
+        argon2.DegreeOfParallelism = 2;
+        argon2.Iterations = 3;
+        argon2.MemorySize = 65536;
+    
         var hash = argon2.GetBytes(32);
-        
+    
         var result = new byte[salt.Length + hash.Length];
         Buffer.BlockCopy(salt, 0, result, 0, salt.Length);
         Buffer.BlockCopy(hash, 0, result, salt.Length, hash.Length);
-        
+    
         return Convert.ToBase64String(result);
     }
     

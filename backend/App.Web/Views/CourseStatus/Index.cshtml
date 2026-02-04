@@ -1,0 +1,55 @@
+@model App.Web.ViewModels.PaginatedList<App.Domain.Entities.CourseStatusEntity>
+
+@{
+    ViewData["Title"] = "Index";
+    ViewData["PageIndex"] = Model.PageIndex;
+    ViewData["TotalPages"] = Model.TotalPages;
+    ViewData["HasPreviousPage"] = Model.HasPreviousPage;
+    ViewData["HasNextPage"] = Model.HasNextPage;
+    ViewData["PageSize"] = Model.PageSize;
+    ViewData["TotalCount"] = Model.TotalCount;
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-controller="AdminPanel" asp-action="Home">Go back</a>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Course Status</th>
+            <th>Updated By</th>
+            <th>Updated At</th>
+            <th>Soft Deleted</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Items) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.StatusName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UpdatedBy)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UpdatedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Deleted)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+@await Html.PartialAsync("_Pagination")
+

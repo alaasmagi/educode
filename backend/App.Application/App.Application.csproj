@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="..\..\..\..\.nuget\packages\oci.dotnetsdk.common\125.1.0\contentFiles\any\netstandard2.0\NLog.config">
+        <Link>NLog.config</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\App.Domain\App.Domain.csproj" />
+      <ProjectReference Include="..\App.Infrastructure\App.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>

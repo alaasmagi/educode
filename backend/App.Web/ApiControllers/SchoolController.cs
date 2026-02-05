@@ -1,7 +1,7 @@
 ﻿using App.Application;
-using App.Application.Contracts.Services;
 using App.Application.DTOs;
 using App.Application.Initializers;
+using App.Contracts.Services;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Sentry;
 using Microsoft.AspNetCore.Mvc;

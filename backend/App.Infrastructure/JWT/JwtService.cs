@@ -16,9 +16,9 @@ namespace App.Infrastructure.JWT;
 public class JwtService(
     EnvInitializer envInitializer,
     ICacheRepository cacheRepository,
-    IUserRepository userRepository) : ITokenService
+    IUserRepository userRepository) : IAccessTokenService
 {
-    public string GenerateAccessToken(UserEntity user)
+    public string GenerateAccessToken(UserEntity user, UserAuthEntity? userAuth)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtKey = envInitializer.JwtKey;
@@ -43,7 +43,9 @@ public class JwtService(
         List<Claim> claims = [
             new Claim(Constants.UserIdClaim, user.Id.ToString()),
             new Claim(Constants.AccessLevelClaim,
-                ((int)(user.Type?.AccessLevel ?? EAccessLevel.NoAccess)).ToString())
+                ((int)(user.Type?.AccessLevel ?? EAccessLevel.NoAccess)).ToString()),
+            new Claim(Constants.VerificationClaim, (userAuth?.Verified ?? false).ToString()),
+            new Claim(Constants.SchoolIdClaim, user.SchoolId.ToString() ?? string.Empty)
         ];
         
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -60,29 +62,6 @@ public class JwtService(
         return tokenHandler.WriteToken(token);
     }
     
-    public async Task<(string? AccessToken, string? RefreshToken)> RefreshTokensAsync(string refreshToken, string jwtToken, 
-        string ipAddress, string creator)
-    {
-        var userId = GetUserIdFromJwt(jwtToken);
-        if (userId == null)
-        {
-            return (null, null);
-        }
-
-        if (!await VerifyRefreshToken(refreshToken, userId.Value, ipAddress))
-        {
-            return (null, null);
-        }
-
-        var user = await userRepository.GetByIdAsync(userId.Value);
-        var newJwtToken = GenerateAccessToken(user!);
-        
-        await cacheRepository.DeletePatternAsync($"*{refreshToken}*");
-        var newRefreshToken = await GenerateRefreshToken(userId.Value, ipAddress, creator);
-        
-        return (newJwtToken, newRefreshToken);
-    }
-    
     private Guid? GetUserIdFromJwt(string jwtToken)
     {
         var handler = new JwtSecurityTokenHandler();
@@ -94,11 +73,5 @@ public class JwtService(
         }
         
         return null;
-    }
-    
-    private int GetAccessLevelFromClaims(AuthorizationHandlerContext context)
-    {
-        var claimValue = context.User.FindFirst(Constants.AccessLevelClaim)?.Value;
-        return int.TryParse(claimValue, out var level) ? level : 0;
     }
 }

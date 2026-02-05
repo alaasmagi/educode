@@ -1,6 +1,4 @@
-﻿using App.Application;
-using App.Application.Contracts.Services;
-using App.Application.DTOs;
+﻿using App.Application.DTOs;
 using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Domain.Enums;
@@ -16,7 +14,6 @@ namespace App.Web.ApiControllers;
 public class AttendanceController(
     IAttendanceManagementService attendanceManagementService,
     ICourseManagementService courseManagementService,
-    IUserManagementService userManagementService,
     ILogger<AttendanceController> logger)
     : ControllerBase
 {

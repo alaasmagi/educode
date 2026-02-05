@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
-using App.Application.Contracts.Services;
 using App.Application.Initializers;
 using App.Contracts.Repositories;
+using App.Contracts.Services;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Sentry;
 using Microsoft.Extensions.Logging;
@@ -10,8 +10,6 @@ namespace App.Application.Services;
 
 public class OtpService(
     ILogger<OtpService> logger,
-    SentryService sentry,
-    EnvInitializer envInitializer,
     ICacheRepository cacheRepository) : IOtpService
 {
     public async Task<int> GenerateAndStoreOtp(string email)

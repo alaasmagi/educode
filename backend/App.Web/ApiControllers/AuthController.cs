@@ -1,5 +1,4 @@
-﻿using App.Application.Contracts.Services;
-using App.Application.Initializers;
+﻿using App.Application.Initializers;
 using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Web.RequestModels;
@@ -13,7 +12,7 @@ namespace App.Web.ApiControllers;
 [Route("api/[controller]")]
 public class AuthController(
     IUserManagementService userManagementService,
-    IAuthService authService,
+
     EnvInitializer envInitializer,
     ILogger<AuthController> logger)
     : ControllerBase

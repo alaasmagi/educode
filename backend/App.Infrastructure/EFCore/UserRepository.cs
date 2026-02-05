@@ -118,6 +118,30 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
         }
     }
 
+    public async Task<UserEntity?> GetByEmailAsync(string email, bool includeDeleted)
+    {
+        try
+        {
+            return includeDeleted ? 
+                await context.Users
+                    .Include(u => u.Type)
+                    .Include(u => u.School)
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Email == email) : 
+                await context.Users
+                    .Include(u => u.Type)
+                    .Include(u => u.School)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Email == email);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user. User email: {Email}", email);
+            sentry.CaptureWithContext(ex, "Error retrieving user. User email: {0}", email);
+            return null;
+        }        }
+
     public async Task<UserEntity?> CreateAsync(UserEntity entity)
     {
         try

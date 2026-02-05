@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
-using App.Application.Contracts.Services;
 using App.Contracts.Repositories;
+using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
 using Microsoft.Extensions.Logging;
@@ -120,17 +120,17 @@ public class AttendanceManagementService(
         return attendances;
     }
 
-    public async Task<bool> AddAttendanceCheckAsync(AttendanceCheckEntity attendanceCheck, string creator, string? workplaceIdentifer)
+    public async Task<bool> AddAttendanceCheckAsync(AttendanceCheckEntity attendanceCheck, string? workplaceIdentifier, string client)
     {
         AttendanceCheckEntity? status;
         attendanceCheck.StudentCode = attendanceCheck.StudentCode.ToUpper();
-        if (workplaceIdentifer != null)
+        if (workplaceIdentifier != null)
         {
-            var workplaceId = await workplaceRepository.CheckAvailabilityByIdentifierAsync(workplaceIdentifer);
+            var workplaceId = await workplaceRepository.CheckAvailabilityByIdentifierAsync(workplaceIdentifier);
             
             if (workplaceId == null)
             {
-                logger.LogError($"Workplace with identifier {workplaceIdentifer} was not found");
+                logger.LogError($"Workplace with identifier {workplaceIdentifier} was not found");
                 return false;
             }
             
@@ -281,7 +281,7 @@ public class AttendanceManagementService(
     }
     
     public async Task<bool> AddAttendanceAsync(AttendanceEntity attendance, List<DateOnly> attendanceDates, 
-                                                                                TimeOnly startTime, TimeOnly endTime)
+                                                                                TimeOnly startTime, TimeOnly endTime, string client)
     {
         var failureCount = 0;
         foreach (var date in attendanceDates)
@@ -312,7 +312,7 @@ public class AttendanceManagementService(
         return true;
     }
 
-    public async Task<bool> EditAttendanceAsync(Guid attendanceId, AttendanceEntity updatedAttendance)
+    public async Task<bool> EditAttendanceAsync(Guid attendanceId, AttendanceEntity updatedAttendance, string client)
     {
         await cacheRepository.DeletePatternAsync($"*{attendanceId.ToString()}*");
         var status = await attendanceRepository.UpdateAsync(updatedAttendance);
@@ -326,7 +326,7 @@ public class AttendanceManagementService(
         return true;
     }
 
-    public async Task<bool> DeleteAttendance(Guid attendanceId, string email)
+    public async Task<bool> DeleteAttendance(Guid attendanceId, string email, string client)
     {
         var attendance = await GetCourseAttendanceByIdAsync(attendanceId, email);
         if (attendance == null)
@@ -347,7 +347,7 @@ public class AttendanceManagementService(
         return true;
     }
     
-    public async Task<bool> DeleteAttendanceCheck(Guid attendanceCheckId, string email)
+    public async Task<bool> DeleteAttendanceCheck(Guid attendanceCheckId, string email, string client)
     {
         var attendanceCheck = await GetAttendanceCheckByIdAsync(attendanceCheckId, email);
         if (attendanceCheck == null)

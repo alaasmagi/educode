@@ -1,5 +1,4 @@
-﻿using App.Application.Contracts.Services;
-using App.Application.Initializers;
+﻿using App.Application.Initializers;
 using App.Contracts.Services;
 using App.Web.RequestModels;
 using Microsoft.AspNetCore.Mvc;

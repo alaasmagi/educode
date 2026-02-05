@@ -1,4 +1,4 @@
-using App.Application.Contracts.Services;
+using App.Contracts.Services;
 
 namespace App.Infrastructure.Sentry;
 public class SentryService(IHub sentry) : ISentryService

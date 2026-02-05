@@ -6,6 +6,9 @@ public static class Constants
     
     public const string UserIdClaim = "UserId";
     public const string AccessLevelClaim = "AccessLevel";
+    public const string VerificationClaim = "Verification";
+    public const string SchoolIdClaim = "SchoolId";
+    
     public const string RefreshTokenPrefix = "RefreshToken:";
     public const string OtpPrefix = "OTP:";
     public const string UserPrefix = "User:";
@@ -27,8 +30,13 @@ public static class Constants
     public const string WorkplacePrefix = "Workplace:";
     public const string UserFolder = "user";
     public const string SchoolFolder = "school";
-    public const string BackendPrefix = "EDUCODE-ASPNET";
     public const int MaxPictureFileSize = 5 * 1024 * 1024; 
+    
+    public const string MobileClientName = "EDUCODE-MOBILE";
+    public const string WebClientName = "EDUCODE-FRONTEND-MAIN";
+    public const string AdminWebClientName = "EDUCODE-FRONTEND-ADMIN";
+    public const string BackendName = "EDUCODE-SERVICE";
+
 
     
     public static readonly TimeSpan DefaultCachePeriod = TimeSpan.FromMinutes(10);

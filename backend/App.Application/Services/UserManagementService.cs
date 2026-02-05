@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using App.Application.Contracts.Services;
 using App.Application.Initializers;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
@@ -13,9 +12,7 @@ namespace App.Application.Services;
 public class UserManagementService(
     IUserRepository userRepository,
     IPasswordService passwordService,
-    ICourseRepository courseRepository,
     ICourseTeacherRepository courseTeacherRepository,
-    ICourseStatusRepository courseStatusRepository,
     IAttendanceCheckRepository attendanceCheckRepository,
     IRefreshTokenRepository refreshTokenRepository,
     IUserAuthRepository userAuthRepository,
@@ -24,42 +21,9 @@ public class UserManagementService(
     ICacheRepository cacheRepository,
     ILogger<UserManagementService> logger) : IUserManagementService
 {
-    public async Task<UserEntity?> AuthenticateUserAsync(string email, string password)
-    {
-        var user = await GetUserByEmailAsync(email);
-        if (user == null)
-        {
-            logger.LogError($"Failed to fetch user with email {email}");
-            return null;
-        }
-        
-        var userAuthData = await userAuthRepository.GetByUserAsync(user.Id);
-        if (userAuthData == null)
-        {
-            logger.LogError($"Failed to fetch user auth data for user with ID {user.Id}");
-            return null;
-        }
-
-        var result = await passwordService.VerifyPasswordAsync(password, userAuthData.PasswordHash);
-        if (!result)
-        {
-            logger.LogError($"Failed to authenticate user with ID {user.Id}");
-            return null;
-        }
-        
-        if (!userAuthData.Verified)
-        {
-            logger.LogError($"User with ID {user.Id} is not verified");
-            return null;
-        }
-        
-        return userAuthData.User;
-    }
-    
-    
     public async Task<UserEntity?> VerifyUser(string email, string otpEntry)
     {
-        var user = await GetUserByEmailAsync(email);
+        var user = await userRepository.GetByEmailAsync(email);
         if (user == null)
         {
             logger.LogError($"Failed to fetch user with email {email}");
@@ -81,40 +45,7 @@ public class UserManagementService(
         
         return userAuthData.User;
     }
-
-    public async Task<bool> CreateAccountAsync(UserEntity user, UserAuthEntity userAuthData)
-    {
-        if (await DoesUserExistAsync(user.Email))
-        {
-            logger.LogError($"Failed to create account for user with email {user.Email}");
-            return false;
-        }
-
-        if (user.StudentCode != null)
-        {
-            user.StudentCode = user.StudentCode.ToUpper();    
-        }
-        
-        if (await userRepository.CreateAsync(user) == null)
-        {
-            logger.LogError($"Failed to create account for user with email {user.Email}");
-            return false;
-        }
-        
-        userAuthData.UserId = user.Id;
-        if (await userAuthRepository.CreateAsync(userAuthData) == null)
-        {
-            logger.LogError($"Failed to create account for user with email {user.Email}");
-            return false;
-        }
-
-        return true;
-    }
-
-    public async Task<bool> ChangeUserPasswordAsync(UserEntity user, string newPasswordHash)
-    { 
-        return true;
-    }
+    
 
     public async Task<bool> DoesUserExistAsync(string email)
     {
@@ -176,37 +107,6 @@ public class UserManagementService(
         return result;
         
     }
-
-    public async Task<UserEntity?> GetUserByEmailAsync(string email)
-    {
-        var cache = await cacheRepository.GetAsync(Constants.UserPrefix + email);
-        if (cache != null)
-        {
-            return JsonSerializer.Deserialize<UserEntity?>(cache);
-        }
-        
-        var userId = await userRepository.CheckAvailabilityByEmailAsync(email);
-        
-        if (userId == null)
-        {
-            logger.LogError($"User with email {email} not found");
-            return null;
-        }
-        
-        var result = await userRepository.GetByIdAsync(userId.Value);
-        
-        if (result == null)
-        {
-            logger.LogError($"User with email {email} not found");
-            return null;
-        }
-        
-        var serializedUser = JsonSerializer.Serialize(result);
-        await cacheRepository.SetAsync(Constants.UserPrefix + email,
-            serializedUser, Constants.DefaultCachePeriod);
-
-        return result;
-    }
     
     public async Task<UserEntity?> GetUserByIdAsync(Guid id)
     {
@@ -231,50 +131,21 @@ public class UserManagementService(
         return result;
     }
     
-    public async Task<bool> SoftDeleteUserAsync(UserEntity user)
+    public async Task<bool> SoftDeleteUserAsync(Guid userId)
     {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null)
+        {
+            return false;
+        }
+        
         await cacheRepository.DeletePatternAsync($"*{user.Id.ToString()}*");
         await cacheRepository.DeletePatternAsync($"*{user.Email}*");
         await cacheRepository.DeletePatternAsync($"*{user.Id}*");
         
-        var singleTeacherCourses = await courseRepository.GetAllSingleUserByUserAsync(user.Id);
-        var unAvailableCourseStatus = await courseStatusRepository.GetByItself("unavailable");
-        
-        if (singleTeacherCourses != null && unAvailableCourseStatus != null)
-        {
-            foreach (var course in singleTeacherCourses)
-            {
-                course.StatusId = unAvailableCourseStatus.Id;
-                await courseRepository.UpdateAsync(course);
-            }
-        }
-        
-        var courseTeachersIds = await courseTeacherRepository.GetAllIdsByTeacherAsync(user.Id);
-        if (courseTeachersIds != null)
-        {
-            foreach (var courseTeacherId in courseTeachersIds)
-            {
-                await courseTeacherRepository.ToggleDeletionAsync(courseTeacherId, true);
-            }
-        }
-        
-        var attendanceCheckIds  = await attendanceCheckRepository.GetAllIdsByUserFullNameAsync(user.FullName);
-        if (attendanceCheckIds != null)
-        {
-            foreach (var attendanceCheckId in attendanceCheckIds)
-            {
-                await courseTeacherRepository.ToggleDeletionAsync(attendanceCheckId, true);
-            }
-        }
-      
-        var refreshTokens = await refreshTokenRepository.GetAllByUser(user.Id);
-        if (refreshTokens != null)
-        {
-            foreach (var refreshToken in refreshTokens)
-            {
-                await refreshTokenRepository.RemoveAsync(refreshToken);
-            }
-        }
+        await courseTeacherRepository.ToggleDeletionForAllByTeacherAsync(user.Id, true);
+        await attendanceCheckRepository.ToggleDeletionForAllByUserAsync(user.FullName, true);
+        await refreshTokenRepository.RemoveAllByUserAsync(user.Id);
         
         var userAuth = await userAuthRepository.GetByUserAsync(user.Id);
         if (await userRepository.ToggleDeletionAsync(user.Id, true) || 
@@ -285,6 +156,31 @@ public class UserManagementService(
         }
         
         logger.LogInformation($"Successfully deleted user with ID {user.Id}");
+        return true;
+    }
+    
+    public async Task<bool> RestoreUserAsync(Guid userId)
+    {
+        await userRepository.ToggleDeletionAsync(userId, false);
+        var user = await userRepository.GetByIdAsync(userId);
+
+        if (user == null)
+        {
+            return false;
+        }
+        
+        await courseTeacherRepository.ToggleDeletionForAllByTeacherAsync(user.Id, false);
+        await attendanceCheckRepository.ToggleDeletionForAllByUserAsync(user.FullName, false);
+        
+        var userAuth = await userAuthRepository.GetByUserAsync(user.Id);
+        if (await userRepository.ToggleDeletionAsync(user.Id, false) || 
+            await userAuthRepository.ToggleDeletionAsync(userAuth!.Id, false))
+        {
+            logger.LogError($"Failed to restore user with ID {user.Id}");
+            return false;
+        }
+        
+        logger.LogInformation($"Successfully restored user with ID {user.Id}");
         return true;
     }
     

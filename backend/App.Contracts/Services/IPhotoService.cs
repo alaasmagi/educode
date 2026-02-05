@@ -1,4 +1,4 @@
-namespace App.Application.Contracts.Services;
+namespace App.Contracts.Services;
 
 public interface IPhotoService
 {

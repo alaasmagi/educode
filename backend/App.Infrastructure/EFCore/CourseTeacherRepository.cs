@@ -254,4 +254,46 @@ public class CourseTeacherRepository(AppDbContext context, ILogger<CourseTeacher
             return null;
         }
     }
+    
+    public async Task<bool> ToggleDeletionForAllByTeacherAsync(Guid id, bool newDeletionState)
+    {
+        try
+        {
+            var affectedRows = await context.CourseTeachers
+                .IgnoreQueryFilters()
+                .Where(ac => ac.TeacherId == id)
+                .ExecuteDeleteAsync();
+
+            return affectedRows > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error toggling deletion state for course teacher. ID: {Id}, New State: {NewState}", 
+                id, newDeletionState);
+            sentry.CaptureWithContext(ex, "Error toggling deletion state for course teacher. ID: {0}, New State: {1}", 
+                id, newDeletionState);
+            return false;
+        }
+    }
+    
+    public async Task<bool> ToggleDeletionForAllByCourseAsync(Guid id, bool newDeletionState)
+    {
+        try
+        { 
+            var affectedRows = await context.CourseTeachers
+                .IgnoreQueryFilters()
+                .Where(ac => ac.CourseId == id)
+                .ExecuteDeleteAsync();;
+
+            return affectedRows > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error toggling deletion state for course teacher. ID: {Id}, New State: {NewState}", 
+                id, newDeletionState);
+            sentry.CaptureWithContext(ex, "Error toggling deletion state for course teacher. ID: {0}, New State: {1}", 
+                id, newDeletionState);
+            return false;
+        }
+    }
 }

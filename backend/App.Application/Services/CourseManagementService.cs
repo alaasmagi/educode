@@ -100,7 +100,7 @@ public class CourseManagementService (
         return true;
     }
     
-    public async Task<bool> EditCourse(Guid courseId, CourseEntity newCourse)
+    public async Task<bool> EditCourse(Guid courseId, CourseEntity newCourse, string client)
     {
         var courseExistence = await DoesCourseExistByIdAsync(courseId);
         
@@ -121,7 +121,7 @@ public class CourseManagementService (
         return true;
     }
     
-    public async Task<bool> DeleteCourse(Guid courseId, string email)
+    public async Task<bool> DeleteCourse(Guid courseId, string email, string client)
     {
         var course = await GetCourseByIdAsync(courseId, email);
         

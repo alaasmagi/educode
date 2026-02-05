@@ -1,4 +1,3 @@
-using App.Application.Contracts.Services;
 using App.Contracts.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

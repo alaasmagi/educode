@@ -94,7 +94,7 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         }
     }
 
-    public async Task<List<RefreshTokenEntity>?> GetAllByUser(Guid userId)
+    public async Task<List<RefreshTokenEntity>?> GetAllByUserAsync(Guid userId)
     {
         try
         {
@@ -161,25 +161,21 @@ public class RefreshTokenRepository(AppDbContext context, ILogger<RefreshTokenRe
         }
     }
 
-    public async Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState)
+    public async Task<bool> RemoveAllByUserAsync(Guid userId)
     {
         try
         {
             var affectedRows = await context.RefreshTokens
                 .IgnoreQueryFilters()
-                .Where(rt => rt.Id == id)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(rt => rt.Deleted, newDeletionState)
-                    .SetProperty(rt => rt.UpdatedAt, DateTime.UtcNow));
+                .Where(rt => rt.UserId == userId)
+                .ExecuteDeleteAsync();
 
             return affectedRows > 0;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error toggling deletion state for refresh token. ID: {Id}, New State: {NewState}", 
-                                                                                                        id, newDeletionState);
-            sentry.CaptureWithContext(ex, "Error toggling deletion state for refresh token. ID: {0}, New State: {1}", 
-                                                                                                        id, newDeletionState);
+            logger.LogError(ex, "Error toggling deletion state for refresh tokens by user. User ID: {Id}", userId);
+            sentry.CaptureWithContext(ex, "Error toggling deletion state for refresh token. ID: {0}", userId);
             return false;
         }
     }

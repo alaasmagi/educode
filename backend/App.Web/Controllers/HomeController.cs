@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using App.Application.Contracts.Services;
 using App.Application.Initializers;
 using App.Contracts.Services;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.Models;
 using App.Web.RequestModels;
 using Microsoft.AspNetCore.Authorization;
@@ -10,8 +10,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Web.Controllers;
 
-public class AdminPanelController(IAuthService authService, IUserManagementService userManagementService, ILogger<AdminPanelController> logger, EnvInitializer envInitializer)
-    : Controller
+public class AdminPanelController(
+    IAuthService authService, 
+    IAccessTokenService accessTokenService,
+    ILogger<AdminPanelController> logger, 
+    EnvInitializer envInitializer) : Controller
 {
     [HttpGet]
     public IActionResult Index(string? message)
@@ -32,21 +35,19 @@ public class AdminPanelController(IAuthService authService, IUserManagementServi
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         
-        var user = await userManagementService.GetUserByEmailAsync(model.Username);
-
-        if (user == null)
-        {
-            return Index("Wrong username or password!");
-        }
+        var clientIp = HttpContext.Connection.RemoteIpAddress!.ToString();
         
-        var adminUser = await userManagementService.AuthenticateUserAsync(user.Id, model.Password);
+        var adminUser = await authService.AuthenticateUserAsync(model.Username, model.Password,
+                                                                clientIp, Constants.BackendName,true);
         
         if (adminUser == null)
         {
             return Index("Wrong username or password!");
         }
         
-        var token = authService.GenerateJwtToken(adminUser);
+        var (user, _, _) = adminUser.Value;
+        
+        var token = accessTokenService.GenerateAccessToken(user, null);
         
         Response.Cookies.Append("jwt", token, new CookieOptions
         {

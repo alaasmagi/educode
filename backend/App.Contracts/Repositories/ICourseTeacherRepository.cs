@@ -8,5 +8,7 @@ public interface ICourseTeacherRepository : IRepository<CourseTeacherEntity>
     Task<List<Guid>?> GetAllIdsByTeacherAsync(Guid userId);
     Task<List<Guid>?> GetAllIdsByCourseAsync(Guid courseId);
     Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState);
+    Task<bool> ToggleDeletionForAllByTeacherAsync(Guid id, bool newDeletionState);
+    Task<bool> ToggleDeletionForAllByCourseAsync(Guid id, bool newDeletionState);
 
 }

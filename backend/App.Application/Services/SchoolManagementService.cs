@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
-using App.Application.Contracts.Services;
 using App.Contracts.Repositories;
+using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Redis;

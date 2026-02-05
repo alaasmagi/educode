@@ -1,5 +1,4 @@
 using App.Application;
-using App.Application.Contracts.Services;
 using App.Application.DTOs;
 using App.Application.Initializers;
 using App.Contracts.Services;

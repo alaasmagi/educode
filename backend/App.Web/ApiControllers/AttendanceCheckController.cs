@@ -1,6 +1,4 @@
-﻿using App.Application;
-using App.Application.Contracts.Services;
-using App.Application.DTOs;
+﻿using App.Application.DTOs;
 using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Domain.Enums;
@@ -8,6 +6,7 @@ using App.Infrastructure.Helpers;
 using App.Web.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NetTools.Extensions;
 
 namespace App.Web.ApiControllers;
 
@@ -15,7 +14,6 @@ namespace App.Web.ApiControllers;
 [Route("api/[controller]")]
 public class AttendanceCheckController(
     IAttendanceManagementService attendanceManagementService,
-    ICourseManagementService courseManagementService,
     IUserManagementService userManagementService,
     ILogger<AttendanceCheckController> logger)
     : ControllerBase
@@ -66,7 +64,8 @@ public class AttendanceCheckController(
             UpdatedBy = model.Client,
         };
 
-        if (!await attendanceManagementService.AddAttendanceCheckAsync(newAttendanceCheck, model.Client, model.WorkplaceIdentifier ?? null))
+        if (!await attendanceManagementService.AddAttendanceCheckAsync(newAttendanceCheck, model.WorkplaceIdentifier ?? null, 
+                                                                                                            model.Client))
         {
             return BadRequest(new {message = "Attendance check already exists", 
                 messageCode = "attendance-check-already-exists" });
@@ -88,7 +87,7 @@ public class AttendanceCheckController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
 
-        if (!await attendanceManagementService.DeleteAttendanceCheck(id, userId))
+        if (!await attendanceManagementService.DeleteAttendanceCheck(id, userId.ToGuid(), client))
         {
             return BadRequest(new { message = "AttendanceCheck does not exist", 
                 messageCode = "attendance-check-does-not-exist" });

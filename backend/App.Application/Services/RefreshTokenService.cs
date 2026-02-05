@@ -14,7 +14,7 @@ public class RefreshTokenService (
     IRefreshTokenRepository refreshTokenRepository,
     ILogger<RefreshTokenService> logger) : IRefreshTokenService
 {
-    public async Task<string?> GenerateRefreshToken(Guid userId, string creatorIp, string creator)
+    public async Task<string?> GenerateRefreshToken(Guid userId, string creatorIp, string client)
     {
         var refreshTokenExpirationDays = envInitializer.RefreshTokenExpirationDays;
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
@@ -23,11 +23,11 @@ public class RefreshTokenService (
         {
             UserId = userId,
             Token = token,
-            Client = creator,
+            Client = client,
             ClientIp = creatorIp,
             ExpirationTime = DateTime.UtcNow + TimeSpan.FromDays(refreshTokenExpirationDays),
-            CreatedBy = Constants.BackendPrefix,
-            UpdatedBy = Constants.BackendPrefix
+            CreatedBy = Constants.BackendName,
+            UpdatedBy = Constants.BackendName
         };
         
         if (await refreshTokenRepository.CreateAsync(tokenData) == null)
@@ -42,7 +42,7 @@ public class RefreshTokenService (
         return token;
     }
     
-    public async Task<bool> VerifyRefreshToken(string refreshToken, Guid userId, string ipAddress)
+    public async Task<bool> VerifyRefreshToken(string refreshToken, Guid userId)
     {
         var cache = await cacheRepository.GetAsync(Constants.RefreshTokenPrefix + refreshToken);
         

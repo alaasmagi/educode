@@ -1,6 +1,6 @@
 using App.Domain.Entities;
 
-namespace App.Application.Contracts.Services;
+namespace App.Contracts.Services;
 
 public interface ISchoolManagementService
 {

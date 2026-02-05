@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Threading.RateLimiting;
-using App.Application.Contracts.Services;
 using App.Application.Initializers;
 using App.Application.Services;
 using App.Contracts.Repositories;
@@ -80,7 +79,7 @@ builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 
 builder.Services.AddScoped<IPhotoService, OciPhotoService>();
 builder.Services.AddScoped<IAttendanceManagementService, AttendanceManagementService>();
-builder.Services.AddScoped<IAuthService, RefreshTokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseManagementService, CourseManagementService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();

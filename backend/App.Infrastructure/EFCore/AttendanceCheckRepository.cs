@@ -124,6 +124,27 @@ public class AttendanceCheckRepository(
         }
     }
 
+    public async Task<bool> ToggleDeletionForAllByUserAsync(string fullName, bool newDeletionState)
+    {
+        try
+        { 
+            var affectedRows = await context.AttendanceChecks
+                .IgnoreQueryFilters()
+                .Where(ac => ac.FullName == fullName)
+                .ExecuteDeleteAsync();;
+
+            return affectedRows > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error toggling deletion state for all attendance checks by user. FullName: {Id}, " +
+                                                                    "New State: {NewState}", fullName, newDeletionState);
+            sentry.CaptureWithContext(ex, "Error toggling deletion state for all attendance checks by user. " +
+                                                            "FullName: {0}, New State: {1}", fullName, newDeletionState);
+            return false;
+        }
+    }
+
     public async Task<AttendanceCheckEntity?> GetByIdAsync(Guid id, bool includeDeleted)
     {
         try

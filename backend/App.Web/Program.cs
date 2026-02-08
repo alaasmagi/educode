@@ -5,14 +5,20 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Threading.RateLimiting;
 using App.Application.Services.Attendance;
+using App.Application.Services.AttendanceCheck;
+using App.Application.Services.AttendanceType;
 using App.Application.Services.Course;
+using App.Application.Services.School;
 using App.Application.Services.User;
+using App.Application.Services.UserType;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
 using App.Domain.Enums;
+using App.Infrastructure.Argon2;
 using App.Infrastructure.EFCore;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
+using App.Infrastructure.JWT;
 using App.Infrastructure.Oracle;
 using App.Infrastructure.Redis;
 using App.Infrastructure.Sentry;
@@ -65,6 +71,7 @@ builder.Services.AddScoped<IDatabase>(sp =>
 });
 
 builder.Services.AddScoped<SentryService>();
+builder.Services.AddScoped<ISentryService>(sp => sp.GetRequiredService<SentryService>());
 
 builder.Services.AddScoped<RedisRepository>(sp =>
 {
@@ -79,18 +86,31 @@ builder.Logging.AddSerilog();
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 
+// Infrastructure Services
+builder.Services.AddScoped<IPasswordService, ArgonService>();
+builder.Services.AddScoped<IAccessTokenService, JwtService>();
 builder.Services.AddScoped<IPhotoService, OciPhotoService>();
-builder.Services.AddScoped<IAttendanceService, AttendanceService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICourseService, CourseService>();
-builder.Services.AddScoped<IOtpService, OtpService>();
 
-// Register specialized user services
+// Application Services - Attendance
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IAttendanceCheckService, AttendanceCheckService>();
+builder.Services.AddScoped<IAttendanceTypeService, AttendanceTypeService>();
+
+// Application Services - User & Auth
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IUserTypeService, UserTypeService>();
-builder.Services.AddScoped<ISeedingService, SeedingService>();
-// Facade service for backward compatibility
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+
+// Application Services - Course & School
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<ISchoolService, SchoolService>();
+
+// Seeding Services
+builder.Services.AddScoped<IUserTypeSeedingService, UserTypeSeedingService>();
+builder.Services.AddScoped<IUserSeedingService, UserSeedingService>();
+builder.Services.AddScoped<IAttendanceTypeSeedingService, AttendanceTypeSeedingService>();
+builder.Services.AddScoped<ICourseStatusSeedingService, CourseStatusSeedingService>();
 
 builder.Services.AddSingleton<DbInitializer>();
 

@@ -3,6 +3,7 @@ using App.Contracts.Services;
 using App.Contracts.WebRequests;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,7 +15,6 @@ namespace App.Web.ApiControllers
         IUserService userService,
         ICourseService courseService,
         IAttendanceService attendanceService,
-        IPhotoService photoService,
         ILogger<UserController> logger)
         : ControllerBase
     {
@@ -140,54 +140,33 @@ namespace App.Web.ApiControllers
         public async Task<ActionResult> UploadUserPhoto(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
-
-            if (user == null)
-            {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
-            }
-
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
             var file = HttpContext.Request.Form.Files.FirstOrDefault();
 
             if (file == null || file.Length == 0)
             {
-                return BadRequest(new { message = "No file uploaded", messageCode = "no-file-uploaded" });
+                return BadRequest(new Error(ErrorConstants.FileNotProvided, "File was not provided"));
             }
 
             if (!file.ContentType.StartsWith("image/"))
             {
-                return BadRequest(new
-                    { message = "Invalid file type. Only images allowed.", messageCode = "invalid-file-type" });
+                return BadRequest(new Error(ErrorConstants.UnsupportedFiletype, "File type is not supported"));
             }
 
             if (file.Length > Constants.MaxPictureFileSize)
             {
-                return BadRequest(new { message = "File size exceeds 5MB limit.", messageCode = "file-too-large" });
+                return BadRequest(new Error(ErrorConstants.FileTooLarge, "File is too large"));
             }
 
-            using (var photoStream = file.OpenReadStream())
+            var response = await userService.UploadPhotoAsync(id, file, email, clientApp);
+            if (!response.Successful)
             {
-                var objectPath = await photoService.UploadPhotoAsync(
-                    Constants.UserFolder,
-                    id,
-                    photoStream,
-                    file.ContentType);
-
-                if (objectPath == null)
-                {
-                    return StatusCode(500,
-                        new
-                        {
-                            message = "Photo upload failed due to server error.", messageCode = "oci-upload-failed"
-                        });
-                }
-
-                user.PhotoPath = objectPath;
-                await userService.UpdateUserAsync(user);
-                logger.LogInformation($"Successfully uploaded photo for user {userId}. Path: {objectPath}");
-                return Ok(new { message = "Photo uploaded successfully", path = objectPath });
+                return BadRequest(response.Error);
             }
+            
+            logger.LogInformation($"Successfully uploaded photo for user {id}");
+            return Ok();
         }
 
         [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
@@ -195,33 +174,17 @@ namespace App.Web.ApiControllers
         public async Task<ActionResult> RemoveUserPhoto(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
-
-            if (user == null)
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var response = await userService.RemovePhotoAsync(id, email, clientApp);
+            if (!response.Successful)
             {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
+                return BadRequest(response.Error);
             }
-
-            if (string.IsNullOrWhiteSpace(user.PhotoPath))
-            {
-                return BadRequest(new { message = "No photo to remove", messageCode = "no-photo-found" });
-            }
-
-            bool removed = await photoService.RemovePhotoAsync(user.PhotoPath);
-
-            if (!removed)
-            {
-                return StatusCode(500,
-                    new { message = "Failed to remove photo from storage", messageCode = "oci-delete-failed" });
-            }
-
-            user.PhotoPath = string.Empty;
-            await userService.UpdateUserAsync(user);
-
-            logger.LogInformation($"Photo removed for user {user.Id}. Path: {user.PhotoPath}");
-
-            return Ok(new { message = "Photo removed successfully" });
+            
+            logger.LogInformation($"Photo removed for user {id}");
+            return Ok();
         }
     }
 }

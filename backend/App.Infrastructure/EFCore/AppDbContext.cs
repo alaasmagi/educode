@@ -237,7 +237,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     }
 }
 
-public abstract class UtcDateTimeConverter() : 
+public class UtcDateTimeConverter() : 
     ValueConverter<DateTime, DateTime>(toDb => toDb.Kind == DateTimeKind.Utc
     ? toDb : DateTime.SpecifyKind(toDb, DateTimeKind.Utc), fromDb => DateTime.SpecifyKind(fromDb, DateTimeKind.Utc));
 

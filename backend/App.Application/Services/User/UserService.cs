@@ -8,6 +8,7 @@ using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
 using Base.Domain;
 using Base.DTO;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace App.Application.Services.User;
@@ -18,6 +19,7 @@ public class UserService(
     ICourseTeacherRepository courseTeacherRepository,
     IAttendanceCheckRepository attendanceCheckRepository,
     IRefreshTokenRepository refreshTokenRepository,
+    IPhotoService photoService,
     IUserAuthRepository userAuthRepository,
     ICacheRepository cacheRepository,
     EnvInitializer envInitializer,
@@ -168,7 +170,91 @@ public class UserService(
         logger.LogInformation($"Successfully restored user with ID {userId}");
         return MethodResponse<bool>.Success(true);
     }
-    
+
+    public async Task<MethodResponse<bool>> UploadPhotoAsync(Guid userId, IFormFile image, string email, string clientApp)
+    {
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            logger.LogWarning($"User with ID {userId} was not found");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.UserNotFound, "User was not found")
+            );
+        }
+        
+        string? objectPath;
+        using (var photoStream = image.OpenReadStream())
+        {
+            objectPath = await photoService.UploadPhotoAsync(Constants.UserFolder, userId, photoStream, image.ContentType);
+            if (objectPath == null)
+            {
+                logger.LogError($"Failed to upload photo for user with ID {userId}");
+                return MethodResponse<bool>.Failure(
+                    new Error(ErrorConstants.PhotoNotUploaded, "Photo was not uploaded")
+                );
+            }
+        }
+
+        user.PhotoPath = objectPath;
+        user.UpdatedBy = email;
+        user.CreatedByClient = clientApp;
+        var response = await userRepository.UpdateAsync(user);
+        if (response == null)
+        {
+            logger.LogError($"Failed to update user with ID {userId} after photo upload");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.PhotoNotUploaded, "Photo was not uploaded")
+            );
+        }
+        
+        logger.LogInformation($"Successfully uploaded photo for user with ID {userId}. Path: {objectPath}");
+        return MethodResponse<bool>.Success(true);
+    }
+
+    public async Task<MethodResponse<bool>> RemovePhotoAsync(Guid userId, string email, string clientApp)
+    {
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            logger.LogWarning($"User with ID {userId} was not found");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.UserNotFound, "User was not found")
+            );
+        }
+        
+        if (string.IsNullOrWhiteSpace(user.PhotoPath))
+        {
+            logger.LogWarning($"User with ID {userId} does not have a photo to remove");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.PhotoNotRemoved, "Photo was not found")
+            );
+        }
+        
+        var status = await photoService.RemovePhotoAsync(user.PhotoPath);
+        if (!status)
+        {
+            logger.LogError($"Failed to remove photo from storage for user with ID {userId}");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.PhotoNotRemoved, "Photo was not removed")
+            );
+        }
+        
+        user.PhotoPath = string.Empty;
+        user.UpdatedBy = email;
+        user.UpdatedByClient = clientApp;
+        var response = await userRepository.UpdateAsync(user);
+        if (response == null)
+        {
+            logger.LogError($"Failed to update user with ID {userId} after photo removal");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.PhotoNotUploaded, "Photo was not removed completely")
+            );
+        }
+        
+        logger.LogInformation($"Successfully removed photo for user with ID {userId}");
+        return MethodResponse<bool>.Success(true);
+    }
+
     public async Task<MethodResponse<UserTypeEntity>> GetUserTypeAsync(string userType)
     {
         var cache = await cacheRepository.GetAsync(Constants.UserTypePrefix + userType);

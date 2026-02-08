@@ -3,6 +3,9 @@ namespace App.Infrastructure.Helpers;
 public static class ErrorConstants
 {
     public const string InvalidCredentials = "invalid-credentials";
+    public const string FileNotProvided = "file-not-provided";
+    public const string UnsupportedFiletype = "file-type-not-supported";
+    public const string FileTooLarge = "file-too-large";
     
     public const string SchoolNotFound = "school-not-found";
     public const string SchoolsNotFound = "schools-not-found";
@@ -14,6 +17,8 @@ public static class ErrorConstants
     public const string UserAuthNotFound = "user-auth-not-found";
     public const string UserNotDeleted = "user-not-deleted";
     public const string UserNotRestored = "user-not-restored";
+    public const string PhotoNotUploaded = "photo-not-uploaded";
+    public const string PhotoNotRemoved = "photo-not-removed";
     public const string UserNotUpdated = "user-not-updated";
     
     public const string AdminUserNotSeeded = "admin-user-not-seeded";

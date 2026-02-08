@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace App.DAL.EF.Migrations
+namespace App.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class DbMigrationv1 : Migration
@@ -22,8 +22,10 @@ namespace App.DAL.EF.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     TypeName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -40,8 +42,10 @@ namespace App.DAL.EF.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     StatusName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -61,8 +65,10 @@ namespace App.DAL.EF.Migrations
                     Domain = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     StudentCodePattern = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -80,8 +86,10 @@ namespace App.DAL.EF.Migrations
                     TypeName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     AccessLevel = table.Column<int>(type: "integer", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -100,8 +108,10 @@ namespace App.DAL.EF.Migrations
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
                     SchoolEntityId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -135,8 +145,10 @@ namespace App.DAL.EF.Migrations
                     StatusId = table.Column<Guid>(type: "uuid", nullable: false),
                     SchoolId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -172,8 +184,10 @@ namespace App.DAL.EF.Migrations
                     FullName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     PhotoPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -206,8 +220,10 @@ namespace App.DAL.EF.Migrations
                     ClassroomId = table.Column<Guid>(type: "uuid", nullable: false),
                     ComputerCode = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -238,8 +254,10 @@ namespace App.DAL.EF.Migrations
                     StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -279,8 +297,10 @@ namespace App.DAL.EF.Migrations
                     CourseId = table.Column<Guid>(type: "uuid", nullable: false),
                     TeacherId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -316,8 +336,10 @@ namespace App.DAL.EF.Migrations
                     ClientIp = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     ExpirationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -343,8 +365,10 @@ namespace App.DAL.EF.Migrations
                     PasswordHash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     Verified = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -371,8 +395,10 @@ namespace App.DAL.EF.Migrations
                     AttendanceIdentifier = table.Column<string>(type: "text", nullable: false),
                     WorkplaceIdentifier = table.Column<string>(type: "text", nullable: true),
                     CreatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    CreatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    UpdatedByClient = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Deleted = table.Column<bool>(type: "boolean", nullable: false)
                 },

@@ -26,7 +26,7 @@ public class SchoolController(
         var response = await schoolService.GetAllSchoolsAsync(pageNr, pageSize); 
         if (!response.Successful)
         {
-            return NotFound(response.Error);
+            return BadRequest(response.Error);
         }
         
         logger.LogInformation($"{response.Value!.Count} schools successfully fetched");
@@ -41,7 +41,7 @@ public class SchoolController(
         var response = await schoolService.GetSchoolByIdAsync(id); 
         if (!response.Successful)
         {
-            return NotFound(response.Error);
+            return BadRequest(response.Error);
         }
         
         logger.LogInformation($"School with ID {id} successfully fetched");

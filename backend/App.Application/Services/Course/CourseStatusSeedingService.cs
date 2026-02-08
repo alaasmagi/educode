@@ -44,6 +44,13 @@ public class CourseStatusSeedingService(
         
         foreach (var courseStatus in courseStatuses)
         {
+            var existing = await courseStatusRepository.GetByItself(courseStatus.StatusName);
+            if (existing != null)
+            {
+                logger.LogInformation($"Course status {courseStatus.StatusName} already exists, skipping");
+                continue;
+            }
+
             var result = await courseStatusRepository.CreateAsync(courseStatus);
 
             if (result == null)

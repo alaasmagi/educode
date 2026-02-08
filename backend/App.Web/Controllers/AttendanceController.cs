@@ -68,17 +68,21 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("CourseId,Identifier,TypeId,StartTime,EndTime,Deleted")] AttendanceEntity attendanceEntity)
+        public async Task<IActionResult> Create([Bind("CourseId,Identifier,TypeId,StartTime,EndTime,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")] AttendanceEntity attendanceEntity)
         {
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            attendanceEntity.CreatedBy = email;
+            attendanceEntity.CreatedByClient = clientApp;
+            attendanceEntity.UpdatedBy = email;
+            attendanceEntity.UpdatedByClient = clientApp;
+            attendanceEntity.CreatedAt = now;
+            attendanceEntity.UpdatedAt = now;
             
             if (ModelState.IsValid)
             {
-                attendanceEntity.CreatedBy = email;
-                attendanceEntity.CreatedByClient = clientApp;
-                attendanceEntity.UpdatedBy = email;
-                attendanceEntity.UpdatedByClient = clientApp;
                 await attendanceRepository.CreateAsync(attendanceEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -115,7 +119,7 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,Identifier,TypeId,StartTime,EndTime,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] AttendanceEntity attendanceEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,Identifier,TypeId,StartTime,EndTime,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")] AttendanceEntity attendanceEntity)
         {
             if (id != attendanceEntity.Id)
             {
@@ -125,11 +129,12 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            attendanceEntity.UpdatedBy = email;
+            attendanceEntity.UpdatedByClient = clientApp;
+            attendanceEntity.UpdatedAt = DateTime.UtcNow;
+
             if (ModelState.IsValid)
             {
-                attendanceEntity.UpdatedBy = email;
-                attendanceEntity.UpdatedByClient = clientApp;
-
                 await cache.DeletePatternAsync($"*{attendanceEntity.Id.ToString()}*");
                 await cache.DeletePatternAsync($"*{attendanceEntity.Identifier}*");
                 var result = await attendanceRepository.UpdateAsync(attendanceEntity);

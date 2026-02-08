@@ -57,28 +57,45 @@ namespace App.Web.Controllers
         // GET: Course/Create
         public async Task<IActionResult> Create()
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var courseEntity = new CourseEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
             var courseStatuses = await courseStatusRepository.GetAllAsync(1, 100);
             var schools = await schoolRepository.GetAllAsync(1, 100);
             ViewData["CourseStatus"] = new SelectList(courseStatuses, "Id", "StatusName");
             ViewData["School"] = new SelectList(schools, "Id", "Name");
-            return View();
+            return View(courseEntity);
         }
 
         // POST: Course/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Deleted")] CourseEntity courseEntity)
+        public async Task<IActionResult> Create([Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")] CourseEntity courseEntity)
         {
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            courseEntity.CreatedBy = email;
+            courseEntity.CreatedByClient = clientApp;
+            courseEntity.UpdatedBy = email;
+            courseEntity.UpdatedByClient = clientApp;
+            courseEntity.CreatedAt = now;
+            courseEntity.UpdatedAt = now;
             
             if (ModelState.IsValid)
             {
-                courseEntity.CreatedBy = email;
-                courseEntity.CreatedByClient = clientApp;
-                courseEntity.UpdatedBy = email;
-                courseEntity.UpdatedByClient = clientApp;
                 await courseRepository.CreateAsync(courseEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -115,7 +132,7 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] CourseEntity courseEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")] CourseEntity courseEntity)
         {
             if (id != courseEntity.Id)
             {
@@ -125,11 +142,12 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            courseEntity.UpdatedBy = email;
+            courseEntity.UpdatedByClient = clientApp;
+            courseEntity.UpdatedAt = DateTime.UtcNow;
+
             if (ModelState.IsValid)
             {
-                courseEntity.UpdatedBy = email;
-                courseEntity.UpdatedByClient = clientApp;
-
                 await cache.DeletePatternAsync($"*{courseEntity.Id.ToString()}*");
                 var result = await courseRepository.UpdateAsync(courseEntity);
 

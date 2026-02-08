@@ -51,26 +51,43 @@ namespace App.Web.Controllers
         }
 
         // GET: UserType/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            return View();
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var userTypeEntity = new UserTypeEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
+            return View(userTypeEntity);
         }
 
         // POST: UserType/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("TypeName,Deleted")] UserTypeEntity userTypeEntity)
+        public async Task<IActionResult> Create([Bind("TypeName,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")] UserTypeEntity userTypeEntity)
         {
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            userTypeEntity.CreatedBy = email;
+            userTypeEntity.CreatedByClient = clientApp;
+            userTypeEntity.UpdatedBy = email;
+            userTypeEntity.UpdatedByClient = clientApp;
+            userTypeEntity.CreatedAt = now;
+            userTypeEntity.UpdatedAt = now;
             
             if (ModelState.IsValid)
             {
-                userTypeEntity.CreatedBy = email;
-                userTypeEntity.CreatedByClient = clientApp;
-                userTypeEntity.UpdatedBy = email;
-                userTypeEntity.UpdatedByClient = clientApp;
                 await userTypeRepository.CreateAsync(userTypeEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -97,7 +114,7 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("TypeName,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] UserTypeEntity userTypeEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("TypeName,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")] UserTypeEntity userTypeEntity)
         {
             if (id != userTypeEntity.Id)
             {
@@ -107,11 +124,12 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            userTypeEntity.UpdatedBy = email;
+            userTypeEntity.UpdatedByClient = clientApp;
+            userTypeEntity.UpdatedAt = DateTime.UtcNow;
+
             if (ModelState.IsValid)
             {
-                userTypeEntity.UpdatedBy = email;
-                userTypeEntity.UpdatedByClient = clientApp;
-
                 await cache.DeletePatternAsync($"*{userTypeEntity.Id.ToString()}*");
                 var result = await userTypeRepository.UpdateAsync(userTypeEntity);
 

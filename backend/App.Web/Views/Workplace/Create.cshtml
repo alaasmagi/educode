@@ -32,6 +32,12 @@
                 <span asp-validation-for="Deleted" class="text-danger"></span>
             </div>
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CreatedBy" />
+            <input type="hidden" asp-for="CreatedByClient" />
+            <input type="hidden" asp-for="CreatedAt" />
+            <input type="hidden" asp-for="UpdatedBy" />
+            <input type="hidden" asp-for="UpdatedByClient" />
+            <input type="hidden" asp-for="UpdatedAt" />
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>

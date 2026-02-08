@@ -66,6 +66,13 @@ public class UserTypeSeedingService(
 
         foreach (var userType in userTypes)
         {
+            var existing = await userTypeRepository.GetByItselfAsync(userType.TypeName);
+            if (existing != null)
+            {
+                logger.LogInformation($"User type {userType.TypeName} already exists, skipping");
+                continue;
+            }
+
             var result = await userTypeRepository.CreateAsync(userType);
 
             if (result == null)

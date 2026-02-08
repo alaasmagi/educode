@@ -29,7 +29,8 @@ public class RefreshTokenService (
             Client = email,
             ClientIp = creatorIp,
             ExpirationTime = DateTime.UtcNow + TimeSpan.FromDays(refreshTokenExpirationDays),
-            CreatedBy = clientApp,
+            CreatedBy = email,
+            CreatedByClient = clientApp,
             UpdatedBy = email,
             UpdatedByClient = clientApp
         };

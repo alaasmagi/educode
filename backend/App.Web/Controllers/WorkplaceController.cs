@@ -56,26 +56,43 @@ namespace App.Web.Controllers
         // GET: Workplace/Create
         public async Task<IActionResult> Create()
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var workplaceEntity = new WorkplaceEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
             var classrooms = await classroomRepository.GetAllAsync(1, 100);
             ViewData["Classroom"] = new SelectList(classrooms, "Id", "Classroom");
-            return View();
+            return View(workplaceEntity);
         }
 
         // POST: Workplace/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Identifier,ClassroomId,ClassRoom,ComputerCode,Deleted")] WorkplaceEntity workplaceEntity)
+        public async Task<IActionResult> Create([Bind("Identifier,ClassroomId,ClassRoom,ComputerCode,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")] WorkplaceEntity workplaceEntity)
         {
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            workplaceEntity.CreatedBy = email;
+            workplaceEntity.CreatedByClient = clientApp;
+            workplaceEntity.UpdatedBy = email;
+            workplaceEntity.UpdatedByClient = clientApp;
+            workplaceEntity.CreatedAt = now;
+            workplaceEntity.UpdatedAt = now;
             
             if (ModelState.IsValid)
             {
-                workplaceEntity.CreatedBy = email;
-                workplaceEntity.CreatedByClient = clientApp;
-                workplaceEntity.UpdatedBy = email;
-                workplaceEntity.UpdatedByClient = clientApp;
                 await workplaceRepository.CreateAsync(workplaceEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -108,7 +125,7 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Identifier,ClassroomId,ComputerCode,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] WorkplaceEntity workplaceEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Identifier,ClassroomId,ComputerCode,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")] WorkplaceEntity workplaceEntity)
         {
             if (id != workplaceEntity.Id)
             {
@@ -118,11 +135,12 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            workplaceEntity.UpdatedBy = email;
+            workplaceEntity.UpdatedByClient = clientApp;
+            workplaceEntity.UpdatedAt = DateTime.UtcNow;
+
             if (ModelState.IsValid)
             {
-                workplaceEntity.UpdatedBy = email;
-                workplaceEntity.UpdatedByClient = clientApp;
-
                 await cache.DeletePatternAsync($"*{workplaceEntity.Id.ToString()}*");
                 var result = await workplaceRepository.UpdateAsync(workplaceEntity);
 

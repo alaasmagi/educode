@@ -56,28 +56,45 @@ namespace App.Web.Controllers
         // GET: CourseTeacher/Create
         public async Task<IActionResult> Create()
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var courseTeacherEntity = new CourseTeacherEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
             var courses = await courseRepository.GetAllAsync(1, 100);
             var users = await userRepository.GetAllAsync(1, 100);
             ViewData["CourseId"] = new SelectList(courses, "Id", "Code");
             ViewData["TeacherId"] = new SelectList(users, "Id", "Email");
-            return View();
+            return View(courseTeacherEntity);
         }
 
         // POST: CourseTeacher/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("CourseId,TeacherId,Deleted")] CourseTeacherEntity courseTeacherEntity)
+        public async Task<IActionResult> Create([Bind("CourseId,TeacherId,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")] CourseTeacherEntity courseTeacherEntity)
         {
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            courseTeacherEntity.CreatedBy = email;
+            courseTeacherEntity.CreatedByClient = clientApp;
+            courseTeacherEntity.UpdatedBy = email;
+            courseTeacherEntity.UpdatedByClient = clientApp;
+            courseTeacherEntity.CreatedAt = now;
+            courseTeacherEntity.UpdatedAt = now;
             
             if (ModelState.IsValid)
             {
-                courseTeacherEntity.CreatedBy = email;
-                courseTeacherEntity.CreatedByClient = clientApp;
-                courseTeacherEntity.UpdatedBy = email;
-                courseTeacherEntity.UpdatedByClient = clientApp;
                 await courseTeacherRepository.CreateAsync(courseTeacherEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -114,7 +131,7 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,TeacherId,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] CourseTeacherEntity courseTeacherEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("CourseId,TeacherId,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")] CourseTeacherEntity courseTeacherEntity)
         {
             if (id != courseTeacherEntity.Id)
             {
@@ -124,11 +141,12 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            courseTeacherEntity.UpdatedBy = email;
+            courseTeacherEntity.UpdatedByClient = clientApp;
+            courseTeacherEntity.UpdatedAt = DateTime.UtcNow;
+
             if (ModelState.IsValid)
             {
-                courseTeacherEntity.UpdatedBy = email;
-                courseTeacherEntity.UpdatedByClient = clientApp;
-
                 await cache.DeletePatternAsync($"*{courseTeacherEntity.Id.ToString()}*");
                 await cache.DeletePatternAsync($"*{courseTeacherEntity.CourseId.ToString()}*");
                 await cache.DeletePatternAsync($"*{courseTeacherEntity.TeacherId.ToString()}*");

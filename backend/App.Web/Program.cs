@@ -22,6 +22,7 @@ using App.Infrastructure.JWT;
 using App.Infrastructure.Oracle;
 using App.Infrastructure.Redis;
 using App.Infrastructure.Sentry;
+using App.Web.Clients;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
@@ -90,6 +91,7 @@ builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 builder.Services.AddScoped<IPasswordService, ArgonService>();
 builder.Services.AddScoped<IAccessTokenService, JwtService>();
 builder.Services.AddScoped<IPhotoService, OciPhotoService>();
+builder.Services.AddScoped<IEmailService, EmailClient>();
 
 // Application Services - Attendance
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();

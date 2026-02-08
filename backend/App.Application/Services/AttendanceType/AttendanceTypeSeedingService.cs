@@ -44,6 +44,13 @@ public class AttendanceTypeSeedingService(
 
         foreach (var attendanceType in attendanceTypes)
         {
+            var existing = await attendanceTypeRepository.SearchAsync(attendanceType.TypeName);
+            if (existing != null && existing.Any(at => at.TypeName == attendanceType.TypeName))
+            {
+                logger.LogInformation($"Attendance type {attendanceType.TypeName} already exists, skipping");
+                continue;
+            }
+
             var result = await attendanceTypeRepository.CreateAsync(attendanceType);
 
             if (result == null)

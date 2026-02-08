@@ -51,9 +51,22 @@ namespace App.Web.Controllers
         }
 
         // GET: School/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            return View();
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var schoolEntity = new SchoolEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
+            return View(schoolEntity);
         }
 
         // POST: School/Create
@@ -61,18 +74,23 @@ namespace App.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         public async Task<IActionResult> Create(
-            [Bind("Name,ShortName,Domain,PhotoPath,StudentCodePattern,Deleted")]
+            [Bind("Name,ShortName,Domain,StudentCodePattern,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")]
             SchoolEntity schoolEntity)
         {
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            // Override with current values
+            schoolEntity.CreatedBy = email;
+            schoolEntity.CreatedByClient = clientApp;
+            schoolEntity.UpdatedBy = email;
+            schoolEntity.UpdatedByClient = clientApp;
+            schoolEntity.CreatedAt = now;
+            schoolEntity.UpdatedAt = now;
             
             if (ModelState.IsValid)
             {
-                schoolEntity.CreatedBy = email;
-                schoolEntity.CreatedByClient = clientApp;
-                schoolEntity.UpdatedBy = email;
-                schoolEntity.UpdatedByClient = clientApp;
                 await schoolRepository.CreateAsync(schoolEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -102,7 +120,7 @@ namespace App.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         public async Task<IActionResult> Edit(Guid id,
-            [Bind("Name,ShortName,Domain,PhotoPath,StudentCodePattern,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")]
+            [Bind("Name,ShortName,Domain,StudentCodePattern,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")]
             SchoolEntity schoolEntity)
         {
             if (id != schoolEntity.Id)
@@ -113,11 +131,12 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            schoolEntity.UpdatedBy = email;
+            schoolEntity.UpdatedByClient = clientApp;
+            schoolEntity.UpdatedAt = DateTime.UtcNow;
+
             if (ModelState.IsValid)
             {
-                schoolEntity.UpdatedBy = email;
-                schoolEntity.UpdatedByClient = clientApp;
-
                 await cache.DeletePatternAsync($"*{schoolEntity.Id.ToString()}*");
                 var result = await schoolRepository.UpdateAsync(schoolEntity);
 

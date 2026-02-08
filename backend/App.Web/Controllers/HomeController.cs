@@ -51,10 +51,7 @@ public class AdminPanelController(
             return Index("Wrong username or password!");
         }
         
-        var (user, _, _) = adminUser.Value;
-        
-        var token = accessTokenService.GenerateAdminAccessToken(user);
-        
+        var (user, token, _) = adminUser.Value;
         Response.Cookies.Append("jwt", token, new CookieOptions
         {
             HttpOnly = true,

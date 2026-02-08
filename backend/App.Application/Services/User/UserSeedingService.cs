@@ -55,6 +55,7 @@ public class UserSeedingService(
         {
             UserId = adminUser.Id,
             PasswordHash = await passwordService.HashPasswordAsync(envInitializer.DefaultAdminPassword),
+            Verified = true,
             CreatedBy = Constants.BackendName,
             CreatedByClient = Constants.BackendName,
             UpdatedBy = Constants.BackendName,

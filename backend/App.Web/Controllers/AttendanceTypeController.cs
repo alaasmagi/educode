@@ -51,26 +51,43 @@ namespace App.Web.Controllers
         }
 
         // GET: AttendanceType/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            return View();
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var attendanceTypeEntity = new AttendanceTypeEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
+            return View(attendanceTypeEntity);
         }
 
         // POST: AttendanceType/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("TypeName,Deleted")] AttendanceTypeEntity attendanceTypeEntity)
+        public async Task<IActionResult> Create([Bind("TypeName,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")] AttendanceTypeEntity attendanceTypeEntity)
         {
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            attendanceTypeEntity.CreatedBy = email;
+            attendanceTypeEntity.CreatedByClient = clientApp;
+            attendanceTypeEntity.UpdatedBy = email;
+            attendanceTypeEntity.UpdatedByClient = clientApp;
+            attendanceTypeEntity.CreatedAt = now;
+            attendanceTypeEntity.UpdatedAt = now;
             
             if (ModelState.IsValid)
             {
-                attendanceTypeEntity.CreatedBy = email;
-                attendanceTypeEntity.CreatedByClient = clientApp;
-                attendanceTypeEntity.UpdatedBy = email;
-                attendanceTypeEntity.UpdatedByClient = clientApp;
                 await attendanceTypeRepository.CreateAsync(attendanceTypeEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -97,7 +114,7 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("TypeName,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] AttendanceTypeEntity attendanceTypeEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("TypeName,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")] AttendanceTypeEntity attendanceTypeEntity)
         {
             if (id != attendanceTypeEntity.Id)
             {
@@ -107,11 +124,12 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            attendanceTypeEntity.UpdatedBy = email;
+            attendanceTypeEntity.UpdatedByClient = clientApp;
+            attendanceTypeEntity.UpdatedAt = DateTime.UtcNow;
+
             if (ModelState.IsValid)
             {
-                attendanceTypeEntity.UpdatedBy = email;
-                attendanceTypeEntity.UpdatedByClient = clientApp;
-
                 await cache.DeletePatternAsync($"*{attendanceTypeEntity.Id.ToString()}*");
                 var result = await attendanceTypeRepository.UpdateAsync(attendanceTypeEntity);
 

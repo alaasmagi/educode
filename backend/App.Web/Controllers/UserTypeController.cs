@@ -164,7 +164,7 @@ namespace App.Web.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var userTypeEntity = await userTypeRepository.GetByIdAsync(id);
+            var userTypeEntity = await userTypeRepository.GetByIdAsync(id, true);
             if (userTypeEntity != null)
             {
                 await userTypeRepository.RemoveAsync(userTypeEntity);

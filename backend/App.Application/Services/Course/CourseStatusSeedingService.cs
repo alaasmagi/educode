@@ -14,39 +14,31 @@ public class CourseStatusSeedingService(
 {
     public async Task<MethodResponse<bool>> Seed()
     {
-        var now = DateTime.UtcNow;
-
         var courseStatuses = new List<CourseStatusEntity>
         {
             new()
             {
                 StatusName = "available",
-                CreatedBy = "aspnet-initializer",
-                CreatedByClient = "aspnet-initializer",
-                CreatedAt = now,
-                UpdatedBy = "aspnet-initializer",
-                UpdatedByClient = "aspnet-initializer",
-                UpdatedAt = now,
+                CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
+                UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new()
             {
                 StatusName = "unavailable",
-                CreatedBy = "aspnet-initializer",
-                CreatedByClient = "aspnet-initializer",
-                CreatedAt = now,
-                UpdatedBy = "aspnet-initializer",
-                UpdatedByClient = "aspnet-initializer",
-                UpdatedAt = now,
+                CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
+                UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new()
             {
                 StatusName = "temp-unavailable",
-                CreatedBy = "aspnet-initializer",
-                CreatedByClient = "aspnet-initializer",
-                CreatedAt = now,
-                UpdatedBy = "aspnet-initializer",
-                UpdatedByClient = "aspnet-initializer",
-                UpdatedAt = now,
+                CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
+                UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             }
         };
         

@@ -14,39 +14,31 @@ public class AttendanceTypeSeedingService(
 {
     public async Task<MethodResponse<bool>> Seed()
     {
-        var now = DateTime.UtcNow;
-
         var attendanceTypes = new List<AttendanceTypeEntity>
         {
             new()
             {
                 TypeName = "lecture",
-                CreatedBy = "aspnet-initializer",
-                CreatedByClient = "aspnet-initializer",
-                CreatedAt = now,
-                UpdatedBy = "aspnet-initializer",
-                UpdatedByClient = "aspnet-initializer",
-                UpdatedAt = now,
+                CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
+                UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new()
             {
                 TypeName = "practice",
-                CreatedBy = "aspnet-initializer",
-                CreatedByClient = "aspnet-initializer",
-                CreatedAt = now,
-                UpdatedBy = "aspnet-initializer",
-                UpdatedByClient = "aspnet-initializer",
-                UpdatedAt = now,
+                CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
+                UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new()
             {
                 TypeName = "lecture-practice",
-                CreatedBy = "aspnet-initializer",
-                CreatedByClient = "aspnet-initializer",
-                CreatedAt = now,
-                UpdatedBy = "aspnet-initializer",
-                UpdatedByClient = "aspnet-initializer",
-                UpdatedAt = now,
+                CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
+                UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             }
         };
 

@@ -1,23 +1,20 @@
+using App.Contracts.Services;
 using App.Contracts.WebRequests;
+using App.Infrastructure.Initializers;
 
 namespace App.Web.Clients;
 
-public class EmailClient(HttpClient httpClient)
+public class EmailClient(EnvInitializer envInitializer) : IEmailService
 {
-    public async Task SendAsync(
-        string to,
-        string subject,
-        string body,
-        CancellationToken cancellationToken = default)
+    public async Task<bool> SendOtpAsync(OtpEmailApiRequest request)
     {
-        var request = new EmailApiRequest();
-
+        var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Add("X-API-Key", envInitializer.EmailApiKey);
         var response = await httpClient.PostAsJsonAsync(
-            "/emails/send",
-            request,
-            cancellationToken
+            envInitializer.EmailApiUrl,
+            request
         );
-
-        response.EnsureSuccessStatusCode();
+        
+        return response.IsSuccessStatusCode;
     }
 }

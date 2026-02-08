@@ -2,6 +2,7 @@
 
 public class OtpRequest
 {
+    public required string ClientApp { get; set; }
     public required string Email { get; set; }
-    public string? FullName { get; set; }
+    public required string FullName { get; set; }
 }

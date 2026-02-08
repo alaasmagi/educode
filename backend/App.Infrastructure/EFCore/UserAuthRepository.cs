@@ -154,7 +154,7 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
         }
     }
 
-    public async Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState)
+    public async Task<bool> ToggleDeletionAsync(Guid id, string email, string clientApp, bool newDeletionState)
     {
         try
         {
@@ -163,6 +163,8 @@ public class UserAuthRepository(AppDbContext context, ILogger<UserAuthRepository
                 .Where(ua => ua.Id == id)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(ua => ua.Deleted, newDeletionState)
+                    .SetProperty(ac => ac.UpdatedBy, email)
+                    .SetProperty(ac => ac.UpdatedByClient, clientApp)
                     .SetProperty(ua => ua.UpdatedAt, DateTime.UtcNow));
 
             return affectedRows > 0;

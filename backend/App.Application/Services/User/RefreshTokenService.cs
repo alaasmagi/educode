@@ -17,7 +17,7 @@ public class RefreshTokenService (
     IRefreshTokenRepository refreshTokenRepository,
     ILogger<RefreshTokenService> logger) : IRefreshTokenService
 {
-    public async Task<MethodResponse<string>> GenerateRefreshToken(Guid userId, string creatorIp, string client, string clientApp)
+    public async Task<MethodResponse<string>> GenerateRefreshTokenAsync(Guid userId, string creatorIp, string email, string clientApp)
     {
         var refreshTokenExpirationDays = envInitializer.RefreshTokenExpirationDays;
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
@@ -30,7 +30,8 @@ public class RefreshTokenService (
             ClientIp = creatorIp,
             ExpirationTime = DateTime.UtcNow + TimeSpan.FromDays(refreshTokenExpirationDays),
             CreatedBy = clientApp,
-            UpdatedBy = Constants.BackendName
+            UpdatedBy = email,
+            UpdatedByClient = clientApp
         };
         
         if (await refreshTokenRepository.CreateAsync(tokenData) == null)
@@ -47,7 +48,7 @@ public class RefreshTokenService (
         return MethodResponse<string>.Success(token);
     }
     
-    public async Task<MethodResponse<bool>> VerifyRefreshToken(string refreshToken, Guid userId)
+    public async Task<MethodResponse<bool>> VerifyRefreshTokenAsync(string refreshToken, Guid userId)
     {
         var cache = await cacheRepository.GetAsync(Constants.RefreshTokenPrefix + refreshToken);
         
@@ -88,7 +89,7 @@ public class RefreshTokenService (
         return MethodResponse<bool>.Success(true);
     }
 
-    public async Task<MethodResponse<bool>> DeleteRefreshToken(string refreshToken)
+    public async Task<MethodResponse<bool>> DeleteRefreshTokenAsync(string refreshToken)
     {
         var token = await refreshTokenRepository.GetByItselfAsync(refreshToken);
         if (token == null || await refreshTokenRepository.RemoveAsync(token) == null)

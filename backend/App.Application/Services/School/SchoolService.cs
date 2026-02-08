@@ -17,7 +17,7 @@ public class SchoolService(
     ILogger<SchoolService> logger, 
     SentryService sentry) : ISchoolService
 {
-    public async Task<MethodResponse<List<SchoolDto>>> GetAllSchools(int pageNr, int pageSize)
+    public async Task<MethodResponse<List<SchoolDto>>> GetAllSchoolsAsync(int pageNr, int pageSize)
     {
         var cache = await redisRepository.GetAsync(Constants.SchoolPrefix + pageNr + pageSize);
         if (cache != null)
@@ -48,7 +48,7 @@ public class SchoolService(
         return MethodResponse<List<SchoolDto>>.Success(schoolDtos);
     }
 
-    public async Task<MethodResponse<SchoolDto>> GetSchoolById(Guid id)
+    public async Task<MethodResponse<SchoolDto>> GetSchoolByIdAsync(Guid id)
     {
         var cache = await redisRepository.GetAsync(Constants.SchoolPrefix + id);
         if (cache != null)

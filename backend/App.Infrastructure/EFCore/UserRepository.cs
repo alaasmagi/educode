@@ -191,7 +191,7 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
         }
     }
 
-    public async Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState)
+    public async Task<bool> ToggleDeletionAsync(Guid id, string email, string clientApp, bool newDeletionState)
     {
         try
         {
@@ -200,7 +200,9 @@ public class UserRepository(AppDbContext context, ILogger<UserRepository> logger
                 .Where(u => u.Id == id)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(u => u.Deleted, newDeletionState)
-                    .SetProperty(u => u.UpdatedAt, DateTime.UtcNow));
+                    .SetProperty(ac => ac.UpdatedBy, email)
+                    .SetProperty(ac => ac.UpdatedByClient, clientApp)
+                    .SetProperty(ua => ua.UpdatedAt, DateTime.UtcNow));
 
             return affectedRows > 0;
         }

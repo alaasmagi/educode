@@ -29,56 +29,50 @@ public class OtpController(
             return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
 
-        await otpService.GenerateAndStoreOtp(request.Email);
+        var response = await authService.GenerateAndSendOtpAsync(request);
+        if (!response.Successful)
+        {
+            return BadRequest(response.Error);
+        }
         
         logger.LogInformation($"OTP sent successfully for user with email {request.Email}");
-        return Ok(new { message = "OTP sent successfully" });
+        return Ok();
     }
 
     [HttpPost("Verify")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        
+        var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
             return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
-        
-        var user = await userService.GetUserByEmailAsync(request.Email);
-        
-        var result = await otpService.VerifyOtp(request.Email, request.Otp);
 
-        if (!result)
+        var response = await authService.VerifyOtpAsync(request, creatorIp);
+        if (!response.Successful)
         {
-            return Unauthorized(new { message = "Invalid OTP", messageCode = "invalid-otp" });
+            return BadRequest(response.Error);
         }
-
-        if (user != null)
+        
+        Response.Cookies.Append("token", response.Value.AccessToken, new CookieOptions
         {
-            var token = authService.GenerateJwtToken(user);
-            Response.Cookies.Append("token", token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                MaxAge = TimeSpan.FromMinutes(envInitializer.JwtCookieExpirationMinutes)
-            });
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            MaxAge = TimeSpan.FromMinutes(envInitializer.JwtCookieExpirationMinutes)
+        });
+        
+        Response.Cookies.Append("refreshToken", response.Value.RefreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenCookieExpirationDays)
+        });
             
-            var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var refreshToken = await authService.GenerateRefreshToken(user.Id, creatorIp, request.Client);
-            Response.Cookies.Append("refreshToken", token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenCookieExpirationDays)
-            });
-                
-            logger.LogInformation($"OTP verified successfully for user with email {user.Email}");
-            return Ok(new { Token = token });
-        }
         
         logger.LogInformation($"OTP verified successfully");
         return Ok();

@@ -11,6 +11,7 @@ public static class ErrorConstants
     public const string UserTypesNotSeeded = "user-types-not-seeded";
     public const string UsersNotFound = "users-not-found";
     public const string UserNotFound = "user-not-found";
+    public const string UserAuthNotFound = "user-auth-not-found";
     public const string UserNotDeleted = "user-not-deleted";
     public const string UserNotRestored = "user-not-restored";
     public const string UserNotUpdated = "user-not-updated";

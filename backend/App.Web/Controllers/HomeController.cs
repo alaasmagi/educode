@@ -36,9 +36,15 @@ public class AdminPanelController(
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         
         var clientIp = HttpContext.Connection.RemoteIpAddress!.ToString();
-        
-        var adminUser = await authService.AuthenticateUserAsync(request.Username, request.Password,
-                                                                clientIp, Constants.BackendName,true);
+
+        var loginRequest = new LoginRequest
+        {
+            Email = request.Username,
+            Password = request.Password,
+            ClientApp = Constants.BackendName
+        };
+        var adminUser = await authService.AuthenticateUserAsync(loginRequest, clientIp, 
+                                                                        loginRequest.ClientApp,true);
         
         if (!adminUser.Successful)
         {

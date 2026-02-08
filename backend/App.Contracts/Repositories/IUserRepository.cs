@@ -8,5 +8,5 @@ public interface IUserRepository : IRepository<UserEntity>
     Task<UserEntity?> GetByEmailAsync(string email, bool includeDeleted = false);
     Task<Guid?> CheckAvailabilityByEmailAsync(string email, bool includeDeleted = false);
     Task<Guid?> CheckAvailabilityByFullNameAsync(string fullName, bool includeDeleted = false);
-    Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState);
+    Task<bool> ToggleDeletionAsync(Guid id, string email, string clientApp, bool newDeletionState);
 }

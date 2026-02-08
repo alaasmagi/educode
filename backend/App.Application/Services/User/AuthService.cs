@@ -1,6 +1,7 @@
 using App.Contracts.DTOs;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
@@ -14,7 +15,7 @@ namespace App.Application.Services.User;
 public class AuthService(
     IRefreshTokenService refreshTokenService,
     IOtpService otpService,
-    IEmailService emailService,
+    IEmailService emailClient,
     IUserTypeRepository userTypeRepository,
     IAccessTokenService accessTokenService,
     IRefreshTokenRepository refreshTokenRepository,
@@ -24,13 +25,13 @@ public class AuthService(
     IPasswordService passwordService,
     IUserAuthRepository userAuthRepository) : IAuthService
 { 
-    public async Task<MethodResponse<(UserDto, string, string)>> AuthenticateUserAsync(string email, string password, string clientIp,
+    public async Task<MethodResponse<(UserDto, string, string)>> AuthenticateUserAsync(LoginRequest request, string clientIp,
                                                                                         string clientApp, bool includeDeleted)
     {
-        var user = await userRepository.GetByEmailAsync(email);
+        var user = await userRepository.GetByEmailAsync(request.Email);
         if (user == null)
         {
-            logger.LogError($"Failed to fetch user with email {email}");
+            logger.LogError($"Failed to fetch user with email {request.Email}");
             return MethodResponse<(UserDto, string, string)>.Failure(
                 new Error(ErrorConstants.UserNotFound, "User was not found")
             );
@@ -45,7 +46,7 @@ public class AuthService(
             );
         }
 
-        var result = await passwordService.VerifyPasswordAsync(password, userAuthData.PasswordHash);
+        var result = await passwordService.VerifyPasswordAsync(request.Password, userAuthData.PasswordHash);
         if (!result)
         {
             logger.LogError($"Failed to authenticate user with ID {user.Id}");
@@ -62,8 +63,8 @@ public class AuthService(
             );
         }
         
-        var jwtToken = accessTokenService.GenerateAccessToken(user, userAuthData, client);
-        var refreshTokenResponse = await refreshTokenService.GenerateRefreshToken(user.Id, clientIp, email, clientApp);
+        var jwtToken = accessTokenService.GenerateAccessToken(user, userAuthData, clientApp);
+        var refreshTokenResponse = await refreshTokenService.GenerateRefreshTokenAsync(user.Id, clientIp, request.Email, clientApp);
 
         if (!refreshTokenResponse.Successful)
         {
@@ -75,14 +76,13 @@ public class AuthService(
         return MethodResponse<(UserDto, string, string)>.Success((userDto, jwtToken, refreshTokenResponse.Value!));
     }
 
-    public async Task<MethodResponse<UserDto>> RegisterUserAsync(string email, string fullName, string password, Guid schoolId, 
-                                                                                    string client, string? studentCode)
+    public async Task<MethodResponse<UserDto>> RegisterUserAsync(CreateAccountRequest request)
     {
         var user = new UserEntity();
 
-        if (await userRepository.CheckAvailabilityByEmailAsync(email) != null)
+        if (await userRepository.CheckAvailabilityByEmailAsync(request.Email) != null)
         {
-            logger.LogError($"Failed to create account for user with email {email}");
+            logger.LogError($"Failed to create account for user with email {request.Email}");
             return MethodResponse<UserDto>.Failure(
                 new Error(ErrorConstants.EmailAlreadyExists, "Email already exists")
             );
@@ -92,28 +92,32 @@ public class AuthService(
 
         if (initialUserTypes == null || initialUserTypes.Count == 0)
         {
-            logger.LogError($"Failed to create account for user with email {email}");
+            logger.LogError($"Failed to create account for user with email {request.Email}");
             return MethodResponse<UserDto>.Failure(
                 new Error(ErrorConstants.UserTypeNotAvailable, "User type is not available")
             );
         }
 
-        user.Email = email;
-        user.FullName = fullName;
-        user.SchoolId = schoolId;
+        user.Email = request.Email;
+        user.FullName = request.Fullname;
+        user.SchoolId = request.SchoolId;
         user.TypeId = initialUserTypes[0].Id;
-        user.StudentCode = studentCode;
-        user.CreatedBy = client;
-        user.UpdatedBy = client;
+        user.StudentCode = request.StudentCode;
+        user.CreatedBy = request.Email;
+        user.CreatedByClient = request.ClientApp;
+        user.UpdatedBy = request.Email;
+        user.UpdatedByClient = request.ClientApp;
         
-        var passwordHash = await passwordService.HashPasswordAsync(password);
+        var passwordHash = await passwordService.HashPasswordAsync(request.Password);
         var userAuthData = new UserAuthEntity
         {
             UserId = user.Id,
             PasswordHash = passwordHash,
             Verified = false,
-            CreatedBy = client,
-            UpdatedBy = client
+            CreatedBy = request.Email,
+            CreatedByClient = request.ClientApp,
+            UpdatedBy = request.Email,
+            UpdatedByClient = request.ClientApp
         };
         
         if (await userRepository.CreateAsync(user) == null)
@@ -137,41 +141,43 @@ public class AuthService(
         return MethodResponse<UserDto>.Success(userDto);
     }
 
-    public async Task<MethodResponse<bool>> ChangePasswordAsync(Guid userId , string currentPassword, string newPassword, string client)
+    public async Task<MethodResponse<bool>> ChangePasswordAsync(ChangePasswordRequest request)
     {
-        var userAuthData = await userAuthRepository.GetByUserAsync(userId);
+        var userAuthData = await userAuthRepository.GetByUserAsync(request.UserId);
         if (userAuthData == null)
         {
-            logger.LogWarning($"User auth data for user with ID {userId} was not found");
+            logger.LogWarning($"User auth data for user with ID {request.UserId} was not found");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.UserNotFound, "User was not found")
             );
         }
         
-        var result = await passwordService.VerifyPasswordAsync(currentPassword, userAuthData.PasswordHash);
+        var result = await passwordService.VerifyPasswordAsync(request.CurrentPassword, userAuthData.PasswordHash);
         if (!result)
         {
-            logger.LogWarning($"Invalid current password provided for user with ID {userId}");
+            logger.LogWarning($"Invalid current password provided for user with ID {request.UserId}");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.InvalidPassword, "Invalid password")
             );
         }
         
-        var newPasswordHash = await passwordService.HashPasswordAsync(newPassword);
+        var newPasswordHash = await passwordService.HashPasswordAsync(request.NewPassword);
         userAuthData.PasswordHash = newPasswordHash;
-        userAuthData.UpdatedBy = client;
+        userAuthData.UpdatedBy = request.Email;
+        userAuthData.UpdatedByClient = request.ClientApp;
+        userAuthData.Verified = false;
         
         if (await userAuthRepository.UpdateAsync(userAuthData) == null)
         {
-            logger.LogError($"Failed to change password for user with ID {userId}");
+            logger.LogError($"Failed to change password for user with ID {request.UserId}");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.PasswordChangeFailed, "Password change failed")
             );
         }
         
-        await refreshTokenRepository.RemoveAllByUserAsync(userId);
+        await refreshTokenRepository.RemoveAllByUserAsync(request.UserId);
         
-        logger.LogInformation($"Successfully changed password for user with ID {userId}");
+        logger.LogInformation($"Successfully changed password for user with ID {request.UserId}");
         return MethodResponse<bool>.Success(true);
     }
 
@@ -180,8 +186,88 @@ public class AuthService(
         return await refreshTokenService.DeleteRefreshTokenAsync(refreshToken);
     }
 
-    public Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, string accessToken, string client)
+    public Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, 
+                                                                    string accessToken, string email, string clientApp)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<MethodResponse<bool>> GenerateAndSendOtpAsync(OtpRequest request)
+    {
+        var otpResponse = await otpService.GenerateAndStoreOtp(request.Email);
+        if (!otpResponse.Successful)
+        {
+            return MethodResponse<bool>.Failure(otpResponse.Error!);
+        }
+
+        var emailContent = new OtpEmailApiRequest
+        {
+            EmailTo =  request.Email,
+            FullName = request.FullName,
+            Otp = otpResponse.Value.ToString(),
+            OtpExpirationMinutes = envInitializer.OtpExpirationMinutes
+        };
+        
+        if (!await emailClient.SendOtpAsync(emailContent))
+        {
+            logger.LogWarning($"User auth data for user with email {request.Email} was not found");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.UserNotFound, "User was not found")
+            );
+        }
+        
+        logger.LogInformation($"Successfully generated and sent OTP for user with email {request.Email}");
+        return MethodResponse<bool>.Success(true);
+    }
+
+    public async Task<MethodResponse<(string AccessToken, string RefreshToken)>> VerifyOtpAsync(VerifyOtpRequest request, 
+                                                                                                        string creatorIp)
+    {
+        var user = await userRepository.GetByEmailAsync(request.Email);
+        if (user == null)
+        {
+            logger.LogWarning($"User with email {request.Email} was not found");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(
+                new Error(ErrorConstants.UserNotFound, "User was not found")
+            );
+        }
+        
+        var otpResponse = await otpService.VerifyOtp(request.Email, request.Otp);
+        if (!otpResponse.Successful)
+        {
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(otpResponse.Error!);
+        }
+        
+        var userAuthData = await userAuthRepository.GetByUserAsync(user.Id);
+        if (userAuthData == null)
+        {
+            logger.LogWarning($"User auth data for user with ID {user.Id} was not found");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(
+                new Error(ErrorConstants.UserAuthNotFound, "User auth data was not found")
+            );
+        }
+        
+        userAuthData.UpdatedBy = request.Email;
+        userAuthData.UpdatedByClient = request.ClientApp;
+        userAuthData.Verified = false;
+        var updateResponse = await userAuthRepository.UpdateAsync(userAuthData);
+        if (updateResponse == null)        {
+            logger.LogError($"Failed to verify OTP for user with ID {user.Id}");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(
+                new Error(ErrorConstants.OtpVerificationFailed, "OTP verification failed")
+            );
+        }
+        
+        var accessToken = accessTokenService.GenerateAccessToken(user, userAuthData, request.ClientApp);
+        var refreshToken = await refreshTokenService.GenerateRefreshTokenAsync(user.Id, creatorIp, 
+                                                                                        request.Email, request.ClientApp);
+        
+        if (!refreshToken.Successful || refreshToken.Value == null)
+        {
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(refreshToken.Error!);
+        }
+
+        logger.LogInformation($"Successfully generated and sent OTP for user with ID {user.Id}");
+        return MethodResponse<(string AccessToken, string RefreshToken)>.Success((accessToken, refreshToken.Value));
     }
 }

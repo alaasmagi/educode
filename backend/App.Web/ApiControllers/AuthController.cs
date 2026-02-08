@@ -1,7 +1,9 @@
 ﻿using App.Contracts.Services;
 using App.Contracts.WebRequests;
 using App.Domain.Entities;
+using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
+using Base.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,40 +12,31 @@ namespace App.Web.ApiControllers;
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController(
-    IUserService userService,
+    IAuthService authService,
     EnvInitializer envInitializer,
     ILogger<AuthController> logger)
     : ControllerBase
 {
 
     [HttpPost("Login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequestRequest requestRequest)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var user = await userService.GetUserByEmailAsync(requestRequest.Email);
-
-        if (user == null)
-        {
-            return NotFound(new {message = "User not found", messageCode = "user-not-found"});
-        }
+        var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         
-        var userAuthData = await userService.AuthenticateUserAsync(user.Id, requestRequest.Password);
-        if (userAuthData == null || !ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
-            return Unauthorized(new { message = "Invalid email or password", messageCode = "invalid-email-password" });
-        }
-
-        var jwtToken = authService.GenerateJwtToken(user);
-        var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var refreshToken = await authService.GenerateRefreshToken(user.Id, creatorIp, requestRequest.Client);
-
-        if (refreshToken == null)
-        {
-            logger.LogWarning($"Refresh token generation failed");
-            return BadRequest(new { message = "Refresh token generation failed", messageCode = "refresh-token-error" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
         
+        var response = await authService.AuthenticateUserAsync(request, creatorIp, request.ClientApp, true);
+        if (!response.Successful)
+        {
+            return BadRequest(response.Error);
+        }
+        
+        var (user, jwtToken, refreshToken) = response.Value;
         Response.Cookies.Append("jwt", jwtToken, new CookieOptions
         {
             HttpOnly = true,
@@ -65,24 +58,26 @@ public class AuthController(
     }
     
     [HttpPost("Refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestRequest request)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
+        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
 
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var (newJwt,  newRefreshToken) = await authService.RefreshJwtToken(request.RefreshToken, request.JwtToken, ipAddress, request.Client);
+        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.JwtToken, ipAddress, clientApp);
 
-        if (newJwt == null || newRefreshToken == null)
+        if (!response.Successful)
         {
-            return Unauthorized(new { message = "Invalid or expired refresh token", messageCode = "invalid-refresh-token" });
+            return Unauthorized(response.Error);
         }
         
+        var (newJwt, newRefreshToken) = response.Value;
         Response.Cookies.Append("jwt", newJwt, new CookieOptions
         {
             HttpOnly = true,
@@ -103,61 +98,48 @@ public class AuthController(
     }
     
     [HttpPost("Logout")]
-    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequestRequest request)
+    public async Task<IActionResult> Logout()
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
+        var refreshToken = Request.Cookies["refreshToken"];;
     
+        if (refreshToken == null)
+        {
+            logger.LogWarning($"Refreshtoken is missing in cookies");
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
+        }
+        
+        var response = await authService.LogOutUserAsync(refreshToken);
+
+        if (!response.Successful)
+        {
+            logger.LogWarning($"Logging out failed");
+            return BadRequest(response.Error);
+        }
+
+        Response.Cookies.Delete("jwt");
+        Response.Cookies.Delete("refreshToken");
+
+        return Ok();
+    }
+
+    [HttpPost("Register/{token}")]
+    public async Task<IActionResult> Register(string? token, [FromBody] CreateAccountRequest request)
+    {
+        logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
         
-        var status = await authService.DeleteRefreshToken(request.RefreshToken);
-
-        if (status == false)
-        {
-            logger.LogWarning($"Logging out failed");
-            return BadRequest(new { message = "Logging out failed", messageCode = "logout-failed" });
-        }
-
-        Response.Cookies.Delete("jwt");
-        Response.Cookies.Delete("refreshToken");
-
-        return Ok(new { message = "Logged out successfully", messageCode = "logout-successful" });
-    }
-
-    [HttpPost("Register/{token}")]
-    public async Task<IActionResult> Register(string? token, [FromBody] CreateAccountRequestRequest requestRequest)
-    {
-        logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userType = await userService.GetUserTypeAsync(requestRequest.UserRole);
-        var newUser = new UserEntity();
-        var newUserAuth = new UserAuthEntity();
-
-        if (userType == null || !ModelState.IsValid)
-        {
-            logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
-        }
-
-        newUser.Email = requestRequest.Email;
-        newUser.FullName = requestRequest.Fullname;
-        newUser.StudentCode = requestRequest.StudentCode;
-        newUser.TypeId = userType.Id;
-        newUser.CreatedBy = requestRequest.Client;
-        newUser.UpdatedBy = requestRequest.Client;
-        
-        newUserAuth.CreatedBy = requestRequest.Client;
-        newUserAuth.UpdatedBy = requestRequest.Client;
-        newUserAuth.PasswordHash = await authService.HashPasswordAsync(requestRequest.Password);
-
-        if (!await userService.CreateAccountAsync(newUser, newUserAuth))
+        var response = await authService.RegisterUserAsync(request);
+        if (!response.Successful)
         {
             return BadRequest(new { message = "User already exists", messageCode = "user-already-exists" });
         }
         
-        logger.LogInformation($"User with email {newUser.Email} was created successfully");
+        logger.LogInformation($"User with email {request.Email} was created successfully");
         return Ok();
     }
 
@@ -172,22 +154,13 @@ public class AuthController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
 
-        var user = await userService.GetUserByEmailAsync(request.Email);
-
-        if (user == null)
+        var response = await authService.ChangePasswordAsync(request);
+        if (!response.Successful)
         {
-            return Unauthorized(new { message = "Invalid email", messageCode = "invalid-email" });
-        }
-
-        // TODO: Refactor and move the logic to service layer
-        var newPasswordHash = await authService.HashPasswordAsync(request.NewPassword);
-
-        if (!await userService.ChangeUserPasswordAsync(user, newPasswordHash))
-        {
-            return BadRequest(new { message = "Password change error. Password was not changed.", messageCode = "password-not-changed" });
+            return Unauthorized(response.Error);
         }
 
         logger.LogInformation($"Password changed successfully for user with email {request.Email}");
-        return Ok(new { message = "Password is changed successfully" });
+        return Ok();
     }
 }

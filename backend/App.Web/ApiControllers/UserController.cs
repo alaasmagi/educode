@@ -1,9 +1,8 @@
-using App.Application;
 using App.Contracts.DTOs;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
-using App.Infrastructure.Initializers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +15,6 @@ namespace App.Web.ApiControllers
         ICourseService courseService,
         IAttendanceService attendanceService,
         IPhotoService photoService,
-        EnvInitializer envInitializer,
         ILogger<UserController> logger)
         : ControllerBase
     {
@@ -26,17 +24,15 @@ namespace App.Web.ApiControllers
             [FromQuery] int pageSize = Constants.DefaultQueryPageSize)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var users = await userService.GetAllUsersAsync(pageNr, pageSize);
-
-            if (users == null)
+            
+            var response = await userService.GetAllUsersAsync(pageNr, pageSize);
+            if (!response.Successful)
             {
-                return NotFound(new { message = "Users not found", messageCode = "users-not-found" });
+                return NotFound(response.Error);
             }
-
-            var result = UserDto.ToDtoList(users, envInitializer.OciPublicUrl);
-
+            
             logger.LogInformation($"All users fetched successfully");
-            return Ok(result);
+            return Ok(response.Value);
         }
 
         [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
@@ -44,51 +40,33 @@ namespace App.Web.ApiControllers
         public async Task<ActionResult<UserDto>> GetUserEntity(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userEntity = await userService.GetUserByIdAsync(id);
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-
-            if (userEntity == null)
+            
+            var response = await userService.GetUserByIdAsync(id);            
+            if (!response.Successful)
             {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
+                return NotFound(response.Error);
             }
-
-            if (userEntity.Id != Guid.Parse(userId))
-            {
-                return Unauthorized(new { message = "User not accessible", messageCode = "user-not-accessible" });
-            }
-
-            var result = new UserDto(userEntity, envInitializer.OciPublicUrl);
-
+            
             logger.LogInformation($"User with ID {id} fetched successfully");
-            return Ok(result);
+            return Ok(response.Value);
         }
 
-        // TODO: IMPLEMENT THE CORRECT UPDATE
         [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
         [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdateUserEntity(Guid id)
+        public async Task<IActionResult> UpdateUserEntity(Guid id, [FromBody] UserRequest request)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userEntity = await userService.GetUserByIdAsync(id);
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
-            if (userEntity == null)
+            var response = await userService.UpdateUserAsync(request, email, clientApp);
+            if (!response.Successful)
             {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
+                logger.LogInformation($"Failed to update User with ID {id}");
+                return BadRequest(response.Error);
             }
 
-            if (userEntity.Id != Guid.Parse(userId))
-            {
-                return Unauthorized(new { message = "User not accessible", messageCode = "user-not-accessible" });
-            }
-
-            if (await userService.UpdateUserAsync(userEntity))
-            {
-                logger.LogInformation($"User with ID {id} deleted successfully");
-                return Ok(new { message = "User deleted successfully" });
-            }
-
-            return BadRequest(new { message = "User delete failed", messageCode = "user-delete-failed" });
+            return Ok();
         }
 
         [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
@@ -96,26 +74,16 @@ namespace App.Web.ApiControllers
         public async Task<IActionResult> DeleteUserEntity(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userEntity = await userService.GetUserByIdAsync(id);
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
-            if (userEntity == null)
+            var response = await userService.SoftDeleteUserAsync(id, email, clientApp);
+            if (!response.Successful)
             {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
+                return BadRequest(response.Error);
             }
 
-            if (userEntity.Id != Guid.Parse(userId))
-            {
-                return Unauthorized(new { message = "User not accessible", messageCode = "user-not-accessible" });
-            }
-
-            if (await userService.SoftDeleteUserAsync(userEntity))
-            {
-                logger.LogInformation($"User with ID {id} deleted successfully");
-                return Ok(new { message = "User deleted successfully" });
-            }
-
-            return BadRequest(new { message = "User delete failed", messageCode = "user-delete-failed" });
+            return Ok();
         }
 
         [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
@@ -124,78 +92,47 @@ namespace App.Web.ApiControllers
             [FromQuery] int pageSize = Constants.DefaultQueryPageSize)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userService.GetUserByIdAsync(id);
-            if (user == null)
+
+            var response = await courseService.GetCoursesByUserAsync(id, pageNr, pageSize);
+            if (!response.Successful)
             {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
+                return Ok(response.Error);
             }
-
-            var courses = await courseService.GetCoursesByUserAsync(user.Id, pageNr, pageSize);
-
-            if (courses == null)
-            {
-                return Ok(new { message = "No courses found", messageCode = "courses-not-found" });
-            }
-
-            var result = CourseDto.ToDtoList(courses);
-
-            logger.LogInformation($"All courses for user with ID {id}");
-            return Ok(result);
+            
+            logger.LogInformation($"Courses for user with ID {id}");
+            return Ok(response.Value);
         }
 
         [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
         [HttpGet("{id}/CurrentAttendance")]
-        public async Task<ActionResult<CourseAttendanceDto>> GetCurrenAttendance()
+        public async Task<ActionResult<AttendanceDto>> GetCurrenAttendance(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
-
-            if (user == null)
+            
+            var response = await attendanceService.GetCurrentAttendanceAsync(id);
+            if (!response.Successful)
             {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
+                return BadRequest(response.Error);
             }
-
-            var courseAttendanceEntity = await attendanceService.GetCurrentAttendanceAsync(user.Id);
-
-            if (courseAttendanceEntity?.Course == null)
-            {
-                return Ok(new
-                    { message = "Current attendance not found", messageCode = "current-attendance-not-found" });
-            }
-
-            var result = new CourseAttendanceDto(courseAttendanceEntity);
-
-            logger.LogInformation($"Current attendance for user with ID {userId} successfully fetched");
-            return Ok(result);
+            
+            logger.LogInformation($"Current attendance for user with ID {id} successfully fetched");
+            return Ok(response.Value);
         }
 
         [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
         [HttpGet("{id}/RecentAttendance")]
-        public async Task<ActionResult<CourseAttendanceDto>> GetMostRecentAttendance()
+        public async Task<ActionResult<AttendanceDto>> GetMostRecentAttendance(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
-
-            if (user == null)
+            
+            var response = await attendanceService.GetMostRecentAttendanceByUserAsync(id);
+            if (!response.Successful)
             {
-                return NotFound(new { message = "User not found", messageCode = "user-not-found" });
+                return BadRequest(response.Error);
             }
-
-            var attendance = await attendanceService.GetMostRecentAttendanceByUserAsync(user.Id);
-
-            if (attendance == null)
-            {
-                return Ok(new
-                    { message = "User has no recent attendances", messageCode = "no-user-recent-attendances-found" });
-            }
-
-            var result = new CourseAttendanceDto(attendance);
-
-            logger.LogInformation($"Most recent attendance for user with ID {userId} successfully fetched");
-            return Ok(result);
+            
+            logger.LogInformation($"Most recent attendance for user with ID {id} successfully fetched");
+            return Ok(response.Value);
         }
 
         [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]

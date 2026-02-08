@@ -2,6 +2,7 @@ using System.Text.Json;
 using App.Contracts.DTOs;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
@@ -77,10 +78,20 @@ public class UserService(
         return MethodResponse<UserDto>.Success(userDto);
     }
     
-    public async Task<MethodResponse<bool>> UpdateUserAsync(UserEntity user)
+    public async Task<MethodResponse<bool>> UpdateUserAsync(UserRequest request, string email, string clientApp)
     {
+        var user = await userRepository.GetByEmailAsync(request.Email);
+
+        if (user == null)
+        {
+            logger.LogWarning($"User with ID {request.Email} was not found");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.UserNotFound, "User was not found")
+            );
+        }
+        
         await cacheRepository.DeletePatternAsync($"*{user.Id.ToString()}*");
-        await cacheRepository.DeletePatternAsync($"*{user.Email}*");
+        await cacheRepository.DeletePatternAsync($"*{request.Email}*");
 
         var status = await userRepository.UpdateAsync(user);
         if (status == null)
@@ -95,7 +106,7 @@ public class UserService(
         return MethodResponse<bool>.Success(true);
     }
     
-    public async Task<MethodResponse<bool>> SoftDeleteUserAsync(Guid userId)
+    public async Task<MethodResponse<bool>> SoftDeleteUserAsync(Guid userId, string email, string clientApp)
     {
         var user = await userRepository.GetByIdAsync(userId);
 
@@ -115,8 +126,8 @@ public class UserService(
         await refreshTokenRepository.RemoveAllByUserAsync(userId);
 
         var userAuth = await userAuthRepository.GetByUserAsync(userId);
-        if (await userRepository.ToggleDeletionAsync(userId, true) ||
-            await userAuthRepository.ToggleDeletionAsync(userAuth!.Id, false))
+        if (await userRepository.ToggleDeletionAsync(userId, email, clientApp,true) ||
+            await userAuthRepository.ToggleDeletionAsync(userAuth!.Id, email, clientApp, false))
         {
             logger.LogWarning($"Failed to delete user with ID {userId}");
             return MethodResponse<bool>.Failure(
@@ -128,9 +139,9 @@ public class UserService(
         return MethodResponse<bool>.Success(true);
     }
     
-    public async Task<MethodResponse<bool>> RestoreUserAsync(Guid userId)
+    public async Task<MethodResponse<bool>> RestoreUserAsync(Guid userId, string email, string clientApp)
     {
-        await userRepository.ToggleDeletionAsync(userId, false);
+        await userRepository.ToggleDeletionAsync(userId, email, clientApp, false);
         var user = await userRepository.GetByIdAsync(userId);
 
         if (user == null)
@@ -145,8 +156,8 @@ public class UserService(
         await attendanceCheckRepository.ToggleDeletionForAllByUserAsync(user.FullName, false);
 
         var userAuth = await userAuthRepository.GetByUserAsync(userId);
-        if (await userRepository.ToggleDeletionAsync(userId, false) ||
-            await userAuthRepository.ToggleDeletionAsync(userAuth!.Id, false))
+        if (await userRepository.ToggleDeletionAsync(userId, email, clientApp,false) ||
+            await userAuthRepository.ToggleDeletionAsync(userAuth!.Id, email, clientApp, false))
         {
             logger.LogError($"Failed to restore user with ID {userId}");
             return MethodResponse<bool>.Failure(

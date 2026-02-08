@@ -23,16 +23,14 @@ public class SchoolController(
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         
-        var schools = await schoolService.GetAllSchools(pageNr, pageSize); 
-        if (schools == null)
+        var response = await schoolService.GetAllSchoolsAsync(pageNr, pageSize); 
+        if (!response.Successful)
         {
-            return NotFound(new { message = "Schools not found", messageCode = "schools-not-found" });
+            return NotFound(response.Error);
         }
-
-        var result = SchoolDto.ToDtoList(schools, envInitializer.OciPublicUrl);
-
-        logger.LogInformation($"{schools.Count} schools successfully fetched");
-        return result;
+        
+        logger.LogInformation($"{response.Value!.Count} schools successfully fetched");
+        return Ok(response.Value);
     }
     
     [HttpGet("{id}")]
@@ -40,15 +38,13 @@ public class SchoolController(
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         
-        var school = await schoolService.GetSchoolById(id); 
-        if (school == null)
+        var response = await schoolService.GetSchoolByIdAsync(id); 
+        if (!response.Successful)
         {
-            return NotFound(new { message = $"School with ID {id} not found", messageCode = "school-not-found" });
+            return NotFound(response.Error);
         }
-
-        var result = new SchoolDto(school, envInitializer.OciPublicUrl);
-
+        
         logger.LogInformation($"School with ID {id} successfully fetched");
-        return result;
+        return Ok(response.Value);
     }
 }

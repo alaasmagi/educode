@@ -22,24 +22,30 @@ public class AttendanceTypeSeedingService(
             {
                 TypeName = "lecture",
                 CreatedBy = "aspnet-initializer",
+                CreatedByClient = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
+                UpdatedByClient = "aspnet-initializer",
                 UpdatedAt = now,
             },
             new()
             {
                 TypeName = "practice",
                 CreatedBy = "aspnet-initializer",
+                CreatedByClient = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
+                UpdatedByClient = "aspnet-initializer",
                 UpdatedAt = now,
             },
             new()
             {
                 TypeName = "lecture-practice",
                 CreatedBy = "aspnet-initializer",
+                CreatedByClient = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
+                UpdatedByClient = "aspnet-initializer",
                 UpdatedAt = now,
             }
         };

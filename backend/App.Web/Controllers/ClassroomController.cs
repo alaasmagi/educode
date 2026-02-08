@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using App.Domain;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 
@@ -64,10 +65,17 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Classroom,SchoolId,CreatedBy,UpdatedBy,Deleted")] ClassroomEntity classroomEntity)
+        public async Task<IActionResult> Create([Bind("Classroom,SchoolId,Deleted")] ClassroomEntity classroomEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             if (ModelState.IsValid)
             {
+                classroomEntity.CreatedBy = email;
+                classroomEntity.CreatedByClient = clientApp;
+                classroomEntity.UpdatedBy = email;
+                classroomEntity.UpdatedByClient = clientApp;
                 await classroomRepository.CreateAsync(classroomEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -100,15 +108,20 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Classroom,SchoolId,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] ClassroomEntity classroomEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Classroom,SchoolId,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] ClassroomEntity classroomEntity)
         {
             if (id != classroomEntity.Id)
             {
                 return NotFound();
             }
 
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
             if (ModelState.IsValid)
             {
+                classroomEntity.UpdatedBy = email;
+                classroomEntity.UpdatedByClient = clientApp;
 
                 await cache.DeletePatternAsync($"*{classroomEntity.Id.ToString()}*");
                 var result = await classroomRepository.UpdateAsync(classroomEntity);

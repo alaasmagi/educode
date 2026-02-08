@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using App.Domain;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 
@@ -67,10 +68,17 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,CreatedBy,UpdatedBy,Deleted")] CourseEntity courseEntity)
+        public async Task<IActionResult> Create([Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Deleted")] CourseEntity courseEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             if (ModelState.IsValid)
             {
+                courseEntity.CreatedBy = email;
+                courseEntity.CreatedByClient = clientApp;
+                courseEntity.UpdatedBy = email;
+                courseEntity.UpdatedByClient = clientApp;
                 await courseRepository.CreateAsync(courseEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -107,15 +115,20 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] CourseEntity courseEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Code,Name,SchoolId,CrossUniRegistration,StatusId,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] CourseEntity courseEntity)
         {
             if (id != courseEntity.Id)
             {
                 return NotFound();
             }
 
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
             if (ModelState.IsValid)
             {
+                courseEntity.UpdatedBy = email;
+                courseEntity.UpdatedByClient = clientApp;
 
                 await cache.DeletePatternAsync($"*{courseEntity.Id.ToString()}*");
                 var result = await courseRepository.UpdateAsync(courseEntity);

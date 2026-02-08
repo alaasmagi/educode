@@ -1,6 +1,7 @@
-﻿using App.Contracts.Repositories;
+﻿﻿using App.Contracts.Repositories;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -60,11 +61,18 @@ namespace App.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         public async Task<IActionResult> Create(
-            [Bind("Name,ShortName,Domain,PhotoPath,StudentCodePattern,CreatedBy,CreatedAt,UpdatedBy,UpdatedAt,Deleted")]
+            [Bind("Name,ShortName,Domain,PhotoPath,StudentCodePattern,Deleted")]
             SchoolEntity schoolEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             if (ModelState.IsValid)
             {
+                schoolEntity.CreatedBy = email;
+                schoolEntity.CreatedByClient = clientApp;
+                schoolEntity.UpdatedBy = email;
+                schoolEntity.UpdatedByClient = clientApp;
                 await schoolRepository.CreateAsync(schoolEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -94,7 +102,7 @@ namespace App.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         public async Task<IActionResult> Edit(Guid id,
-            [Bind("Name,ShortName,Domain,PhotoPath,StudentCodePattern,Id,CreatedBy,CreatedAt,UpdatedBy,UpdatedAt,Deleted")]
+            [Bind("Name,ShortName,Domain,PhotoPath,StudentCodePattern,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")]
             SchoolEntity schoolEntity)
         {
             if (id != schoolEntity.Id)
@@ -102,8 +110,13 @@ namespace App.Web.Controllers
                 return NotFound();
             }
 
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
             if (ModelState.IsValid)
             {
+                schoolEntity.UpdatedBy = email;
+                schoolEntity.UpdatedByClient = clientApp;
 
                 await cache.DeletePatternAsync($"*{schoolEntity.Id.ToString()}*");
                 var result = await schoolRepository.UpdateAsync(schoolEntity);

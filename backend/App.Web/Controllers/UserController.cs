@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -69,10 +70,17 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("TypeId,SchoolId,Email,StudentCode,FullName,PhotoPath,CreatedBy,UpdatedBy,Deleted")] UserEntity userEntity)
+        public async Task<IActionResult> Create([Bind("TypeId,SchoolId,Email,StudentCode,FullName,PhotoPath,Deleted")] UserEntity userEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             if (ModelState.IsValid)
             {
+                userEntity.CreatedBy = email;
+                userEntity.CreatedByClient = clientApp;
+                userEntity.UpdatedBy = email;
+                userEntity.UpdatedByClient = clientApp;
                 await userRepository.CreateAsync(userEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -111,15 +119,20 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("TypeId,SchoolId,Email,StudentCode,FullName,Id,PhotoPath,CreatedBy,CreatedAt,UpdatedBy,Deleted")] UserEntity userEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("TypeId,SchoolId,Email,StudentCode,FullName,Id,PhotoPath,CreatedBy,CreatedByClient,CreatedAt,Deleted")] UserEntity userEntity)
         {
             if (id != userEntity.Id)
             {
                 return NotFound();
             }
 
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
             if (ModelState.IsValid)
             {
+                userEntity.UpdatedBy = email;
+                userEntity.UpdatedByClient = clientApp;
 
                 await cache.DeletePatternAsync($"*{userEntity.Id}*");
                 await cache.DeletePatternAsync($"*{userEntity.Email}*");

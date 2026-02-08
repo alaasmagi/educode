@@ -2,6 +2,7 @@ using App.Contracts.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 
@@ -59,10 +60,17 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("TypeName,CreatedBy,UpdatedBy,Deleted")] AttendanceTypeEntity attendanceTypeEntity)
+        public async Task<IActionResult> Create([Bind("TypeName,Deleted")] AttendanceTypeEntity attendanceTypeEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             if (ModelState.IsValid)
             {
+                attendanceTypeEntity.CreatedBy = email;
+                attendanceTypeEntity.CreatedByClient = clientApp;
+                attendanceTypeEntity.UpdatedBy = email;
+                attendanceTypeEntity.UpdatedByClient = clientApp;
                 await attendanceTypeRepository.CreateAsync(attendanceTypeEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -89,15 +97,20 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("TypeName,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] AttendanceTypeEntity attendanceTypeEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("TypeName,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] AttendanceTypeEntity attendanceTypeEntity)
         {
             if (id != attendanceTypeEntity.Id)
             {
                 return NotFound();
             }
 
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
             if (ModelState.IsValid)
             {
+                attendanceTypeEntity.UpdatedBy = email;
+                attendanceTypeEntity.UpdatedByClient = clientApp;
 
                 await cache.DeletePatternAsync($"*{attendanceTypeEntity.Id.ToString()}*");
                 var result = await attendanceTypeRepository.UpdateAsync(attendanceTypeEntity);

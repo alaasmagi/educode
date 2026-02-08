@@ -25,6 +25,7 @@
             <th>Email</th>
             <th>Full Name</th>
             <th>Updated By</th>
+            <th>Updated By Client</th>
             <th>Updated At</th>
             <th>Soft Deleted</th>
             <th></th>
@@ -47,6 +48,9 @@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.UpdatedBy)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UpdatedByClient)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.UpdatedAt)

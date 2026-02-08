@@ -46,7 +46,9 @@ public class UserSeedingService(
             TypeId = adminUserTypes[0].Id,
             FullName = envInitializer.DefaultAdminUser,
             CreatedBy = Constants.BackendName,
+            CreatedByClient = Constants.BackendName,
             UpdatedBy = Constants.BackendName,
+            UpdatedByClient = Constants.BackendName,
         };
         
         var adminAuth = new UserAuthEntity
@@ -54,7 +56,9 @@ public class UserSeedingService(
             UserId = adminUser.Id,
             PasswordHash = await passwordService.HashPasswordAsync(envInitializer.DefaultAdminPassword),
             CreatedBy = Constants.BackendName,
+            CreatedByClient = Constants.BackendName,
             UpdatedBy = Constants.BackendName,
+            UpdatedByClient = Constants.BackendName,
         };
         
         if (await userRepository.CreateAsync(adminUser) == null || await userAuthRepository.CreateAsync(adminAuth) == null)

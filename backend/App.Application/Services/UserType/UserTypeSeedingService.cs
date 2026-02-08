@@ -22,35 +22,45 @@ public class UserTypeSeedingService(
                 TypeName = "student",
                 AccessLevel = EAccessLevel.PrimaryLevel,
                 CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
                 UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new UserTypeEntity
             {
                 TypeName = "teacher-assistant",
                 AccessLevel = EAccessLevel.SecondaryLevel,
                 CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
                 UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new UserTypeEntity
             {
                 TypeName = "teacher",
                 AccessLevel = EAccessLevel.TertiaryLevel,
                 CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
                 UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new UserTypeEntity
             {
                 TypeName = "school-administrator",
                 AccessLevel = EAccessLevel.QuaternaryLevel,
                 CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
                 UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             },
             new UserTypeEntity
             {
                 TypeName = "system-administrator",
                 AccessLevel = EAccessLevel.QuinaryLevel,
                 CreatedBy = Constants.BackendName,
+                CreatedByClient = Constants.BackendName,
                 UpdatedBy = Constants.BackendName,
+                UpdatedByClient = Constants.BackendName,
             }
         };
 

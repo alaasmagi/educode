@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using App.Domain;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -64,10 +65,17 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Identifier,ClassroomId,ClassRoom,ComputerCode,CreatedBy,UpdatedBy,Deleted")] WorkplaceEntity workplaceEntity)
+        public async Task<IActionResult> Create([Bind("Identifier,ClassroomId,ClassRoom,ComputerCode,Deleted")] WorkplaceEntity workplaceEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             if (ModelState.IsValid)
             {
+                workplaceEntity.CreatedBy = email;
+                workplaceEntity.CreatedByClient = clientApp;
+                workplaceEntity.UpdatedBy = email;
+                workplaceEntity.UpdatedByClient = clientApp;
                 await workplaceRepository.CreateAsync(workplaceEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -100,15 +108,20 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Identifier,ClassroomId,ComputerCode,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] WorkplaceEntity workplaceEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Identifier,ClassroomId,ComputerCode,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] WorkplaceEntity workplaceEntity)
         {
             if (id != workplaceEntity.Id)
             {
                 return NotFound();
             }
 
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
             if (ModelState.IsValid)
             {
+                workplaceEntity.UpdatedBy = email;
+                workplaceEntity.UpdatedByClient = clientApp;
 
                 await cache.DeletePatternAsync($"*{workplaceEntity.Id.ToString()}*");
                 var result = await workplaceRepository.UpdateAsync(workplaceEntity);

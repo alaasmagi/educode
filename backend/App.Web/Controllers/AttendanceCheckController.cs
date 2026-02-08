@@ -56,6 +56,9 @@ namespace App.Web.Controllers
         // GET: AttendanceCheck/Create
         public async Task<IActionResult> Create()
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             var workplaces = await workplaceRepository.GetAllAsync(1, 100);
             var attendances = await attendanceRepository.GetAllAsync(1, 100);
             ViewData["WorkplaceId"] = new SelectList(workplaces, "Id", "ClassRoom");
@@ -67,10 +70,17 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("StudentId,FullName,AttendanceIdentifier,WorkplaceIdentifier,CreatedBy,UpdatedBy,Deleted")] AttendanceCheckEntity attendanceCheckEntity)
+        public async Task<IActionResult> Create([Bind("StudentId,FullName,AttendanceIdentifier,WorkplaceIdentifier,Deleted")] AttendanceCheckEntity attendanceCheckEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
             if (ModelState.IsValid)
             {
+                attendanceCheckEntity.CreatedBy = email;
+                attendanceCheckEntity.CreatedByClient = clientApp;
+                attendanceCheckEntity.UpdatedBy = email;
+                attendanceCheckEntity.UpdatedByClient = clientApp;
                 await attendanceCheckRepository.CreateAsync(attendanceCheckEntity);
                 return RedirectToAction(nameof(Index));
             }
@@ -105,15 +115,20 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("StudentId,FullName,AttendanceIdentifier,WorkplaceIdentifier,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] AttendanceCheckEntity attendanceCheckEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("StudentId,FullName,AttendanceIdentifier,WorkplaceIdentifier,Id,CreatedBy,CreatedByClient,CreatedAt,Deleted")] AttendanceCheckEntity attendanceCheckEntity)
         {
             if (id != attendanceCheckEntity.Id)
             {
                 return NotFound();
             }
 
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
             if (ModelState.IsValid)
             {
+                attendanceCheckEntity.UpdatedBy = email;
+                attendanceCheckEntity.UpdatedByClient = clientApp;
 
                 await cache.DeletePatternAsync($"*{attendanceCheckEntity.Id.ToString()}*");
                 var result = await attendanceCheckRepository.UpdateAsync(attendanceCheckEntity);

@@ -22,24 +22,30 @@ public class CourseStatusSeedingService(
             {
                 StatusName = "available",
                 CreatedBy = "aspnet-initializer",
+                CreatedByClient = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
+                UpdatedByClient = "aspnet-initializer",
                 UpdatedAt = now,
             },
             new()
             {
                 StatusName = "unavailable",
                 CreatedBy = "aspnet-initializer",
+                CreatedByClient = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
+                UpdatedByClient = "aspnet-initializer",
                 UpdatedAt = now,
             },
             new()
             {
                 StatusName = "temp-unavailable",
                 CreatedBy = "aspnet-initializer",
+                CreatedByClient = "aspnet-initializer",
                 CreatedAt = now,
                 UpdatedBy = "aspnet-initializer",
+                UpdatedByClient = "aspnet-initializer",
                 UpdatedAt = now,
             }
         };

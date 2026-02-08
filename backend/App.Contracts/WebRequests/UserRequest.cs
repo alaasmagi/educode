@@ -1,6 +1,6 @@
 ﻿namespace App.Contracts.WebRequests;
 
-public class CreateAccountRequest : BaseRequest
+public class UserRequest
 {
     public required string Fullname { get; set; }
     public required string Email { get; set; }

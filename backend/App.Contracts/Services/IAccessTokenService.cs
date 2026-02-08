@@ -5,6 +5,6 @@ namespace App.Contracts.Services;
 
 public interface IAccessTokenService
 {
-    string GenerateAccessToken(UserEntity user, UserAuthEntity userAuth);
+    string GenerateAccessToken(UserEntity user, UserAuthEntity userAuth, string clientApp);
     string GenerateAdminAccessToken(UserDto user);
 }

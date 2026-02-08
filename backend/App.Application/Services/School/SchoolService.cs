@@ -5,6 +5,7 @@ using App.Contracts.Services;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Redis;
 using App.Infrastructure.Sentry;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 

@@ -2,8 +2,10 @@
 using App.Contracts.DTOs;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 
@@ -56,6 +58,34 @@ public class CourseService (
         return MethodResponse<CourseDto>.Success(courseDto);
     }
 
+    public async Task<MethodResponse<List<AttendanceStudentCountDto>>> GetAttendancesUserCountsByCourseIdAsync(Guid id)
+    {
+        var cache = await cacheRepository.GetAsync(Constants.CoursePrefix + 
+                                                   Constants.AttendancePrefix + Constants.CourseStudentCountsPrefix + id);
+        if (cache != null)
+        {
+            var deserializedStudentCounts = JsonSerializer.Deserialize<List<AttendanceStudentCountDto>>(cache);
+            return MethodResponse<List<AttendanceStudentCountDto>>.Success(deserializedStudentCounts!);
+        }
+        
+        var studentCounts = await courseRepository.GetUserCountsAsync(id);
+        if (studentCounts == null)
+        {
+            logger.LogError($"Course student counts for course with id {id} not found");
+            return MethodResponse<List<AttendanceStudentCountDto>>.Failure(
+                new Error(ErrorConstants.CourseStudentCountsNotFound, "Course student counts were not found")
+            );
+        }
+        
+        var studentCountDtos = AttendanceStudentCountDto.AttendanceStudentCountDtos(studentCounts);
+        var serializedStudentCounts = JsonSerializer.Serialize(studentCountDtos);
+        await cacheRepository.SetAsync(Constants.CoursePrefix + Constants.AttendancePrefix + id, 
+            serializedStudentCounts, Constants.LongCachePeriod);
+        
+        logger.LogInformation($"Successfully retrieved course student count for course with ID {id}");
+        return MethodResponse<List<AttendanceStudentCountDto>>.Success(studentCountDtos);    
+    }
+
     public async Task<MethodResponse<CourseDto>> GetCourseByIdAsync(Guid courseId)
     {
         var cache = await cacheRepository.GetAsync(Constants.CoursePrefix + courseId);
@@ -84,55 +114,85 @@ public class CourseService (
         return MethodResponse<CourseDto>.Success(courseDto);
     }
     
-    public async Task<MethodResponse<bool>> AddCourse(UserEntity user, CourseEntity course, string creator)
+    public async Task<MethodResponse<bool>> AddCourseAsync(Guid userId, CourseRequest request, string email, string clientApp)
     {
-        var courseExists = await DoesCourseExistByCodeAsync(course.Code);
+        var courseExists = await DoesCourseExistByCodeAsync(request.CourseCode);
 
         if (courseExists)
         {
-            logger.LogError($"Course with code {course.Code} already exists");
+            logger.LogWarning($"Course with code {request.CourseCode} already exists");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.CourseAlreadyExists, "Course already exists")
             );
         }
         
-        var courseTeacher = new CourseTeacherEntity
+        var newCourse = new CourseEntity
         {
-            TeacherId = user.Id,
-            CourseId = course.Id,
-            CreatedBy = creator,
-            UpdatedBy = creator
+            Name = request.CourseName,
+            Code = request.CourseCode,
+            StatusId = request.CourseStatusId,
+            CreatedBy = email,
+            CreatedByClient = clientApp,
+            UpdatedBy = email,
+            UpdatedByClient = clientApp,
         };
-        
-        if (await courseRepository.CreateAsync(course) == null || await courseTeacherRepository.CreateAsync(courseTeacher) == null)
+
+        if (await courseRepository.CreateAsync(newCourse) == null)
         {
-            logger.LogError("Failed to add course");
+            logger.LogWarning("Failed to add course");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.CourseNotCreated, "Course was not created")
             );
         }
         
-        logger.LogInformation($"Successfully added course with code {course.Code}");
+        var courseTeacher = new CourseTeacherEntity
+        {
+            TeacherId = userId,
+            CourseId = newCourse.Id,
+            CreatedBy = email,
+            CreatedByClient = clientApp,
+            UpdatedBy = email,
+            UpdatedByClient = clientApp,
+        };
+        
+        if (await courseTeacherRepository.CreateAsync(courseTeacher) == null)
+        {
+            logger.LogWarning("Failed to add course teacher");
+            return MethodResponse<bool>.Failure(
+                new Error(ErrorConstants.CourseTeacherNotCreated, "Course was not created")
+            );
+        }
+        
+        logger.LogInformation($"Successfully created course with code {newCourse.Code}");
         return MethodResponse<bool>.Success(true);
     }
     
-    public async Task<MethodResponse<bool>> EditCourse(Guid courseId, CourseEntity newCourse, string client)
+    public async Task<MethodResponse<bool>> EditCourseAsync(Guid id, CourseRequest request, string email, string clientApp)
     {
-        await cacheRepository.DeletePatternAsync($"*{courseId.ToString()}*");
+        var newCourse = new CourseEntity
+        {
+            Name = request.CourseName,
+            Code = request.CourseCode,
+            StatusId = request.CourseStatusId,
+            UpdatedBy = email,
+            UpdatedByClient = clientApp,
+        };
+        
+        await cacheRepository.DeletePatternAsync($"*{id.ToString()}*");
         var status = await courseRepository.UpdateAsync(newCourse);
         if (status == null)
         {
-            logger.LogError($"Failed to update course with id {courseId}");
+            logger.LogError($"Failed to update course with id {id}");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.CourseNotUpdated, "Course was not updated")
             );
         }
         
-        logger.LogInformation($"Successfully updated course with id {courseId}");
+        logger.LogInformation($"Successfully updated course with id {id}");
         return MethodResponse<bool>.Success(true);
     }
     
-    public async Task<MethodResponse<bool>> DeleteCourse(Guid courseId, string email, string client)
+    public async Task<MethodResponse<bool>> SoftDeleteCourseAsync(Guid courseId, string email, string client)
     {
         var course = await courseRepository.GetByIdAsync(courseId);
         
@@ -160,7 +220,7 @@ public class CourseService (
         return MethodResponse<bool>.Success(true);
     }
     
-    public async Task<MethodResponse<List<CourseStatusDto>>> GetAllCourseStatuses()
+    public async Task<MethodResponse<List<CourseStatusDto>>> GetAllCourseStatusesAsync()
     {
         var cache = await cacheRepository.GetAsync(Constants.CourseStatusPrefix);
         

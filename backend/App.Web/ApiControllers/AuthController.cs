@@ -11,7 +11,6 @@ namespace App.Web.ApiControllers;
 [Route("api/[controller]")]
 public class AuthController(
     IUserService userService,
-
     EnvInitializer envInitializer,
     ILogger<AuthController> logger)
     : ControllerBase

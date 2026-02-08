@@ -102,11 +102,6 @@ public class AttendanceCheckRepository(
         }
     }
 
-    public Task<List<Guid>?> GetAllIdsByUserFullNameAsync(string fullName)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<int?> GetUserCountAsync(Guid attendanceId)
     {
         try
@@ -256,7 +251,7 @@ public class AttendanceCheckRepository(
         }
     }
 
-    public async Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState)
+    public async Task<bool> ToggleDeletionAsync(Guid id, string email, string clientApp, bool newDeletionState)
     {
         try
         {
@@ -265,6 +260,8 @@ public class AttendanceCheckRepository(
                 .Where(ac => ac.Id == id)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(ac => ac.Deleted, newDeletionState)
+                    .SetProperty(ac => ac.UpdatedBy, email)
+                    .SetProperty(ac => ac.UpdatedByClient, clientApp)
                     .SetProperty(ac => ac.UpdatedAt, DateTime.UtcNow));
 
             return affectedRows > 0;

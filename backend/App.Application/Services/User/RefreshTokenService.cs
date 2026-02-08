@@ -5,6 +5,7 @@ using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +17,7 @@ public class RefreshTokenService (
     IRefreshTokenRepository refreshTokenRepository,
     ILogger<RefreshTokenService> logger) : IRefreshTokenService
 {
-    public async Task<MethodResponse<string>> GenerateRefreshToken(Guid userId, string creatorIp, string client)
+    public async Task<MethodResponse<string>> GenerateRefreshToken(Guid userId, string creatorIp, string client, string clientApp)
     {
         var refreshTokenExpirationDays = envInitializer.RefreshTokenExpirationDays;
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
@@ -25,10 +26,10 @@ public class RefreshTokenService (
         {
             UserId = userId,
             Token = token,
-            Client = client,
+            Client = email,
             ClientIp = creatorIp,
             ExpirationTime = DateTime.UtcNow + TimeSpan.FromDays(refreshTokenExpirationDays),
-            CreatedBy = Constants.BackendName,
+            CreatedBy = clientApp,
             UpdatedBy = Constants.BackendName
         };
         

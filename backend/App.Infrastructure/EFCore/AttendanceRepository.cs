@@ -291,7 +291,7 @@ public class AttendanceRepository(
         }
     }
 
-    public async Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState)
+    public async Task<bool> ToggleDeletionAsync(Guid id, string email, string clientApp, bool newDeletionState)
     {
         try
         {
@@ -300,6 +300,8 @@ public class AttendanceRepository(
                 .Where(a => a.Id == id)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(a => a.Deleted, newDeletionState)
+                    .SetProperty(ac => ac.UpdatedBy, email)
+                    .SetProperty(ac => ac.UpdatedByClient, clientApp)
                     .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
             
             return affectedRows > 0;

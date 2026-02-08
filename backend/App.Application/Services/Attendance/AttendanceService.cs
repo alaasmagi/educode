@@ -2,8 +2,10 @@
 using App.Contracts.DTOs;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 
@@ -166,21 +168,23 @@ public class AttendanceService(
     }
     
     
-    public async Task<MethodResponse<bool>> AddAttendanceAsync(AttendanceEntity attendance, List<DateOnly> attendanceDates, 
-                                                                                TimeOnly startTime, TimeOnly endTime, string client)
+    public async Task<MethodResponse<bool>> AddAttendanceAsync(AttendanceRequest request, string email, string clientApp)
     {
         var failureCount = 0;
-        foreach (var date in attendanceDates)
+        foreach (var date in request.AttendanceDates)
         {
             var newAttendance = new AttendanceEntity()
             {
-                CourseId = attendance.CourseId,
-                TypeId = attendance.TypeId,
-                Type = attendance.Type,
-                StartTime = date.ToDateTime(startTime),
-                EndTime = date.ToDateTime(endTime),
-                CreatedBy = attendance.CreatedBy,
-                UpdatedBy = attendance.UpdatedBy
+                CourseId = request.CourseId,
+                ClassroomId =  request.ClassroomId,
+                TypeId = request.AttendanceTypeId,
+                StartTime = date.ToDateTime(request.StartTime).ToUniversalTime(),
+                EndTime = date.ToDateTime(request.EndTime).ToUniversalTime(),
+                AutomatedRegistration =  request.AutomatedRegistration,
+                CreatedBy = email,
+                CreatedByClient =  clientApp,
+                UpdatedBy = email,
+                UpdatedByClient =  clientApp,
             };
             
             if (await attendanceRepository.CreateAsync(newAttendance) == null)
@@ -198,50 +202,62 @@ public class AttendanceService(
             );
         }
         
-        logger.LogInformation($"Successfully created {attendanceDates.Count} attendances");
+        logger.LogInformation($"Successfully created {request.AttendanceDates.Count} attendances");
         return MethodResponse<bool>.Success(true);
     }
 
-    public async Task<MethodResponse<bool>> EditAttendanceAsync(Guid attendanceId, AttendanceEntity updatedAttendance, string client)
+    public async Task<MethodResponse<bool>> EditAttendanceAsync(Guid id, AttendanceChangeRequest request, 
+                                                                                        string email, string clientApp)
     {
-        await cacheRepository.DeletePatternAsync($"*{attendanceId.ToString()}*");
+        var updatedAttendance = new AttendanceEntity()
+        {
+            ClassroomId = request.ClassroomId,
+            TypeId = request.AttendanceTypeId,
+            StartTime = request.StartTime.ToUniversalTime(),
+            EndTime = request.EndTime.ToUniversalTime(),
+            AutomatedRegistration =  request.AutomatedRegistration,
+            UpdatedBy = email,
+            UpdatedByClient = clientApp
+        };
+        
+        await cacheRepository.DeletePatternAsync($"*{id.ToString()}*");
         var status = await attendanceRepository.UpdateAsync(updatedAttendance);
 
         if (status == null)
         {
-            logger.LogWarning($"Updating attendance with ID {attendanceId} failed");
+            logger.LogWarning($"Updating attendance with ID {id} failed");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.AttendanceNotUpdated, "Attendance was not updated")
             );
         }
 
-        logger.LogInformation($"Successfully updated attendance with ID {attendanceId}");
+        logger.LogInformation($"Successfully updated attendance with ID {id}");
         return MethodResponse<bool>.Success(true);
     }
 
-    public async Task<MethodResponse<bool>> DeleteAttendance(Guid attendanceId, string email, string client)
+    public async Task<MethodResponse<bool>> SoftDeleteAttendanceAsync(Guid id, string email, string clientApp)
     {
-        var attendance = await attendanceRepository.GetByIdAsync(attendanceId);
+        var attendance = await attendanceRepository.GetByIdAsync(id);
         if (attendance == null)
         {
-            logger.LogWarning($"Deleting attendance with ID {attendanceId} failed");
+            logger.LogWarning($"Deleting attendance with ID {id} failed");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.AttendanceNotFound, "Attendance was not found")
             );
         }
         
-        await cacheRepository.DeletePatternAsync($"*{attendanceId.ToString()}*");
-        var status = await attendanceRepository.RemoveAsync(attendance);
+        await cacheRepository.DeletePatternAsync($"*{id.ToString()}*");
+        var status = await attendanceRepository.ToggleDeletionAsync(id, email, clientApp, true);
         
-        if (status == null)
+        if (!status)
         {
-            logger.LogWarning($"Deleting attendance with ID {attendanceId} failed");
+            logger.LogWarning($"Deleting attendance with ID {id} failed");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.AttendanceNotDeleted, "Attendance was not deleted")
             );
         }
         
-        logger.LogInformation($"Successfully deleted attendance with ID {attendanceId}");
+        logger.LogInformation($"Successfully deleted attendance with ID {id}");
         return MethodResponse<bool>.Success(true);
     }
 }

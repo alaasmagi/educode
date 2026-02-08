@@ -14,7 +14,7 @@ namespace App.Infrastructure.JWT;
 public class JwtService(
     EnvInitializer envInitializer) : IAccessTokenService
 {
-    public string GenerateAccessToken(UserEntity user, UserAuthEntity userAuth)
+    public string GenerateAccessToken(UserEntity user, UserAuthEntity userAuth, string client)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtKey = envInitializer.JwtKey;
@@ -38,6 +38,8 @@ public class JwtService(
 
         List<Claim> claims = [
             new Claim(Constants.UserIdClaim, user.Id.ToString()),
+            new Claim(Constants.EmailClaim, user.Email),
+            new Claim(Constants.ClientAppClaim, client),
             new Claim(Constants.AccessLevelClaim,
                 ((int)(user.Type?.AccessLevel ?? EAccessLevel.NoAccess)).ToString()),
             new Claim(Constants.VerificationClaim, userAuth.Verified.ToString()),
@@ -82,6 +84,8 @@ public class JwtService(
 
         List<Claim> claims = [
             new Claim(Constants.UserIdClaim, user.Id.ToString()),
+            new Claim(Constants.EmailClaim, user.Email),
+            new Claim(Constants.ClientAppClaim, Constants.BackendAdminWebClientName),
             new Claim(Constants.AccessLevelClaim, EAccessLevel.QuinaryLevel.ToString()),
             new Claim(Constants.VerificationClaim, true.ToString()),
             new Claim(Constants.SchoolIdClaim, string.Empty)

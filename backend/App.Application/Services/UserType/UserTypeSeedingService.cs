@@ -3,6 +3,7 @@ using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 

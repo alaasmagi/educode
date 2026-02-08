@@ -5,6 +5,6 @@ namespace App.Contracts.Services;
 
 public interface ISchoolService
 {
-    Task<MethodResponse<List<SchoolDto>>> GetAllSchools(int pageNr, int pageSize);
-    Task<MethodResponse<SchoolDto>> GetSchoolById(Guid id);
+    Task<MethodResponse<List<SchoolDto>>> GetAllSchoolsAsync(int pageNr, int pageSize);
+    Task<MethodResponse<SchoolDto>> GetSchoolByIdAsync(Guid id);
 }

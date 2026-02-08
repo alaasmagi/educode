@@ -3,6 +3,7 @@ using App.Contracts.DTOs;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 

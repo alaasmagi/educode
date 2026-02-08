@@ -6,9 +6,8 @@ public interface IAttendanceCheckRepository : IRepository<AttendanceCheckEntity>
 {
     Task<List<AttendanceCheckEntity>?> GetAllByAttendanceAsync(Guid attendanceId);
     Task<List<AttendanceCheckEntity>?> GetAllByAttendanceIdentifierAsync(string attendanceIdentifier, int pageNr, int pageSize);
-    Task<List<Guid>?> GetAllIdsByUserFullNameAsync(string fullName);
     Task<int?> GetUserCountAsync(Guid attendanceId);
     Task<bool> ToggleDeletionForAllByUserAsync(string fullName, bool newDeletionState);
     Task<List<AttendanceCheckEntity>?> SearchAsync(string keyword, Guid? resourceFilterId = null, bool includeDeleted = false);
-    Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState);
+    Task<bool> ToggleDeletionAsync(Guid id, string email, string clientApp, bool newDeletionState);
 }

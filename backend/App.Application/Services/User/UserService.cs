@@ -5,6 +5,7 @@ using App.Contracts.Services;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 

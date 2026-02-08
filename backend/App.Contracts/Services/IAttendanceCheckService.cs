@@ -1,13 +1,13 @@
 using App.Contracts.DTOs;
-using App.Domain.Entities;
+using App.Contracts.WebRequests;
 using Base.DTO;
 
 namespace App.Contracts.Services;
 
 public interface IAttendanceCheckService
 {
-    Task<MethodResponse<bool>> AddAttendanceCheckAsync(AttendanceCheckEntity attendanceCheck, string? workplaceIdentifier, string client);
-    Task<MethodResponse<List<AttendanceCheckDto>>> GetAttendanceChecksByAttendanceIdAsync(string attendanceIdentifier, int pageNr, int pageSize);
-    Task<MethodResponse<AttendanceCheckDto>> GetAttendanceCheckByIdAsync(Guid attendanceCheckId);
-    Task<MethodResponse<bool>> DeleteAttendanceCheck(Guid attendanceCheckId, string email, string client);
+    Task<MethodResponse<List<AttendanceCheckDto>>> GetAttendanceChecksByAttendanceIdAsync(Guid id, int pageNr, int pageSize);
+    Task<MethodResponse<AttendanceCheckDto>> GetAttendanceCheckByIdAsync(Guid id);
+    Task<MethodResponse<bool>> AddAttendanceCheckAsync(AttendanceCheckRequest request, string? email, string clientApp);
+    Task<MethodResponse<bool>> SoftDeleteAttendanceCheckAsync(Guid id, string email, string clientApp);
 }

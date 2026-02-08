@@ -1,9 +1,9 @@
 ﻿using App.Contracts.DTOs;
 using App.Contracts.Services;
 using App.Contracts.WebRequests;
-using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,27 +13,27 @@ namespace App.Web.ApiControllers;
 [Route("api/[controller]")]
 public class AttendanceController(
     IAttendanceService attendanceService,
+    IAttendanceCheckService attendanceCheckService,
+    IAttendanceTypeService attendanceTypeService,
     ICourseService courseService,
     ILogger<AttendanceController> logger)
     : ControllerBase
 {
     [Authorize(Policy = nameof(EAccessLevel.SecondaryLevel))]
     [HttpGet("{id}")]
-    public async Task<ActionResult<CourseAttendanceDto>> GetAttendanceById(Guid id)
+    public async Task<ActionResult<AttendanceDto>> GetAttendanceById(Guid id)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        var attendanceEntity = await attendanceService.GetCourseAttendanceByIdAsync(id, userId);
-
-        if (attendanceEntity == null)
+        
+        var response = await attendanceService.GetAttendanceByIdAsync(id, userId);
+        if (!response.Successful)
         {
-            return NotFound(new {message = "Attendance not found", messageCode = "attendance-not-found"});
+            return NotFound(response.Error);
         }
-
-        var result = new CourseAttendanceDto(attendanceEntity);
         
         logger.LogInformation($"Attendance with ID {id} successfully fetched");
-        return result;
+        return Ok(response.Value);
     }
     
     [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
@@ -41,17 +41,15 @@ public class AttendanceController(
     public async Task<ActionResult<CourseDto>> GetCourseByAttendanceId(Guid id)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var courseEntity = await courseService.GetCourseByAttendanceIdAsync(id);
-
-        if (courseEntity == null)
+        
+        var response = await courseService.GetCourseByAttendanceIdAsync(id);
+        if (!response.Successful)
         {
-            return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
+            return NotFound(response.Error);
         }
         
-        var result = new CourseDto(courseEntity);
-        
         logger.LogInformation($"Successfully fetched course by attendance with ID {id}");
-        return Ok(result);
+        return Ok(response.Value);
     }
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
@@ -59,53 +57,35 @@ public class AttendanceController(
     public async Task<ActionResult<IEnumerable<AttendanceTypeDto>>> GetAllAttendanceTypes()
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var attendanceTypes = await attendanceService.GetAttendanceTypesAsync();
-
-        if (attendanceTypes == null)
+        
+        var response = await attendanceTypeService.GetAttendanceTypesAsync();
+        if (!response.Successful)
         {
-            return NotFound(new {message = "Attendance types not found", messageCode = "attendance-types-not-found"});
+            return NotFound(response.Error);
         }
         
-        var result = AttendanceTypeDto.ToDtoList(attendanceTypes);
-        
         logger.LogInformation($"All attendance types successfully fetched");
-        return Ok(result);
+        return Ok(response.Value);
     }
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpPost]
-    public async Task<ActionResult> AddCourseAttendance([FromBody] AttendanceRequest request)
+    public async Task<ActionResult> AddAttendance([FromBody] AttendanceRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
+        var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+        
         if (!ModelState.IsValid)
         {
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
-        }
-        var course = await courseService.GetCourseByIdAsync(request.CourseId, userId);
-        if (course == null)
-        {
-            return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
+            logger.LogWarning($"Form data is invalid");
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
         
-        var attendanceType = await attendanceService.GetAttendanceTypeByIdAsync(request.AttendanceTypeId);
-        if (attendanceType == null)
+        var response = await attendanceService.AddAttendanceAsync(request, email, clientApp);
+        if (!response.Successful)
         {
-            return NotFound(new {message = "Attendance type not found", messageCode = "attendance-type-not-found"});
-        }
-        
-        var newAttendance = new AttendanceEntity()
-        {
-            CourseId = request.CourseId,
-            TypeId = request.AttendanceTypeId,
-            CreatedBy = request.Client,
-            UpdatedBy = request.Client
-        };
-        if (!await attendanceService.AddAttendanceAsync(newAttendance, request.AttendanceDates, request.StartTime,
-                request.EndTime, request.Client))
-        {
-            return BadRequest(new {message = "One or more attendances could not be added", 
-                messageCode = "attendances-could-not-be-added"});
+            return BadRequest(response.Error);
         }
         
         logger.LogInformation($"Attendance added successfully");
@@ -114,45 +94,25 @@ public class AttendanceController(
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpPatch("{id}")]
-    public async Task<ActionResult> EditAttendance(Guid id, [FromBody] AttendanceRequest request)
+    public async Task<ActionResult> EditAttendance(Guid id, [FromBody] AttendanceChangeRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        if (!ModelState.IsValid || request.Id == null)
+        var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+        
+        if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
-        
-        var course = await courseService.GetCourseByIdAsync(request.CourseId, userId);
-        if (course == null)
-        {
-            return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
-        }
-        
-        var attendanceType = await attendanceService.GetAttendanceTypeByIdAsync(request.AttendanceTypeId);
-        if (attendanceType == null)
-        {
-            return NotFound(new {message = "Attendance type not found", messageCode = "attendance-type-not-found"});
-        }
-        
-        var newAttendance = new AttendanceEntity()
-        {
-            CourseId = request.CourseId,
-            TypeId = request.AttendanceTypeId,
-            StartTime = request.AttendanceDates[0].ToDateTime(request.StartTime).ToUniversalTime(),
-            EndTime = request.AttendanceDates[0].ToDateTime(request.EndTime).ToUniversalTime(),
-            CreatedBy = request.Client,
-            UpdatedBy = request.Client
-        };
 
-        var attendanceId = request.Id.Value;
-        if (!await attendanceService.EditAttendanceAsync(attendanceId, newAttendance, request.Client))
+        var response = await attendanceService.EditAttendanceAsync(id, request, email, clientApp);
+        if (!response.Successful)
         {
-            return BadRequest(new { message = "Attendance does not exist", messageCode = "attendance-does-not-exist" });
+            return BadRequest(response.Error);
         }
 
-        logger.LogInformation($"Attendance for attendance with ID {request.Id} updated successfully");
+        logger.LogInformation($"Attendance for attendance with ID {id} updated successfully");
         return Ok();
     }
     
@@ -161,16 +121,19 @@ public class AttendanceController(
     public async Task<ActionResult> DeleteAttendance(Guid id)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
+        var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+        
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
-        
-        if (!await attendanceService.DeleteAttendance(id, userId, ))
+
+        var response = await attendanceService.SoftDeleteAttendanceAsync(id, email, clientApp);
+        if (!response.Successful)
         {
-            return BadRequest(new { message = "Attendance does not exist", messageCode = "attendance-does-not-exist" });
+            return BadRequest(response.Error);
         }
 
         logger.LogInformation($"Attendance with ID {id} deleted successfully");
@@ -183,26 +146,14 @@ public class AttendanceController(
         Guid id, [FromQuery] int pageNr = 1, [FromQuery] int pageSize = Constants.DefaultQueryPageSize)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-       
-        var courseAttendance = await attendanceService.GetCourseAttendanceByIdAsync(id, userId);
-
-        if (courseAttendance == null)
+        
+        var response = await attendanceCheckService.GetAttendanceChecksByAttendanceIdAsync(id, pageNr, pageSize);
+        if (!response.Successful)
         {
-            return NotFound(new { message = "Attendance not found", messageCode = "attendance-not-found" });
+            return Ok(response.Error);
         }
-
-        var attendanceChecks =
-            await attendanceService.GetAttendanceChecksByAttendanceIdAsync(courseAttendance.Identifier, pageNr, pageSize);
-        if (attendanceChecks == null)
-        {
-            return Ok(new
-                { message = "Attendance has no attendance checks", messageCode = "attendance-has-no-checks" });
-        }
-
-        var result = AttendanceCheckDto.ToDtoList(attendanceChecks);
-
+        
         logger.LogInformation($"Attendance checks for attendance with ID {id} successfully fetched");
-        return Ok(result);
+        return Ok(response.Value);
     }
 }

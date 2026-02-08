@@ -2,8 +2,10 @@ using System.Text.Json;
 using App.Contracts.DTOs;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 
@@ -16,27 +18,38 @@ public class AttendanceCheckService(
     IWorkplaceRepository workplaceRepository,
     IAttendanceCheckRepository attendanceCheckRepository) : IAttendanceCheckService
 {
-    public async Task<MethodResponse<bool>> AddAttendanceCheckAsync(AttendanceCheckEntity attendanceCheck, string? workplaceIdentifier, string client)
+    public async Task<MethodResponse<bool>> AddAttendanceCheckAsync(AttendanceCheckRequest request, string? email, string clientApp)
     {
-        AttendanceCheckEntity? status;
-        attendanceCheck.StudentCode = attendanceCheck.StudentCode.ToUpper();
-        if (workplaceIdentifier != null)
+        var newAttendanceCheck = new AttendanceCheckEntity
         {
-            var workplaceId = await workplaceRepository.CheckAvailabilityByIdentifierAsync(workplaceIdentifier);
+            StudentCode = request.StudentCode,
+            FullName = request.FullName,
+            AttendanceIdentifier = request.AttendanceIdentifier,
+            CreatedBy = request.IsOffline ? Constants.OfflineUser : email ?? Constants.BackendName,
+            CreatedByClient = clientApp,
+            UpdatedBy = request.IsOffline ? Constants.OfflineUser : email ?? Constants.BackendName,
+            UpdatedByClient = clientApp
+        };
+        
+        newAttendanceCheck.StudentCode = newAttendanceCheck.StudentCode.ToUpper();
+        AttendanceCheckEntity? status;
+        if (request.WorkplaceIdentifier != null)
+        {
+            var workplaceId = await workplaceRepository.CheckAvailabilityByIdentifierAsync(request.WorkplaceIdentifier);
             
             if (workplaceId == null)
             {
-                logger.LogWarning($"Workplace with identifier {workplaceIdentifier} was not found");
+                logger.LogWarning($"Workplace with identifier {request.WorkplaceIdentifier} was not found");
                 return MethodResponse<bool>.Failure(
                     new Error(ErrorConstants.WorkplaceNotFound, "Workplace was not found")
                 );
             }
             
-            status = await attendanceCheckRepository.CreateAsync(attendanceCheck);
+            status = await attendanceCheckRepository.CreateAsync(newAttendanceCheck);
         }
         else
         {
-            status = await attendanceCheckRepository.CreateAsync(attendanceCheck);
+            status = await attendanceCheckRepository.CreateAsync(newAttendanceCheck);
         }
         
         if (status == null)
@@ -51,31 +64,19 @@ public class AttendanceCheckService(
         return MethodResponse<bool>.Success(true);
     }
     
-    public async Task<MethodResponse<List<AttendanceCheckDto>>> GetAttendanceChecksByAttendanceIdAsync(string attendanceIdentifier, 
-                                                                                                int pageNr, int pageSize)
+    public async Task<MethodResponse<List<AttendanceCheckDto>>> GetAttendanceChecksByAttendanceIdAsync(Guid id, int pageNr, int pageSize)
     {
-        var cache = await cacheRepository.GetAsync(Constants.AttendanceCheckPrefix + Constants.AttendancePrefix + attendanceIdentifier + pageNr + pageSize);
+        var cache = await cacheRepository.GetAsync(Constants.AttendanceCheckPrefix + Constants.AttendancePrefix + id + pageNr + pageSize);
         if (cache != null)
         {
             var deserializedChecks = JsonSerializer.Deserialize<List<AttendanceCheckDto>?>(cache);
             return MethodResponse<List<AttendanceCheckDto>>.Success(deserializedChecks!);
         }
         
-        var attendanceId = await attendanceRepository.CheckAvailabilityByIdentifierAsync(attendanceIdentifier);
-        
-        if (attendanceId == null)
-        {
-            logger.LogWarning($"Attendance with identifier {attendanceIdentifier} was not found");
-            return MethodResponse<List<AttendanceCheckDto>>.Failure(
-                new Error(ErrorConstants.AttendanceNotFound, "Attendance was not found")
-            );
-        }
-        
-        var attendanceChecks = await attendanceCheckRepository.GetAllByAttendanceAsync(attendanceId.Value);
-        
+        var attendanceChecks = await attendanceCheckRepository.GetAllByAttendanceAsync(id);
         if (attendanceChecks == null)
         {
-            logger.LogWarning($"Attendance checks for attendance with identifier {attendanceIdentifier} were not found");
+            logger.LogWarning($"Attendance checks for attendance with identifier {id} were not found");
             return MethodResponse<List<AttendanceCheckDto>>.Failure(
                 new Error(ErrorConstants.AttendanceChecksNotFound, "Attendance checks were not found")
             );
@@ -83,10 +84,10 @@ public class AttendanceCheckService(
         
         var attendanceCheckDtos = AttendanceCheckDto.ToDtoList(attendanceChecks);
         var serializedAttendanceCheckDtos = JsonSerializer.Serialize(attendanceCheckDtos);
-        await cacheRepository.SetAsync(Constants.AttendanceCheckPrefix + Constants.AttendancePrefix + attendanceIdentifier + pageNr + pageSize, 
+        await cacheRepository.SetAsync(Constants.AttendanceCheckPrefix + Constants.AttendancePrefix + id + pageNr + pageSize, 
             serializedAttendanceCheckDtos, Constants.ShortCachePeriod);
         
-        logger.LogInformation($"Successfully retrieved attendance check by attendance with ID {attendanceId}");
+        logger.LogInformation($"Successfully retrieved attendance check by attendance with ID {id}");
         return MethodResponse<List<AttendanceCheckDto>>.Success(attendanceCheckDtos);
     }
     
@@ -119,29 +120,29 @@ public class AttendanceCheckService(
         return MethodResponse<AttendanceCheckDto>.Success(result);
     }
     
-    public async Task<MethodResponse<bool>> DeleteAttendanceCheck(Guid attendanceCheckId, string email, string client)
+    public async Task<MethodResponse<bool>> SoftDeleteAttendanceCheckAsync(Guid id, string email, string clientApp)
     {
-        var attendanceCheck = await attendanceCheckRepository.GetByIdAsync(attendanceCheckId);
+        var attendanceCheck = await attendanceCheckRepository.GetByIdAsync(id);
         if (attendanceCheck == null)
         {
-            logger.LogWarning($"Failed to delete attendance check with ID {attendanceCheckId}: check not found");
+            logger.LogWarning($"Failed to delete attendance check with ID {id}: check not found");
             return MethodResponse<bool>.Failure(                    
                 new Error(ErrorConstants.AttendanceCheckNotFound, "Attendance check was not found")
             );
         }
         
-        await cacheRepository.DeletePatternAsync($"*{attendanceCheckId.ToString()}*");
-        var status = await attendanceCheckRepository.RemoveAsync(attendanceCheck);
+        await cacheRepository.DeletePatternAsync($"*{id.ToString()}*");
+        var status = await attendanceCheckRepository.ToggleDeletionAsync(id, email, clientApp, true);
 
-        if (status == null)
+        if (!status)
         {
-            logger.LogWarning($"Failed to delete attendance check with ID {attendanceCheckId}");
+            logger.LogWarning($"Failed to delete attendance check with ID {id}");
             return MethodResponse<bool>.Failure(
                 new Error(ErrorConstants.AttendanceCheckNotDeleted, "Attendance check was not deleted")
             );
         }
         
-        logger.LogInformation($"Successfully deleted attendance check with ID {attendanceCheckId}");
+        logger.LogInformation($"Successfully deleted attendance check with ID {id}");
         return MethodResponse<bool>.Success(true);
     }
 }

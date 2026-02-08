@@ -4,6 +4,7 @@ using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
+using Base.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,56 +15,43 @@ namespace App.Web.ApiControllers;
 public class CourseController(
     ICourseService courseService,
     IAttendanceService attendanceService,
-    IUserService userService,
     ILogger<CourseController> logger)
     : ControllerBase
 {
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpGet("{id}")]
-    public async Task<ActionResult<CourseDto>> GetCourseDetails(Guid id)
+    public async Task<ActionResult<CourseDto>> GetCourseById(Guid id)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        var courseEntity = await courseService.GetCourseByIdAsync(id, userId!);
 
-        if (courseEntity == null)
+        var response = await courseService.GetCourseByIdAsync(id);
+        if (!response.Successful)
         {
-            return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
+            return BadRequest(response.Error);
         }
         
-        var result = new CourseDto(courseEntity);
-        
         logger.LogInformation($"Successfully fetched course by course ID {id}");
-        return Ok(result);
+        return Ok(response.Value);
     }
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpGet("{id}/Attendances")]
-    public async Task<ActionResult<IEnumerable<CourseAttendanceDto>>> GetAttendancesByCourseId(Guid id, [FromQuery] int pageNr = 1, 
+    public async Task<ActionResult<IEnumerable<AttendanceDto>>> GetAttendancesByCourseId(Guid id, [FromQuery] int pageNr = 1, 
                                                                         [FromQuery] int pageSize = Constants.DefaultQueryPageSize)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        var course = await courseService.GetCourseByIdAsync(id, userId);
-
-        if (course == null)
-        {
-            return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
-        }
         
-        var attendances = 
-            await attendanceService.GetAttendancesByCourseAsync(course.Id, pageNr, pageSize);
+        var response = 
+            await attendanceService.GetAttendancesByCourseAsync(id, pageNr, pageSize);
 
-        if (attendances == null)
+        if (!response.Successful)
         {
-            return Ok(new {message = "Course has no attendances", messageCode = "no-course-attendances-found"});
+            return BadRequest(response.Error);
         }
-        
-        var result = CourseAttendanceDto.ToDtoList(attendances);
         
         logger.LogInformation($"Attendances for course {id} successfully fetched");
-        return Ok(result);
+        return Ok(response.Value);
     }
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
@@ -71,39 +59,31 @@ public class CourseController(
     public async Task<IActionResult> GetAllCourseStatuses()
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var courseStatuses = await courseService.GetAllCourseStatuses();
-
-        if (courseStatuses == null)
+        
+        var response = await courseService.GetAllCourseStatusesAsync();
+        if (!response.Successful)
         {
-            return NotFound(new {message = "Course statuses not found", messageCode = "course-statuses-not-found"});
+            return NotFound(response.Error);
         }
         
-        var result = CourseStatusDto.ToDtoList(courseStatuses);
-        
         logger.LogInformation($"All course statuses fetched successfully");
-        return Ok(result);
+        return Ok(response.Value);
     }
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpGet("{id}/StudentCounts")]
-    public async Task<ActionResult<IEnumerable<AttendanceStudentCountDto>>> GetAllStudentCountsByCourse(Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+    public async Task<ActionResult<IEnumerable<AttendanceStudentCountDto>>> GetAllStudentCountsByCourse(Guid id)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var validity = await courseService.DoesCourseExistByIdAsync(id);
-        if(!validity)
+        
+        var response = await courseService.GetAttendancesUserCountsByCourseIdAsync(id);
+        if (!response.Successful)
         {
-            return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
+            return NotFound(response.Error);
         }
         
-        var result = await courseService.GetAttendancesUserCountsByCourseAsync(id);
-
-        if (result == null)
-        {
-            return NotFound(new {message = "No student counts found", messageCode = "student-counts-not-found"});
-        }
-        
-        logger.LogInformation($"All student counts for course with ID {id}");
-        return Ok(result);
+        logger.LogInformation($"Successfully retrieved student counts for course with ID {id}");
+        return Ok(response.Value);
     }
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
@@ -112,31 +92,19 @@ public class CourseController(
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
+        var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+        
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
 
-        var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
-        if (user == null)
+        var response = await courseService.AddCourseAsync(new Guid(userId), request, email, clientApp);
+        if (!response.Successful)
         {
-            return BadRequest(new { message = "User does not exist", messageCode = "user-not-found" });
-        }
-        
-        var newCourse = new CourseEntity
-        {
-            Name = request.CourseName,
-            Code = request.CourseCode,
-            StatusId = request.CourseStatusId,
-            CreatedBy = request.Client,
-            UpdatedBy = request.Client,
-        };
-
-        if (!await courseService.AddCourse(user, newCourse, request.Client))
-        {
-            
-            return BadRequest(new { message = "Course already exists", messageCode = "course-already-exists" });
+            return BadRequest(response.Error);
         }
         
         logger.LogInformation($"Course added successfully");
@@ -148,28 +116,22 @@ public class CourseController(
     public async Task<ActionResult> EditCourse(Guid id, [FromBody] CourseRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        if (!ModelState.IsValid || request.Id == null)
-        {
+        var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+        
+        if (!ModelState.IsValid)
+        { 
             logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
         
-        var newCourse = new CourseEntity
+        var response = await courseService.EditCourseAsync(id, request, email, clientApp);
+        if (!response.Successful)
         {
-            Name = request.CourseName,
-            Code = request.CourseCode,
-            StatusId = request.CourseStatusId,
-            CreatedBy = request.Client,
-            UpdatedBy = request.Client,
-        };
-
-        var courseId = request.Id.Value;
-        if (!await courseService.EditCourse(courseId, newCourse))
-        {
-            return BadRequest(new { message = "Course does not exist", messageCode = "course-does-not-exist" });
+            return BadRequest(response.Error);
         }
         
-        logger.LogInformation($"Course with ID {request.Id} updated successfully");
+        logger.LogInformation($"Course with ID {id} updated successfully");
         return Ok();
     }
     
@@ -178,17 +140,19 @@ public class CourseController(
     public async Task<ActionResult> DeleteCourse(Guid id)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
+        var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
         
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
-        
-        if (!await courseService.DeleteCourse(id, userId!))
+
+        var response = await courseService.SoftDeleteCourseAsync(id, email, clientApp);
+        if (!response.Successful)
         {
-            return BadRequest(new { message = "Course does not exist", messageCode = "course-does-not-exist" });
+            return BadRequest(response.Error);
         }
         
         logger.LogInformation($"Course with ID {id} deleted successfully");

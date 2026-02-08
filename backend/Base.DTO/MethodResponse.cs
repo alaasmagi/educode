@@ -1,4 +1,6 @@
-﻿namespace Base.DTO;
+﻿using Base.Domain;
+
+namespace Base.DTO;
 
 public class MethodResponse<T>
 {

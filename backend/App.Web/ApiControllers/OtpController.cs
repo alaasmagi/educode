@@ -1,6 +1,8 @@
 ﻿using App.Contracts.Services;
 using App.Contracts.WebRequests;
+using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
+using Base.Domain;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Web.ApiControllers;
@@ -17,24 +19,17 @@ public class OtpController(
 {
 
     [HttpPost("Request")]
-    public async Task<IActionResult> RequestOtp([FromBody] RequestOtpRequest request)
+    public async Task<IActionResult> RequestOtp([FromBody] OtpRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
+        
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
 
-        var user = await userService.GetUserByEmailAsync(request.Email);
-        if (user == null && string.IsNullOrWhiteSpace(request.FullName))
-        {
-            return Unauthorized(new { message = "Invalid email", messageCode = "invalid-email" });
-        }
-
-        var key = await otpService.GenerateAndStoreOtp(request.Email);
-        var recipientEmail = user?.Email ?? request.Email;
-        var recipientName = user?.FullName ?? request.FullName ?? "EduCode user";
+        await otpService.GenerateAndStoreOtp(request.Email);
         
         logger.LogInformation($"OTP sent successfully for user with email {request.Email}");
         return Ok(new { message = "OTP sent successfully" });
@@ -48,7 +43,7 @@ public class OtpController(
         if (!ModelState.IsValid)
         {
             logger.LogWarning($"Form data is invalid");
-            return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
+            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
         
         var user = await userService.GetUserByEmailAsync(request.Email);

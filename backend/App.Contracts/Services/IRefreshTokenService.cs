@@ -4,7 +4,7 @@ namespace App.Contracts.Services;
 
 public interface IRefreshTokenService
 {
-    Task<MethodResponse<string>> GenerateRefreshToken(Guid userId, string creatorIp, string client);
-    Task<MethodResponse<bool>> VerifyRefreshToken(string refreshToken, Guid userId);
-    Task<MethodResponse<bool>> DeleteRefreshToken(string refreshToken);
+    Task<MethodResponse<string>> GenerateRefreshTokenAsync(Guid userId, string creatorIp, string email, string clientApp);
+    Task<MethodResponse<bool>> VerifyRefreshTokenAsync(string refreshToken, Guid userId);
+    Task<MethodResponse<bool>> DeleteRefreshTokenAsync(string refreshToken, string email, string clientApp);
 }

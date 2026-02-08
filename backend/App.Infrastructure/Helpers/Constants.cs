@@ -5,9 +5,13 @@ public static class Constants
     public const int DefaultQueryPageSize = 20;
     
     public const string UserIdClaim = "UserId";
+    public const string EmailClaim = "Email";
     public const string AccessLevelClaim = "AccessLevel";
     public const string VerificationClaim = "Verification";
     public const string SchoolIdClaim = "SchoolId";
+    public const string ClientAppClaim = "ClientApp";
+    
+    public const string OfflineUser = "OFFLINE_USER";
     
     public const string RefreshTokenPrefix = "RefreshToken:";
     public const string OtpPrefix = "OTP:";
@@ -35,6 +39,7 @@ public static class Constants
     public const string MobileClientName = "EDUCODE-MOBILE";
     public const string WebClientName = "EDUCODE-FRONTEND-MAIN";
     public const string AdminWebClientName = "EDUCODE-FRONTEND-ADMIN";
+    public const string BackendAdminWebClientName = "EDUCODE-ASPNET-ADMIN";
     public const string BackendName = "EDUCODE-SERVICE";
 
 

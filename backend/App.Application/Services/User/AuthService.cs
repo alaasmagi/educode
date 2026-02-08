@@ -5,6 +5,7 @@ using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
+using Base.Domain;
 using Base.DTO;
 using Microsoft.Extensions.Logging;
 
@@ -12,6 +13,8 @@ namespace App.Application.Services.User;
 
 public class AuthService(
     IRefreshTokenService refreshTokenService,
+    IOtpService otpService,
+    IEmailService emailService,
     IUserTypeRepository userTypeRepository,
     IAccessTokenService accessTokenService,
     IRefreshTokenRepository refreshTokenRepository,
@@ -22,7 +25,7 @@ public class AuthService(
     IUserAuthRepository userAuthRepository) : IAuthService
 { 
     public async Task<MethodResponse<(UserDto, string, string)>> AuthenticateUserAsync(string email, string password, string clientIp,
-                                                                                        string client, bool includeDeleted)
+                                                                                        string clientApp, bool includeDeleted)
     {
         var user = await userRepository.GetByEmailAsync(email);
         if (user == null)
@@ -59,8 +62,8 @@ public class AuthService(
             );
         }
         
-        var jwtToken = accessTokenService.GenerateAccessToken(user, userAuthData);
-        var refreshTokenResponse = await refreshTokenService.GenerateRefreshToken(user.Id, clientIp, client);
+        var jwtToken = accessTokenService.GenerateAccessToken(user, userAuthData, client);
+        var refreshTokenResponse = await refreshTokenService.GenerateRefreshToken(user.Id, clientIp, email, clientApp);
 
         if (!refreshTokenResponse.Successful)
         {
@@ -174,7 +177,7 @@ public class AuthService(
 
     public async Task<MethodResponse<bool>> LogOutUserAsync(string refreshToken)
     {
-        return await refreshTokenService.DeleteRefreshToken(refreshToken);
+        return await refreshTokenService.DeleteRefreshTokenAsync(refreshToken);
     }
 
     public Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, string accessToken, string client)

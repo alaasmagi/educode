@@ -9,5 +9,5 @@ public interface IAttendanceRepository : IRepository<AttendanceEntity>
     Task<AttendanceEntity?> GetMostRecentByUserAsync(Guid userId);
     Task<List<AttendanceEntity>?> SearchAsync(string keyword, Guid? resourceFilterId = null, bool includeDeleted = false);
     Task<Guid?> CheckAvailabilityByIdentifierAsync(string identifier, bool includeDeleted = false);
-    Task<bool> ToggleDeletionAsync(Guid id, bool newDeletionState);
+    Task<bool> ToggleDeletionAsync(Guid id, string email, string clientApp, bool newDeletionState);
 }

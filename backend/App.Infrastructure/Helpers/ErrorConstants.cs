@@ -2,6 +2,8 @@ namespace App.Infrastructure.Helpers;
 
 public static class ErrorConstants
 {
+    public const string InvalidCredentials = "invalid-credentials";
+    
     public const string SchoolNotFound = "school-not-found";
     public const string SchoolsNotFound = "schools-not-found";
     
@@ -45,6 +47,7 @@ public static class ErrorConstants
     public const string CourseStatusesNotFound = "course-statuses-not-found";
     public const string CourseStatusesNotSeeded = "course-statuses-not-seeded";
     public const string CourseStudentCountsNotFound = "course-student-counts-not-found";
+    public const string CourseTeacherNotCreated = "course-teacher-not-created";
     
     // Auth errors
     public const string AuthenticationFailed = "authentication-failed";

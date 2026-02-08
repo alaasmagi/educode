@@ -1,4 +1,4 @@
-namespace Base.DTO;
+namespace Base.Domain;
 
 public class Error(string code, string message)
 {

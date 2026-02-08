@@ -1,9 +1,9 @@
-﻿using App.Application.DTOs;
+﻿using App.Contracts.DTOs;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
-using App.Web.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +12,9 @@ namespace App.Web.ApiControllers;
 [ApiController]
 [Route("api/[controller]")]
 public class CourseController(
-    ICourseManagementService courseManagementService,
-    IAttendanceManagementService attendanceManagementService,
-    IUserManagementService userManagementService,
+    ICourseService courseService,
+    IAttendanceService attendanceService,
+    IUserService userService,
     ILogger<CourseController> logger)
     : ControllerBase
 {
@@ -25,7 +25,7 @@ public class CourseController(
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        var courseEntity = await courseManagementService.GetCourseByIdAsync(id, userId!);
+        var courseEntity = await courseService.GetCourseByIdAsync(id, userId!);
 
         if (courseEntity == null)
         {
@@ -45,7 +45,7 @@ public class CourseController(
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        var course = await courseManagementService.GetCourseByIdAsync(id, userId);
+        var course = await courseService.GetCourseByIdAsync(id, userId);
 
         if (course == null)
         {
@@ -53,7 +53,7 @@ public class CourseController(
         }
         
         var attendances = 
-            await attendanceManagementService.GetAttendancesByCourseAsync(course.Id, pageNr, pageSize);
+            await attendanceService.GetAttendancesByCourseAsync(course.Id, pageNr, pageSize);
 
         if (attendances == null)
         {
@@ -71,7 +71,7 @@ public class CourseController(
     public async Task<IActionResult> GetAllCourseStatuses()
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var courseStatuses = await courseManagementService.GetAllCourseStatuses();
+        var courseStatuses = await courseService.GetAllCourseStatuses();
 
         if (courseStatuses == null)
         {
@@ -89,13 +89,13 @@ public class CourseController(
     public async Task<ActionResult<IEnumerable<AttendanceStudentCountDto>>> GetAllStudentCountsByCourse(Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var validity = await courseManagementService.DoesCourseExistByIdAsync(id);
+        var validity = await courseService.DoesCourseExistByIdAsync(id);
         if(!validity)
         {
             return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
         }
         
-        var result = await courseManagementService.GetAttendancesUserCountsByCourseAsync(id);
+        var result = await courseService.GetAttendancesUserCountsByCourseAsync(id);
 
         if (result == null)
         {
@@ -108,7 +108,7 @@ public class CourseController(
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpPost]
-    public async Task<ActionResult> AddCourse([FromBody] CourseModel model)
+    public async Task<ActionResult> AddCourse([FromBody] CourseRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
@@ -118,7 +118,7 @@ public class CourseController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
 
-        var user = await userManagementService.GetUserByIdAsync(Guid.Parse(userId));
+        var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
         if (user == null)
         {
             return BadRequest(new { message = "User does not exist", messageCode = "user-not-found" });
@@ -126,14 +126,14 @@ public class CourseController(
         
         var newCourse = new CourseEntity
         {
-            Name = model.CourseName,
-            Code = model.CourseCode,
-            StatusId = model.CourseStatusId,
-            CreatedBy = model.Client,
-            UpdatedBy = model.Client,
+            Name = request.CourseName,
+            Code = request.CourseCode,
+            StatusId = request.CourseStatusId,
+            CreatedBy = request.Client,
+            UpdatedBy = request.Client,
         };
 
-        if (!await courseManagementService.AddCourse(user, newCourse, model.Client))
+        if (!await courseService.AddCourse(user, newCourse, request.Client))
         {
             
             return BadRequest(new { message = "Course already exists", messageCode = "course-already-exists" });
@@ -145,10 +145,10 @@ public class CourseController(
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpPatch("{id}")]
-    public async Task<ActionResult> EditCourse(Guid id, [FromBody] CourseModel model)
+    public async Task<ActionResult> EditCourse(Guid id, [FromBody] CourseRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        if (!ModelState.IsValid || model.Id == null)
+        if (!ModelState.IsValid || request.Id == null)
         {
             logger.LogWarning($"Form data is invalid");
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
@@ -156,20 +156,20 @@ public class CourseController(
         
         var newCourse = new CourseEntity
         {
-            Name = model.CourseName,
-            Code = model.CourseCode,
-            StatusId = model.CourseStatusId,
-            CreatedBy = model.Client,
-            UpdatedBy = model.Client,
+            Name = request.CourseName,
+            Code = request.CourseCode,
+            StatusId = request.CourseStatusId,
+            CreatedBy = request.Client,
+            UpdatedBy = request.Client,
         };
 
-        var courseId = model.Id.Value;
-        if (!await courseManagementService.EditCourse(courseId, newCourse))
+        var courseId = request.Id.Value;
+        if (!await courseService.EditCourse(courseId, newCourse))
         {
             return BadRequest(new { message = "Course does not exist", messageCode = "course-does-not-exist" });
         }
         
-        logger.LogInformation($"Course with ID {model.Id} updated successfully");
+        logger.LogInformation($"Course with ID {request.Id} updated successfully");
         return Ok();
     }
     
@@ -186,7 +186,7 @@ public class CourseController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
         
-        if (!await courseManagementService.DeleteCourse(id, userId!))
+        if (!await courseService.DeleteCourse(id, userId!))
         {
             return BadRequest(new { message = "Course does not exist", messageCode = "course-does-not-exist" });
         }

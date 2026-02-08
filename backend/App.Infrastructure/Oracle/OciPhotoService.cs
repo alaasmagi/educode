@@ -1,5 +1,5 @@
-using App.Application.Initializers;
 using App.Contracts.Services;
+using App.Infrastructure.Initializers;
 using Oci.Common;
 using Oci.Common.Auth;
 using Oci.Common.Model;

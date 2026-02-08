@@ -1,8 +1,10 @@
-﻿namespace App.Contracts.Services;
+﻿using Base.DTO;
+
+namespace App.Contracts.Services;
 
 public interface IRefreshTokenService
 {
-    Task<string?> GenerateRefreshToken(Guid userId, string creatorIp, string client);
-    Task<bool> VerifyRefreshToken(string refreshToken, Guid userId);
-    Task<bool> DeleteRefreshToken(string refreshToken);
+    Task<MethodResponse<string>> GenerateRefreshToken(Guid userId, string creatorIp, string client);
+    Task<MethodResponse<bool>> VerifyRefreshToken(string refreshToken, Guid userId);
+    Task<MethodResponse<bool>> DeleteRefreshToken(string refreshToken);
 }

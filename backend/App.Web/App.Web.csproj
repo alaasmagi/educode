@@ -61,4 +61,8 @@
       <ProjectReference Include="..\App.Domain\App.Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="RequestModels\" />
+    </ItemGroup>
+
 </Project>

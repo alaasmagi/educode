@@ -1,9 +1,0 @@
-﻿namespace App.Web.RequestModels;
-
-public class CreateAccountRequestModel : BaseModel
-{
-    public required string Fullname { get; set; }
-    public required string Email { get; set; }
-    public required string Password { get; set; }
-    public string? StudentCode { get; set; }
-}

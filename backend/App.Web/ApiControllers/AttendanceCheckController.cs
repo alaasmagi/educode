@@ -1,9 +1,9 @@
-﻿using App.Application.DTOs;
+﻿using App.Contracts.DTOs;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
-using App.Web.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NetTools.Extensions;
@@ -13,8 +13,9 @@ namespace App.Web.ApiControllers;
 [ApiController]
 [Route("api/[controller]")]
 public class AttendanceCheckController(
-    IAttendanceManagementService attendanceManagementService,
-    IUserManagementService userManagementService,
+    IAttendanceService attendanceService,
+    IAttendanceCheckService attendanceCheckService,
+    IUserService userService,
     ILogger<AttendanceCheckController> logger)
     : ControllerBase
 {
@@ -24,18 +25,11 @@ public class AttendanceCheckController(
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        var user = await userManagementService.GetUserByIdAsync(Guid.Parse(userId));
-
-        if (user == null)
-        {
-            return NotFound(new {message = "User not found", messageCode = "user-not-found"});
-        }
         
-        var attendanceCheck = 
-            await attendanceManagementService.GetAttendanceCheckByIdAsync(id, user.Email);
-        if (attendanceCheck == null)
+        var response = await attendanceCheckService.GetAttendanceCheckByIdAsync(id);
+        if (!response.Successful)
         {
-            return Ok(new {message = "Attendance has no attendance checks", messageCode = "attendance-has-no-checks"});
+            return NotFound(response.Error);
         }
         
         var result = new AttendanceCheckDto(attendanceCheck);
@@ -46,7 +40,7 @@ public class AttendanceCheckController(
     
     [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
     [HttpPost]
-    public async Task<IActionResult> AddAttendanceCheck([FromBody] AttendanceCheckModel model)
+    public async Task<IActionResult> AddAttendanceCheck([FromBody] AttendanceCheckRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         if (!ModelState.IsValid)
@@ -57,15 +51,15 @@ public class AttendanceCheckController(
         
         var newAttendanceCheck = new AttendanceCheckEntity
         {
-            StudentCode = model.StudentCode,
-            FullName = model.FullName,
-            AttendanceIdentifier = model.CourseAttendanceIdentifier,
-            CreatedBy = model.Client,
-            UpdatedBy = model.Client,
+            StudentCode = request.StudentCode,
+            FullName = request.FullName,
+            AttendanceIdentifier = request.CourseAttendanceIdentifier,
+            CreatedBy = request.Client,
+            UpdatedBy = request.Client,
         };
 
-        if (!await attendanceManagementService.AddAttendanceCheckAsync(newAttendanceCheck, model.WorkplaceIdentifier ?? null, 
-                                                                                                            model.Client))
+        if (!await attendanceCheckService.AddAttendanceCheckAsync(newAttendanceCheck, request.WorkplaceIdentifier ?? null, 
+                                                                                                            request.Client))
         {
             return BadRequest(new {message = "Attendance check already exists", 
                 messageCode = "attendance-check-already-exists" });
@@ -87,7 +81,7 @@ public class AttendanceCheckController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
 
-        if (!await attendanceManagementService.DeleteAttendanceCheck(id, userId.ToGuid(), client))
+        if (!await attendanceCheckService.DeleteAttendanceCheck(id, userId.ToGuid().ToString(), client))
         {
             return BadRequest(new { message = "AttendanceCheck does not exist", 
                 messageCode = "attendance-check-does-not-exist" });

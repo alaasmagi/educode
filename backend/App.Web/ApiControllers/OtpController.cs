@@ -1,6 +1,6 @@
-﻿using App.Application.Initializers;
-using App.Contracts.Services;
-using App.Web.RequestModels;
+﻿using App.Contracts.Services;
+using App.Contracts.WebRequests;
+using App.Infrastructure.Initializers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Web.ApiControllers;
@@ -9,7 +9,7 @@ namespace App.Web.ApiControllers;
 [Route("api/[controller]")]
 public class OtpController(
     IOtpService otpService,
-    IUserManagementService userManagementService,
+    IUserService userService,
     IAuthService authService,
     EnvInitializer envInitializer,
     ILogger<OtpController> logger)
@@ -17,7 +17,7 @@ public class OtpController(
 {
 
     [HttpPost("Request")]
-    public async Task<IActionResult> RequestOtp([FromBody] RequestOtpModel model)
+    public async Task<IActionResult> RequestOtp([FromBody] RequestOtpRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         if (!ModelState.IsValid)
@@ -26,22 +26,22 @@ public class OtpController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
 
-        var user = await userManagementService.GetUserByEmailAsync(model.Email);
-        if (user == null && string.IsNullOrWhiteSpace(model.FullName))
+        var user = await userService.GetUserByEmailAsync(request.Email);
+        if (user == null && string.IsNullOrWhiteSpace(request.FullName))
         {
             return Unauthorized(new { message = "Invalid email", messageCode = "invalid-email" });
         }
 
-        var key = await otpService.GenerateAndStoreOtp(model.Email);
-        var recipientEmail = user?.Email ?? model.Email;
-        var recipientName = user?.FullName ?? model.FullName ?? "EduCode user";
+        var key = await otpService.GenerateAndStoreOtp(request.Email);
+        var recipientEmail = user?.Email ?? request.Email;
+        var recipientName = user?.FullName ?? request.FullName ?? "EduCode user";
         
-        logger.LogInformation($"OTP sent successfully for user with email {model.Email}");
+        logger.LogInformation($"OTP sent successfully for user with email {request.Email}");
         return Ok(new { message = "OTP sent successfully" });
     }
 
     [HttpPost("Verify")]
-    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpModel model)
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         
@@ -51,9 +51,9 @@ public class OtpController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
         
-        var user = await userManagementService.GetUserByEmailAsync(model.Email);
+        var user = await userService.GetUserByEmailAsync(request.Email);
         
-        var result = await otpService.VerifyOtp(model.Email, model.Otp);
+        var result = await otpService.VerifyOtp(request.Email, request.Otp);
 
         if (!result)
         {
@@ -72,7 +72,7 @@ public class OtpController(
             });
             
             var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var refreshToken = await authService.GenerateRefreshToken(user.Id, creatorIp, model.Client);
+            var refreshToken = await authService.GenerateRefreshToken(user.Id, creatorIp, request.Client);
             Response.Cookies.Append("refreshToken", token, new CookieOptions
             {
                 HttpOnly = true,

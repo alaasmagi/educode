@@ -1,9 +1,9 @@
-using App.Application.Initializers;
 using App.Contracts.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Initializers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 

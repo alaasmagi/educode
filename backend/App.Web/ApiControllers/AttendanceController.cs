@@ -1,9 +1,9 @@
-﻿using App.Application.DTOs;
+﻿using App.Contracts.DTOs;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
-using App.Web.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,8 +12,8 @@ namespace App.Web.ApiControllers;
 [ApiController]
 [Route("api/[controller]")]
 public class AttendanceController(
-    IAttendanceManagementService attendanceManagementService,
-    ICourseManagementService courseManagementService,
+    IAttendanceService attendanceService,
+    ICourseService courseService,
     ILogger<AttendanceController> logger)
     : ControllerBase
 {
@@ -23,7 +23,7 @@ public class AttendanceController(
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        var attendanceEntity = await attendanceManagementService.GetCourseAttendanceByIdAsync(id, userId);
+        var attendanceEntity = await attendanceService.GetCourseAttendanceByIdAsync(id, userId);
 
         if (attendanceEntity == null)
         {
@@ -41,7 +41,7 @@ public class AttendanceController(
     public async Task<ActionResult<CourseDto>> GetCourseByAttendanceId(Guid id)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var courseEntity = await courseManagementService.GetCourseByAttendanceIdAsync(id);
+        var courseEntity = await courseService.GetCourseByAttendanceIdAsync(id);
 
         if (courseEntity == null)
         {
@@ -59,7 +59,7 @@ public class AttendanceController(
     public async Task<ActionResult<IEnumerable<AttendanceTypeDto>>> GetAllAttendanceTypes()
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var attendanceTypes = await attendanceManagementService.GetAttendanceTypesAsync();
+        var attendanceTypes = await attendanceService.GetAttendanceTypesAsync();
 
         if (attendanceTypes == null)
         {
@@ -74,7 +74,7 @@ public class AttendanceController(
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpPost]
-    public async Task<ActionResult> AddCourseAttendance([FromBody] AttendanceModel model)
+    public async Task<ActionResult> AddCourseAttendance([FromBody] AttendanceRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
@@ -82,13 +82,13 @@ public class AttendanceController(
         {
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
-        var course = await courseManagementService.GetCourseByIdAsync(model.CourseId, userId);
+        var course = await courseService.GetCourseByIdAsync(request.CourseId, userId);
         if (course == null)
         {
             return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
         }
         
-        var attendanceType = await attendanceManagementService.GetAttendanceTypeByIdAsync(model.AttendanceTypeId);
+        var attendanceType = await attendanceService.GetAttendanceTypeByIdAsync(request.AttendanceTypeId);
         if (attendanceType == null)
         {
             return NotFound(new {message = "Attendance type not found", messageCode = "attendance-type-not-found"});
@@ -96,13 +96,13 @@ public class AttendanceController(
         
         var newAttendance = new AttendanceEntity()
         {
-            CourseId = model.CourseId,
-            TypeId = model.AttendanceTypeId,
-            CreatedBy = model.Client,
-            UpdatedBy = model.Client
+            CourseId = request.CourseId,
+            TypeId = request.AttendanceTypeId,
+            CreatedBy = request.Client,
+            UpdatedBy = request.Client
         };
-        if (!await attendanceManagementService.AddAttendanceAsync(newAttendance, model.AttendanceDates, model.StartTime,
-                model.EndTime))
+        if (!await attendanceService.AddAttendanceAsync(newAttendance, request.AttendanceDates, request.StartTime,
+                request.EndTime, request.Client))
         {
             return BadRequest(new {message = "One or more attendances could not be added", 
                 messageCode = "attendances-could-not-be-added"});
@@ -114,23 +114,23 @@ public class AttendanceController(
     
     [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
     [HttpPatch("{id}")]
-    public async Task<ActionResult> EditAttendance(Guid id, [FromBody] AttendanceModel model)
+    public async Task<ActionResult> EditAttendance(Guid id, [FromBody] AttendanceRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-        if (!ModelState.IsValid || model.Id == null)
+        if (!ModelState.IsValid || request.Id == null)
         {
             logger.LogWarning($"Form data is invalid");
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
         
-        var course = await courseManagementService.GetCourseByIdAsync(model.CourseId, userId);
+        var course = await courseService.GetCourseByIdAsync(request.CourseId, userId);
         if (course == null)
         {
             return NotFound(new {message = "Course not found", messageCode = "course-not-found"});
         }
         
-        var attendanceType = await attendanceManagementService.GetAttendanceTypeByIdAsync(model.AttendanceTypeId);
+        var attendanceType = await attendanceService.GetAttendanceTypeByIdAsync(request.AttendanceTypeId);
         if (attendanceType == null)
         {
             return NotFound(new {message = "Attendance type not found", messageCode = "attendance-type-not-found"});
@@ -138,21 +138,21 @@ public class AttendanceController(
         
         var newAttendance = new AttendanceEntity()
         {
-            CourseId = model.CourseId,
-            TypeId = model.AttendanceTypeId,
-            StartTime = model.AttendanceDates[0].ToDateTime(model.StartTime).ToUniversalTime(),
-            EndTime = model.AttendanceDates[0].ToDateTime(model.EndTime).ToUniversalTime(),
-            CreatedBy = model.Client,
-            UpdatedBy = model.Client
+            CourseId = request.CourseId,
+            TypeId = request.AttendanceTypeId,
+            StartTime = request.AttendanceDates[0].ToDateTime(request.StartTime).ToUniversalTime(),
+            EndTime = request.AttendanceDates[0].ToDateTime(request.EndTime).ToUniversalTime(),
+            CreatedBy = request.Client,
+            UpdatedBy = request.Client
         };
 
-        var attendanceId = model.Id.Value;
-        if (!await attendanceManagementService.EditAttendanceAsync(attendanceId, newAttendance))
+        var attendanceId = request.Id.Value;
+        if (!await attendanceService.EditAttendanceAsync(attendanceId, newAttendance, request.Client))
         {
             return BadRequest(new { message = "Attendance does not exist", messageCode = "attendance-does-not-exist" });
         }
 
-        logger.LogInformation($"Attendance for attendance with ID {model.Id} updated successfully");
+        logger.LogInformation($"Attendance for attendance with ID {request.Id} updated successfully");
         return Ok();
     }
     
@@ -168,7 +168,7 @@ public class AttendanceController(
             return BadRequest(new { message = "Invalid credentials", messageCode = "invalid-credentials" });
         }
         
-        if (!await attendanceManagementService.DeleteAttendance(id, userId))
+        if (!await attendanceService.DeleteAttendance(id, userId, ))
         {
             return BadRequest(new { message = "Attendance does not exist", messageCode = "attendance-does-not-exist" });
         }
@@ -185,7 +185,7 @@ public class AttendanceController(
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
        
-        var courseAttendance = await attendanceManagementService.GetCourseAttendanceByIdAsync(id, userId);
+        var courseAttendance = await attendanceService.GetCourseAttendanceByIdAsync(id, userId);
 
         if (courseAttendance == null)
         {
@@ -193,7 +193,7 @@ public class AttendanceController(
         }
 
         var attendanceChecks =
-            await attendanceManagementService.GetAttendanceChecksByAttendanceIdAsync(courseAttendance.Identifier, pageNr, pageSize);
+            await attendanceService.GetAttendanceChecksByAttendanceIdAsync(courseAttendance.Identifier, pageNr, pageSize);
         if (attendanceChecks == null)
         {
             return Ok(new

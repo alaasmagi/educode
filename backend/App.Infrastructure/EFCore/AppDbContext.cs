@@ -1,5 +1,4 @@
 using App.Domain.Entities;
-using Base.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -32,30 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         modelBuilder.HasDefaultSchema("educode");
         
-        // Configure BaseEntity properties for all entities
-        ConfigureBaseEntity<UserEntity>(modelBuilder);
-        ConfigureBaseEntity<UserAuthEntity>(modelBuilder);
-        ConfigureBaseEntity<UserTypeEntity>(modelBuilder);
-        ConfigureBaseEntity<AttendanceEntity>(modelBuilder);
-        ConfigureBaseEntity<AttendanceCheckEntity>(modelBuilder);
-        ConfigureBaseEntity<AttendanceTypeEntity>(modelBuilder);
-        ConfigureBaseEntity<CourseEntity>(modelBuilder);
-        ConfigureBaseEntity<CourseStatusEntity>(modelBuilder);
-        ConfigureBaseEntity<CourseTeacherEntity>(modelBuilder);
-        ConfigureBaseEntity<WorkplaceEntity>(modelBuilder);
-        ConfigureBaseEntity<SchoolEntity>(modelBuilder);
-        ConfigureBaseEntity<ClassroomEntity>(modelBuilder);
-        ConfigureBaseEntity<RefreshTokenEntity>(modelBuilder);
-        
-        // UserEntity configuration
-        modelBuilder.Entity<UserEntity>()
-            .Property(u => u.Email).IsRequired().HasMaxLength(128);
-        modelBuilder.Entity<UserEntity>()
-            .Property(u => u.StudentCode).HasMaxLength(128);
-        modelBuilder.Entity<UserEntity>()
-            .Property(u => u.FullName).IsRequired().HasMaxLength(255);
-        modelBuilder.Entity<UserEntity>()
-            .Property(u => u.PhotoPath).HasMaxLength(255);
+        // UserEntity relationship
         modelBuilder.Entity<UserEntity>()
             .ToTable("Users")
             .HasQueryFilter(c => c.Deleted == false)
@@ -80,11 +56,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(u => u.School)
             .WithMany()
             .HasForeignKey(u => u.SchoolId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
         
-        // UserAuth configuration
-        modelBuilder.Entity<UserAuthEntity>()
-            .Property(u => u.PasswordHash).IsRequired().HasMaxLength(255);
+        // UserAuth relationship
         modelBuilder.Entity<UserAuthEntity>()
             .ToTable("UserAuthData")
             .HasQueryFilter(c => c.Deleted == false)
@@ -95,9 +69,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(u => u.UserId)
             .IsUnique();
         
-        // Attendance configuration
-        modelBuilder.Entity<AttendanceEntity>()
-            .Property(a => a.Identifier).IsRequired();
+        // Attendance relationship
         modelBuilder.Entity<AttendanceEntity>()
             .ToTable("Attendances")
             .HasQueryFilter(c => c.Deleted == false);
@@ -109,8 +81,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<AttendanceEntity>()
             .HasOne(c => c.Course)
             .WithMany()
-            .HasForeignKey(c => c.CourseId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(c => c.CourseId);
         modelBuilder.Entity<AttendanceEntity>()
             .HasOne(c => c.Classroom)
             .WithMany(c => c.Attendances)
@@ -121,13 +92,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(c => c.TypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // AttendanceCheck configuration
-        modelBuilder.Entity<AttendanceCheckEntity>()
-            .Property(a => a.StudentCode).IsRequired();
-        modelBuilder.Entity<AttendanceCheckEntity>()
-            .Property(a => a.FullName).IsRequired().HasMaxLength(255);
-        modelBuilder.Entity<AttendanceCheckEntity>()
-            .Property(a => a.AttendanceIdentifier).IsRequired();
+        // AttendanceCheck relationship
         modelBuilder.Entity<AttendanceCheckEntity>()
             .ToTable("AttendanceChecks")
             .HasQueryFilter(c => c.Deleted == false);
@@ -152,17 +117,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(a => a.WorkplaceIdentifier)
             .HasPrincipalKey(w => w.Identifier);
         
-        // Course configuration
-        modelBuilder.Entity<CourseEntity>()
-            .Property(c => c.Code).IsRequired().HasMaxLength(128);
-        modelBuilder.Entity<CourseEntity>()
-            .Property(c => c.Name).IsRequired().HasMaxLength(128);
+        // Course relationship
         modelBuilder.Entity<CourseEntity>()
             .ToTable("Courses")
             .HasQueryFilter(c => c.Deleted == false)
             .HasOne(c => c.Status)
             .WithMany()
-            .HasForeignKey(c => c.StatusId);
+            .HasForeignKey(c => c.SchoolId);
         modelBuilder.Entity<CourseEntity>()
             .HasMany(c => c.Teachers)
             .WithOne(c => c.Course)
@@ -179,9 +140,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(c => c.SchoolId)
             .OnDelete(DeleteBehavior.Cascade);
         
-        // CourseStatus configuration
-        modelBuilder.Entity<CourseStatusEntity>()
-            .Property(c => c.StatusName).IsRequired().HasMaxLength(128);
+        // CourseStatus relationship
         modelBuilder.Entity<CourseStatusEntity>()
             .ToTable("CourseStatuses")            
             .HasQueryFilter(c => c.Deleted == false);
@@ -189,7 +148,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(c => c.StatusName)
             .IsUnique();
         
-        // CourseTeacher configuration
+        // CourseTeacher relationship
         modelBuilder.Entity<CourseTeacherEntity>()
             .ToTable("CourseTeachers")
             .HasQueryFilter(c => c.Deleted == false)
@@ -201,9 +160,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(c => c.TeacherId);
         
-        // UserType configuration
-        modelBuilder.Entity<UserTypeEntity>()
-            .Property(u => u.TypeName).IsRequired().HasMaxLength(128);
+        // UserType relationship
         modelBuilder.Entity<UserTypeEntity>()
             .ToTable("UserTypes")
             .HasQueryFilter(c => c.Deleted == false);
@@ -214,9 +171,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .Property(u => u.AccessLevel)
             .HasConversion<int>();
         
-        // AttendanceType configuration
-        modelBuilder.Entity<AttendanceTypeEntity>()
-            .Property(a => a.TypeName).IsRequired().HasMaxLength(128);
+        // AttendanceType relationship
         modelBuilder.Entity<AttendanceTypeEntity>()
             .ToTable("AttendanceTypes")
             .HasQueryFilter(c => c.Deleted == false);
@@ -224,11 +179,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(a => a.TypeName)
             .IsUnique();
         
-        // Workplace configuration
-        modelBuilder.Entity<WorkplaceEntity>()
-            .Property(w => w.Identifier).IsRequired();
-        modelBuilder.Entity<WorkplaceEntity>()
-            .Property(w => w.ComputerCode).IsRequired().HasMaxLength(128);
+        // Workplace relationship
         modelBuilder.Entity<WorkplaceEntity>()
             .ToTable("Workplaces")
             .HasQueryFilter(c => c.Deleted == false);
@@ -239,19 +190,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(w => w.Classroom)
             .WithMany()
             .HasForeignKey(w => w.ClassroomId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<WorkplaceEntity>()
             .HasAlternateKey(w => w.Identifier);
         
-        // School configuration
-        modelBuilder.Entity<SchoolEntity>()
-            .Property(s => s.Name).IsRequired().HasMaxLength(255);
-        modelBuilder.Entity<SchoolEntity>()
-            .Property(s => s.ShortName).IsRequired().HasMaxLength(128);
-        modelBuilder.Entity<SchoolEntity>()
-            .Property(s => s.Domain).IsRequired().HasMaxLength(255);
-        modelBuilder.Entity<SchoolEntity>()
-            .Property(s => s.StudentCodePattern).IsRequired().HasMaxLength(128);
+        // School relationship
         modelBuilder.Entity<SchoolEntity>()
             .ToTable("Schools")
             .HasQueryFilter(r => r.Deleted == false);
@@ -268,17 +211,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasMany(s => s.Classrooms)
             .WithOne(s => s.School)
             .HasForeignKey(s => s.SchoolId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
         
-        // RefreshToken configuration
-        modelBuilder.Entity<RefreshTokenEntity>()
-            .Property(r => r.Token).IsRequired().HasMaxLength(256);
-        modelBuilder.Entity<RefreshTokenEntity>()
-            .Property(r => r.PushNotificationToken).HasMaxLength(256);
-        modelBuilder.Entity<RefreshTokenEntity>()
-            .Property(r => r.Client).IsRequired().HasMaxLength(128);
-        modelBuilder.Entity<RefreshTokenEntity>()
-            .Property(r => r.ClientIp).IsRequired().HasMaxLength(128);
+        // RefreshToken relationship
         modelBuilder.Entity<RefreshTokenEntity>()
             .ToTable("RefreshTokens")
             .HasQueryFilter(r => r.Deleted == false);
@@ -288,9 +223,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<RefreshTokenEntity>()
             .HasIndex(r => r.UserId);
 
-        // Classroom configuration
-        modelBuilder.Entity<ClassroomEntity>()
-            .Property(c => c.Classroom).IsRequired().HasMaxLength(128);
+        // ClassroomEntity relationship
         modelBuilder.Entity<ClassroomEntity>()
             .ToTable("Classrooms")
             .HasQueryFilter(c => c.Deleted == false);
@@ -302,34 +235,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<ClassroomEntity>()
             .HasIndex(c => c.Classroom);
     }
-    
-    private static void ConfigureBaseEntity<TEntity>(ModelBuilder modelBuilder) where TEntity : BaseEntity
-    {
-        modelBuilder.Entity<TEntity>()
-            .HasKey(e => e.Id);
-        modelBuilder.Entity<TEntity>()
-            .Property(e => e.CreatedBy).IsRequired().HasMaxLength(128);
-        modelBuilder.Entity<TEntity>()
-            .Property(e => e.CreatedAt).IsRequired();
-        modelBuilder.Entity<TEntity>()
-            .Property(e => e.UpdatedBy).IsRequired().HasMaxLength(128);
-        modelBuilder.Entity<TEntity>()
-            .Property(e => e.UpdatedAt).IsRequired();
-        modelBuilder.Entity<TEntity>()
-            .Property(e => e.Deleted).IsRequired();
-    }
 }
 
-public class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
-{
-    public UtcDateTimeConverter() : base(
-        // Convert to database: ensure UTC
-        toDb => toDb.Kind == DateTimeKind.Utc 
-            ? toDb 
-            : DateTime.SpecifyKind(toDb, DateTimeKind.Utc),
-        // Convert from database: ensure UTC
-        fromDb => DateTime.SpecifyKind(fromDb, DateTimeKind.Utc))
-    {
-    }
-}
+public abstract class UtcDateTimeConverter() : 
+    ValueConverter<DateTime, DateTime>(toDb => toDb.Kind == DateTimeKind.Utc
+    ? toDb : DateTime.SpecifyKind(toDb, DateTimeKind.Utc), fromDb => DateTime.SpecifyKind(fromDb, DateTimeKind.Utc));
 

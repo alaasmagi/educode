@@ -4,13 +4,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Threading.RateLimiting;
-using App.Application.Initializers;
-using App.Application.Services;
+using App.Application.Services.Attendance;
+using App.Application.Services.Course;
+using App.Application.Services.User;
 using App.Contracts.Repositories;
 using App.Contracts.Services;
 using App.Domain.Enums;
 using App.Infrastructure.EFCore;
 using App.Infrastructure.Helpers;
+using App.Infrastructure.Initializers;
 using App.Infrastructure.Oracle;
 using App.Infrastructure.Redis;
 using App.Infrastructure.Sentry;
@@ -78,11 +80,18 @@ builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 
 builder.Services.AddScoped<IPhotoService, OciPhotoService>();
-builder.Services.AddScoped<IAttendanceManagementService, AttendanceManagementService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICourseManagementService, CourseManagementService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
-builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+
+// Register specialized user services
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserTypeService, UserTypeService>();
+builder.Services.AddScoped<ISeedingService, SeedingService>();
+// Facade service for backward compatibility
+builder.Services.AddScoped<IUserService, UserService>();
+
 builder.Services.AddSingleton<DbInitializer>();
 
 // Register repositories

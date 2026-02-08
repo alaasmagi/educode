@@ -1,12 +1,10 @@
 using Microsoft.Extensions.Logging;
 
-namespace App.Application.Initializers;
+namespace App.Infrastructure.Initializers;
 
 // TODO: Implement proper error logging (sentry)
-public class EnvInitializer
+public class EnvInitializer(ILogger<EnvInitializer> logger)
 {
-    private readonly ILogger<EnvInitializer> _logger;
-    
     // DB
     public string PgDbConnection { get; private set; } = string.Empty;
     public string RedisConnection { get; private set; } = string.Empty;
@@ -16,6 +14,7 @@ public class EnvInitializer
     public string JwtAudience { get; private set; } = string.Empty;
     public string JwtIssuer { get; private set; } = string.Empty;
     public int JwtExpirationMinutes { get; private set; }
+    public int JwtAdminExpirationMinutes { get; private set; }
     public int JwtCookieExpirationMinutes { get; private set; }
     
     // Email API
@@ -53,11 +52,6 @@ public class EnvInitializer
     // Frontend
     public string FrontendUrls { get; private set; } = string.Empty;
 
-    
-    public EnvInitializer(ILogger<EnvInitializer> logger)
-    {
-        _logger = logger;
-    }
 
     public void InitializeEnv()
     {
@@ -77,6 +71,7 @@ public class EnvInitializer
         JwtAudience = GetStringEnv("JWTAUD");
         JwtIssuer = GetStringEnv("JWTISS");
         JwtExpirationMinutes = GetIntEnv("JWT_MINUTES");
+        JwtAdminExpirationMinutes = GetIntEnv("JWT_ADMIN_MINUTES");
         JwtCookieExpirationMinutes = GetIntEnv("JWT_COOKIE_MINUTES");
         
         EmailApiUrl = GetStringEnv("EMAIL_API_URL");
@@ -97,7 +92,7 @@ public class EnvInitializer
         
         FrontendUrls = GetStringEnv("FRONTENDURLS");
 
-        _logger.LogInformation("Environment variables initialized.");
+        logger.LogInformation("Environment variables initialized.");
     }
     
     private string GetStringEnv(string key)
@@ -105,7 +100,7 @@ public class EnvInitializer
         var value = Environment.GetEnvironmentVariable(key);
         if (string.IsNullOrWhiteSpace(value))
         {
-            _logger.LogWarning($"Environment variable '{key}' is missing or empty.");
+            logger.LogWarning($"Environment variable '{key}' is missing or empty.");
             return "";
         }
         return value;
@@ -118,7 +113,7 @@ public class EnvInitializer
         {
             return result;
         }
-        _logger.LogWarning($"Environment variable '{key}' is missing or not an integer. Using 0 as default.");
+        logger.LogWarning($"Environment variable '{key}' is missing or not an integer. Using 0 as default.");
         return 0;
     }
 }

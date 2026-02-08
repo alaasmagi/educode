@@ -1,7 +1,9 @@
-﻿namespace App.Contracts.Services;
+﻿using Base.DTO;
+
+namespace App.Contracts.Services;
 
 public interface IOtpService
 {
-    Task<int> GenerateAndStoreOtp(string email);
-    Task<bool> VerifyOtp(string email, string otpToVerify);
+    Task<MethodResponse<int>> GenerateAndStoreOtp(string email);
+    Task<MethodResponse<bool>> VerifyOtp(string email, string otpToVerify);
 }

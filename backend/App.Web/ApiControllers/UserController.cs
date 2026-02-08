@@ -1,9 +1,9 @@
 using App.Application;
-using App.Application.DTOs;
-using App.Application.Initializers;
+using App.Contracts.DTOs;
 using App.Contracts.Services;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
+using App.Infrastructure.Initializers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +12,9 @@ namespace App.Web.ApiControllers
     [ApiController]
     [Route("api/[controller]")]
     public class UserController(
-        IUserManagementService userManagementService,
-        ICourseManagementService courseManagementService,
-        IAttendanceManagementService attendanceManagementService,
+        IUserService userService,
+        ICourseService courseService,
+        IAttendanceService attendanceService,
         IPhotoService photoService,
         EnvInitializer envInitializer,
         ILogger<UserController> logger)
@@ -26,7 +26,7 @@ namespace App.Web.ApiControllers
             [FromQuery] int pageSize = Constants.DefaultQueryPageSize)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var users = await userManagementService.GetAllUsersAsync(pageNr, pageSize);
+            var users = await userService.GetAllUsersAsync(pageNr, pageSize);
 
             if (users == null)
             {
@@ -44,7 +44,7 @@ namespace App.Web.ApiControllers
         public async Task<ActionResult<UserDto>> GetUserEntity(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userEntity = await userManagementService.GetUserByIdAsync(id);
+            var userEntity = await userService.GetUserByIdAsync(id);
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
 
             if (userEntity == null)
@@ -69,7 +69,7 @@ namespace App.Web.ApiControllers
         public async Task<IActionResult> UpdateUserEntity(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userEntity = await userManagementService.GetUserByIdAsync(id);
+            var userEntity = await userService.GetUserByIdAsync(id);
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
 
             if (userEntity == null)
@@ -82,7 +82,7 @@ namespace App.Web.ApiControllers
                 return Unauthorized(new { message = "User not accessible", messageCode = "user-not-accessible" });
             }
 
-            if (await userManagementService.UpdateUserAsync(userEntity))
+            if (await userService.UpdateUserAsync(userEntity))
             {
                 logger.LogInformation($"User with ID {id} deleted successfully");
                 return Ok(new { message = "User deleted successfully" });
@@ -96,7 +96,7 @@ namespace App.Web.ApiControllers
         public async Task<IActionResult> DeleteUserEntity(Guid id)
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-            var userEntity = await userManagementService.GetUserByIdAsync(id);
+            var userEntity = await userService.GetUserByIdAsync(id);
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
 
             if (userEntity == null)
@@ -109,7 +109,7 @@ namespace App.Web.ApiControllers
                 return Unauthorized(new { message = "User not accessible", messageCode = "user-not-accessible" });
             }
 
-            if (await userManagementService.SoftDeleteUserAsync(userEntity))
+            if (await userService.SoftDeleteUserAsync(userEntity))
             {
                 logger.LogInformation($"User with ID {id} deleted successfully");
                 return Ok(new { message = "User deleted successfully" });
@@ -125,13 +125,13 @@ namespace App.Web.ApiControllers
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userManagementService.GetUserByIdAsync(id);
+            var user = await userService.GetUserByIdAsync(id);
             if (user == null)
             {
                 return NotFound(new { message = "User not found", messageCode = "user-not-found" });
             }
 
-            var courses = await courseManagementService.GetCoursesByUserAsync(user.Id, pageNr, pageSize);
+            var courses = await courseService.GetCoursesByUserAsync(user.Id, pageNr, pageSize);
 
             if (courses == null)
             {
@@ -150,14 +150,14 @@ namespace App.Web.ApiControllers
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userManagementService.GetUserByIdAsync(Guid.Parse(userId));
+            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
 
             if (user == null)
             {
                 return NotFound(new { message = "User not found", messageCode = "user-not-found" });
             }
 
-            var courseAttendanceEntity = await attendanceManagementService.GetCurrentAttendanceAsync(user.Id);
+            var courseAttendanceEntity = await attendanceService.GetCurrentAttendanceAsync(user.Id);
 
             if (courseAttendanceEntity?.Course == null)
             {
@@ -177,14 +177,14 @@ namespace App.Web.ApiControllers
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userManagementService.GetUserByIdAsync(Guid.Parse(userId));
+            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
 
             if (user == null)
             {
                 return NotFound(new { message = "User not found", messageCode = "user-not-found" });
             }
 
-            var attendance = await attendanceManagementService.GetMostRecentAttendanceByUserAsync(user.Id);
+            var attendance = await attendanceService.GetMostRecentAttendanceByUserAsync(user.Id);
 
             if (attendance == null)
             {
@@ -204,7 +204,7 @@ namespace App.Web.ApiControllers
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userManagementService.GetUserByIdAsync(Guid.Parse(userId));
+            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
 
             if (user == null)
             {
@@ -247,7 +247,7 @@ namespace App.Web.ApiControllers
                 }
 
                 user.PhotoPath = objectPath;
-                await userManagementService.UpdateUserAsync(user);
+                await userService.UpdateUserAsync(user);
                 logger.LogInformation($"Successfully uploaded photo for user {userId}. Path: {objectPath}");
                 return Ok(new { message = "Photo uploaded successfully", path = objectPath });
             }
@@ -259,7 +259,7 @@ namespace App.Web.ApiControllers
         {
             logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
             var userId = User.FindFirst(Constants.UserIdClaim)?.Value ?? string.Empty;
-            var user = await userManagementService.GetUserByIdAsync(Guid.Parse(userId));
+            var user = await userService.GetUserByIdAsync(Guid.Parse(userId));
 
             if (user == null)
             {
@@ -280,7 +280,7 @@ namespace App.Web.ApiControllers
             }
 
             user.PhotoPath = string.Empty;
-            await userManagementService.UpdateUserAsync(user);
+            await userService.UpdateUserAsync(user);
 
             logger.LogInformation($"Photo removed for user {user.Id}. Path: {user.PhotoPath}");
 

@@ -1,10 +1,10 @@
 using System.Diagnostics;
-using App.Application.Initializers;
 using App.Contracts.Services;
+using App.Contracts.WebRequests;
 using App.Domain.Enums;
 using App.Infrastructure.Helpers;
+using App.Infrastructure.Initializers;
 using App.Web.Models;
-using App.Web.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +20,7 @@ public class AdminPanelController(
     public IActionResult Index(string? message)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var model = new AdminLoginModel
+        var model = new AdminLoginRequest
         {
             Username = string.Empty,
             Password = string.Empty,
@@ -31,23 +31,23 @@ public class AdminPanelController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Index([Bind("Username", "Password")] AdminLoginModel model)
+    public async Task<IActionResult> Index([Bind("Username", "Password")] AdminLoginRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         
         var clientIp = HttpContext.Connection.RemoteIpAddress!.ToString();
         
-        var adminUser = await authService.AuthenticateUserAsync(model.Username, model.Password,
+        var adminUser = await authService.AuthenticateUserAsync(request.Username, request.Password,
                                                                 clientIp, Constants.BackendName,true);
         
-        if (adminUser == null)
+        if (!adminUser.Successful)
         {
             return Index("Wrong username or password!");
         }
         
         var (user, _, _) = adminUser.Value;
         
-        var token = accessTokenService.GenerateAccessToken(user, null);
+        var token = accessTokenService.GenerateAdminAccessToken(user);
         
         Response.Cookies.Append("jwt", token, new CookieOptions
         {
@@ -75,7 +75,7 @@ public class AdminPanelController(
     [Authorize(Policy = nameof(EAccessLevel.QuaternaryLevel))]
     public IActionResult Home(string? message)
     {
-        var model = new AdminLoginModel
+        var model = new AdminLoginRequest
         {
             Username = string.Empty,
             Password = string.Empty,

@@ -2,20 +2,29 @@
 
 namespace App.Contracts.DTOs;
 
-public class CourseDto(CourseEntity course)
+public class CourseDto
 {
-    public Guid Id { get; set; } = course.Id;
-    public string CourseCode { get; set; } = course.Code;
-    public string CourseName { get; set; } = course.Name;
-    public Guid? CourseStatusId { get; set; } = course.StatusId;
-    public string? CourseStatus { get; set; } = course.Status?.StatusName;
+    // Parameterless constructor for deserialization
+    public CourseDto() { }
+    
+    public CourseDto(CourseEntity course)
+    {
+        Id = course.Id;
+        CourseCode = course.Code;
+        CourseName = course.Name;
+        CourseStatusId = course.StatusId;
+        CourseStatus = course.Status?.StatusName;
+    }
+
+    public Guid Id { get; set; }
+    public string CourseCode { get; set; } = string.Empty;
+    public string CourseName { get; set; } = string.Empty;
+    public Guid? CourseStatusId { get; set; }
+    public string? CourseStatus { get; set; }
     
     public static List<CourseDto> ToDtoList(List<CourseEntity>? entities)
     {
-        if (entities == null)
-        {
-            return new List<CourseDto>();
-        }
-        return entities.Select(e => new CourseDto(e)).ToList();
+        return entities?.Select(e => new CourseDto(e)).ToList() 
+               ?? new List<CourseDto>();
     }
 }

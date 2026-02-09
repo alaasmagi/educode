@@ -1,10 +1,20 @@
 ﻿namespace App.Contracts.DTOs;
 
-public class AttendanceStudentCountDto(Guid attendanceId, DateTime attendanceDate, int studentCount)
+public class AttendanceStudentCountDto
 {
-    public Guid AttendanceId { get; set; } = attendanceId;
-    public DateTime AttendanceDate { get; set; } = attendanceDate;
-    public int StudentCount { get; set; } = studentCount;
+    // Parameterless constructor for deserialization
+    public AttendanceStudentCountDto() { }
+    
+    public AttendanceStudentCountDto(Guid attendanceId, DateTime attendanceDate, int studentCount)
+    {
+        AttendanceId = attendanceId;
+        AttendanceDate = attendanceDate;
+        StudentCount = studentCount;
+    }
+
+    public Guid AttendanceId { get; set; }
+    public DateTime AttendanceDate { get; set; }
+    public int StudentCount { get; set; }
     
     public static List<AttendanceStudentCountDto> AttendanceStudentCountDtos(List<(Guid, DateTime, int)> data)
     {

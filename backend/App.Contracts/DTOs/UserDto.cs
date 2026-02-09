@@ -3,22 +3,33 @@ using App.Domain.Enums;
 
 namespace App.Contracts.DTOs;
 
-public class UserDto(UserEntity user, string bucketUrl)
+public class UserDto
 {
-    public Guid Id { get; set; } = user.Id;
-    public string Email { get; set; } = user.Email;
-    public Guid UserTypeId { get; set; } = user.TypeId;
-    public string? UserType { get; set; } = user.Type?.TypeName ?? null;
-    public EAccessLevel? AccessLevel { get; set; } = user.Type?.AccessLevel ?? null;
-    public string? StudentCode { get; set; } = user.StudentCode ?? null;
-    public string? PhotoLink { get; set; } = user.PhotoPath != string.Empty ? bucketUrl + user.PhotoPath : null;
+    // Parameterless constructor for deserialization
+    public UserDto() { }
+    
+    public UserDto(UserEntity user, string bucketUrl)
+    {
+        Id = user.Id;
+        Email = user.Email;
+        UserTypeId = user.TypeId;
+        UserType = user.Type?.TypeName;
+        AccessLevel = user.Type?.AccessLevel;
+        StudentCode = user.StudentCode;
+        PhotoLink = user.PhotoPath != null ? bucketUrl + user.PhotoPath : null;
+    }
+
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public Guid UserTypeId { get; set; }
+    public string? UserType { get; set; }
+    public EAccessLevel? AccessLevel { get; set; }
+    public string? StudentCode { get; set; }
+    public string? PhotoLink { get; set; }
     
     public static List<UserDto> ToDtoList(List<UserEntity>? entities, string bucketUrl)
     {
-        if (entities == null)
-        {
-            return new List<UserDto>();
-        }
-        return entities.Select(e => new UserDto(e, bucketUrl)).ToList();
+        return entities?.Select(e => new UserDto(e, bucketUrl)).ToList() 
+               ?? new List<UserDto>();
     }
 }

@@ -2,21 +2,30 @@
 
 namespace App.Contracts.DTOs;
 
-public class AttendanceCheckDto(AttendanceCheckEntity attendanceCheck)
+public class AttendanceCheckDto
 {
-    public Guid Id { get; set; } = attendanceCheck.Id;
-    public string StudentCode { get; set; } = attendanceCheck.StudentCode;
-    public string FullName { get; set; } = attendanceCheck.FullName;
-    public string AttendanceIdentifier { get; set; } = attendanceCheck.AttendanceIdentifier;
-    public string? WorkplaceIdentifier { get; set; } = attendanceCheck.WorkplaceIdentifier;
+    // Parameterless constructor for deserialization
+    public AttendanceCheckDto() { }
+    
+    public AttendanceCheckDto(AttendanceCheckEntity attendanceCheck)
+    {
+        Id = attendanceCheck.Id;
+        StudentCode = attendanceCheck.StudentCode;
+        FullName = attendanceCheck.FullName;
+        AttendanceIdentifier = attendanceCheck.AttendanceIdentifier;
+        WorkplaceIdentifier = attendanceCheck.WorkplaceIdentifier;
+    }
+
+    public Guid Id { get; set; }
+    public string StudentCode { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string AttendanceIdentifier { get; set; } = string.Empty;
+    public string? WorkplaceIdentifier { get; set; }
     
     public static List<AttendanceCheckDto> ToDtoList(List<AttendanceCheckEntity>? entities)
     {
-        if (entities == null)
-        {
-            return new List<AttendanceCheckDto>();
-        }
-        return entities.Select(e => new AttendanceCheckDto(e)).ToList();
+        return entities?.Select(e => new AttendanceCheckDto(e)).ToList() 
+               ?? new List<AttendanceCheckDto>();
     }
 }
 

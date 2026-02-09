@@ -2,17 +2,23 @@
 
 namespace App.Contracts.DTOs;
 
-public class AttendanceTypeDto(AttendanceTypeEntity attendanceType)
+public class AttendanceTypeDto
 {
-    public Guid Id { get; set; } = attendanceType.Id;
-    public string AttendanceType { get; set; } = attendanceType.TypeName;
+    // Parameterless constructor for deserialization
+    public AttendanceTypeDto() { }
+    
+    public AttendanceTypeDto(AttendanceTypeEntity attendanceType)
+    {
+        Id = attendanceType.Id;
+        AttendanceType = attendanceType.TypeName;
+    }
+
+    public Guid Id { get; set; }
+    public string AttendanceType { get; set; } = string.Empty;
     
     public static List<AttendanceTypeDto> ToDtoList(List<AttendanceTypeEntity>? entities)
     {
-        if (entities == null)
-        {
-            return new List<AttendanceTypeDto>();
-        }
-        return entities.Select(e => new AttendanceTypeDto(e)).ToList();
+        return entities?.Select(e => new AttendanceTypeDto(e)).ToList() 
+               ?? new List<AttendanceTypeDto>();
     }
 }

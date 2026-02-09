@@ -2,20 +2,29 @@ using App.Domain.Entities;
 
 namespace App.Contracts.DTOs;
 
-public class SchoolDto(SchoolEntity school)
+public class SchoolDto
 {
-    public Guid Id { get; set; } = school.Id;
-    public string Name { get; set; } = school.Name;
-    public string ShortName { get; set; } = school.ShortName;
-    public string Domain { get; set; } = school.Domain;
-    public string StudentCodePattern { get; set; } = school.StudentCodePattern;
+    // Parameterless constructor for deserialization
+    public SchoolDto() { }
+    
+    public SchoolDto(SchoolEntity school)
+    {
+        Id = school.Id;
+        Name = school.Name;
+        ShortName = school.ShortName;
+        Domain = school.Domain;
+        StudentCodePattern = school.StudentCodePattern;
+    }
+
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string ShortName { get; set; } = string.Empty;
+    public string Domain { get; set; } = string.Empty;
+    public string StudentCodePattern { get; set; } = string.Empty;
     
     public static List<SchoolDto> ToDtoList(List<SchoolEntity>? entities)
     {
-        if (entities == null)
-        {
-            return new List<SchoolDto>();
-        }
-        return entities.Select(e => new SchoolDto(e)).ToList();
+        return entities?.Select(e => new SchoolDto(e)).ToList() 
+               ?? new List<SchoolDto>();
     }
 }

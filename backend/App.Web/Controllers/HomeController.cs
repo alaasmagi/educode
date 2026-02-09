@@ -12,7 +12,6 @@ namespace App.Web.Controllers;
 
 public class AdminPanelController(
     IAuthService authService, 
-    IAccessTokenService accessTokenService,
     ILogger<AdminPanelController> logger, 
     EnvInitializer envInitializer) : Controller
 {
@@ -51,7 +50,7 @@ public class AdminPanelController(
             return Index("Wrong username or password!");
         }
         
-        var (user, token, _) = adminUser.Value;
+        var (user, token, refreshToken) = adminUser.Value;
         Response.Cookies.Append("jwt", token, new CookieOptions
         {
             HttpOnly = true,
@@ -60,14 +59,90 @@ public class AdminPanelController(
             MaxAge = TimeSpan.FromMinutes(envInitializer.JwtCookieExpirationMinutes)
         });
         
-        logger.LogInformation($"Admin access granted successfully. JWT cookie set.");
+        Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenExpirationDays)
+        });
+        
+        logger.LogInformation($"Admin access granted successfully. JWT and refresh token cookies set.");
         return  RedirectToAction("Home");
     }
 
     public IActionResult LogOut()
     {
         Response.Cookies.Delete("jwt");
+        Response.Cookies.Delete("refreshToken");
         return RedirectToAction("Index");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RefreshToken()
+    {
+        logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
+        
+        var currentRefreshToken = Request.Cookies["refreshToken"];
+        var currentAccessToken = Request.Cookies["jwt"];
+        
+        if (string.IsNullOrEmpty(currentRefreshToken) || string.IsNullOrEmpty(currentAccessToken))
+        {
+            logger.LogWarning("Missing refresh token or access token in cookies");
+            return RedirectToAction("Index", new { message = "Session expired. Please login again." });
+        }
+        
+        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        System.IdentityModel.Tokens.Jwt.JwtSecurityToken? jwtToken;
+        try
+        {
+            jwtToken = handler.ReadJwtToken(currentAccessToken);
+        }
+        catch
+        {
+            logger.LogWarning("Failed to read JWT token");
+            return RedirectToAction("Index", new { message = "Invalid session. Please login again." });
+        }
+        
+        var emailClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "email");
+        if (emailClaim == null)
+        {
+            logger.LogWarning("Email claim not found in JWT");
+            return RedirectToAction("Index", new { message = "Invalid session. Please login again." });
+        }
+        
+        var refreshResult = await authService.RefreshTokensAsync(
+            currentRefreshToken, 
+            currentAccessToken, 
+            emailClaim.Value, 
+            Constants.BackendName);
+        
+        if (!refreshResult.Successful)
+        {
+            logger.LogWarning($"Token refresh failed: {refreshResult.Error?.Message}");
+            return RedirectToAction("Index", new { message = "Session expired. Please login again." });
+        }
+        
+        var (newAccessToken, newRefreshToken) = refreshResult.Value;
+        
+        Response.Cookies.Append("jwt", newAccessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            MaxAge = TimeSpan.FromMinutes(envInitializer.JwtCookieExpirationMinutes)
+        });
+        
+        Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenExpirationDays)
+        });
+        
+        logger.LogInformation("Tokens refreshed successfully");
+        return RedirectToAction("Home");
     }
 
     public IActionResult Privacy()

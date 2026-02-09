@@ -186,10 +186,49 @@ public class AuthService(
         return await refreshTokenService.DeleteRefreshTokenAsync(refreshToken);
     }
 
-    public Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, 
+    public async Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, 
                                                                     string accessToken, string email, string clientApp)
     {
-        throw new NotImplementedException();
+        var user = await userRepository.GetByEmailAsync(email);
+        if (user == null)
+        {
+            logger.LogError($"Failed to fetch user with email {email}");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(
+                new Error(ErrorConstants.UserNotFound, "User was not found")
+            );
+        }
+        
+        var verifyResult = await refreshTokenService.VerifyRefreshTokenAsync(refreshToken, user.Id);
+        if (!verifyResult.Successful)
+        {
+            logger.LogError($"Invalid refresh token for user with ID {user.Id}");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(verifyResult.Error!);
+        }
+        
+        var userAuthData = await userAuthRepository.GetByUserAsync(user.Id);
+        if (userAuthData == null)
+        {
+            logger.LogError($"Failed to fetch user auth data for user with ID {user.Id}");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(
+                new Error(ErrorConstants.AuthenticationFailed, "Authentication failed")
+            );
+        }
+        
+        var newAccessToken = accessTokenService.GenerateAccessToken(user, userAuthData, clientApp);
+        
+        await refreshTokenService.DeleteRefreshTokenAsync(refreshToken);
+        
+        var newRefreshTokenResponse = await refreshTokenService.GenerateRefreshTokenAsync(
+            user.Id, "refresh", email, clientApp);
+        
+        if (!newRefreshTokenResponse.Successful)
+        {
+            logger.LogError($"Failed to generate new refresh token for user with ID {user.Id}");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(newRefreshTokenResponse.Error!);
+        }
+        
+        logger.LogInformation($"Successfully refreshed tokens for user with ID {user.Id}");
+        return MethodResponse<(string AccessToken, string RefreshToken)>.Success((newAccessToken, newRefreshTokenResponse.Value!));
     }
 
     public async Task<MethodResponse<bool>> GenerateAndSendOtpAsync(OtpRequest request)

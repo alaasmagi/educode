@@ -1,6 +1,3 @@
-using System.Collections;
-using App.Domain.Enums;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Web.ApiControllers;

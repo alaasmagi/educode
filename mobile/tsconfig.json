@@ -6,5 +6,12 @@
     "noFallthroughCasesInSwitch": true,
     "types": []
   },
-  "include": ["src/**/*", "types.d.ts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.backup.tsx"
+  ]
 }

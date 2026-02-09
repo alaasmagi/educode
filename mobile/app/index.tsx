@@ -1,12 +1,19 @@
-import {useRootNavigationState, useRouter} from "expo-router";
-import {useEffect} from "react";
-
+import { useRootNavigationState, Redirect } from "expo-router";
+import { useEffect, useState } from "react";
 
 export default function Index() {
-    const router = useRouter();
     const rootNavigation = useRootNavigationState();
+    const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
-        const timeout = setTimeout(() => router.replace('/tabs/login'))
-    }, []);
+        if (rootNavigation?.key) {
+            setIsReady(true);
+        }
+    }, [rootNavigation]);
+
+    if (!isReady) {
+        return null;
+    }
+
+    return <Redirect href="/initial-selection" />;
 }

@@ -1,6 +1,7 @@
-﻿using App.Contracts.Repositories;
+﻿﻿using App.Contracts.Repositories;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -50,9 +51,22 @@ namespace App.Web.Controllers
         }
 
         // GET: RefreshToken/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            return View();
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var refreshTokenEntity = new RefreshTokenEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
+            return View(refreshTokenEntity);
         }
 
         // POST: RefreshToken/Create
@@ -60,9 +74,21 @@ namespace App.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         public async Task<IActionResult> Create(
-            [Bind("UserId,Token,CreatedByIp,ExpirationTime,CreatedBy,CreatedAt,UpdatedBy,UpdatedAt,Deleted")]
+            [Bind("UserId,Token,Client,ClientIp,PushNotificationToken,ExpirationTime,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")]
             RefreshTokenEntity refreshTokenEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            // Override with current values
+            refreshTokenEntity.CreatedBy = email;
+            refreshTokenEntity.CreatedByClient = clientApp;
+            refreshTokenEntity.UpdatedBy = email;
+            refreshTokenEntity.UpdatedByClient = clientApp;
+            refreshTokenEntity.CreatedAt = now;
+            refreshTokenEntity.UpdatedAt = now;
+            
             if (ModelState.IsValid)
             {
                 await refreshTokenRepository.CreateAsync(refreshTokenEntity);
@@ -94,13 +120,20 @@ namespace App.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         public async Task<IActionResult> Edit(Guid id,
-            [Bind("UserId,Token,CreatedByIp,ExpirationTime,Id,CreatedBy,CreatedAt,UpdatedBy,UpdatedAt,Deleted")]
+            [Bind("UserId,Token,Client,ClientIp,PushNotificationToken,ExpirationTime,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")]
             RefreshTokenEntity refreshTokenEntity)
         {
             if (id != refreshTokenEntity.Id)
             {
                 return NotFound();
             }
+
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
+            refreshTokenEntity.UpdatedBy = email;
+            refreshTokenEntity.UpdatedByClient = clientApp;
+            refreshTokenEntity.UpdatedAt = DateTime.UtcNow;
 
             if (ModelState.IsValid)
             {

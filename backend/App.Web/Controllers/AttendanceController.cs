@@ -57,11 +57,24 @@ namespace App.Web.Controllers
         // GET: CourseAttendance/Create
         public async Task<IActionResult> Create()
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            
+            var attendanceEntity = new AttendanceEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
             var attendanceTypes = await attendanceTypeRepository.GetAllAsync(1, 100);
             var courses = await courseRepository.GetAllAsync(1, 100);
             ViewData["AttendanceTypeId"] = new SelectList(attendanceTypes, "Id", "TypeName");
             ViewData["CourseId"] = new SelectList(courses, "Id", "Code");
-            return View();
+            return View(attendanceEntity);
         }
 
         // POST: CourseAttendance/Create

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using App.Domain;
 using App.Domain.Entities;
 using App.Domain.Enums;
+using App.Infrastructure.Helpers;
 using App.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 
@@ -55,17 +56,43 @@ namespace App.Web.Controllers
         // GET: UserAuth/Create
         public async Task<IActionResult> Create()
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            var userAuthEntity = new UserAuthEntity
+            {
+                CreatedBy = email,
+                CreatedByClient = clientApp,
+                UpdatedBy = email,
+                UpdatedByClient = clientApp,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+            
             var users = await userRepository.GetAllAsync(1, 100);
             ViewData["UserId"] = new SelectList(users, "Id", "Email");
-            return View();
+            return View(userAuthEntity);
         }
 
         // POST: UserAuth/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("UserId,PasswordHash,CreatedBy,UpdatedBy,Deleted")] UserAuthEntity userAuthEntity)
+        public async Task<IActionResult> Create([Bind("UserId,PasswordHash,Verified,Deleted,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt")] UserAuthEntity userAuthEntity)
         {
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+            var now = DateTime.UtcNow;
+            
+            // Override with current values
+            userAuthEntity.CreatedBy = email;
+            userAuthEntity.CreatedByClient = clientApp;
+            userAuthEntity.UpdatedBy = email;
+            userAuthEntity.UpdatedByClient = clientApp;
+            userAuthEntity.CreatedAt = now;
+            userAuthEntity.UpdatedAt = now;
+            
             if (ModelState.IsValid)
             {
                 await userAuthRepository.CreateAsync(userAuthEntity);
@@ -100,12 +127,19 @@ namespace App.Web.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("UserId,PasswordHash,Id,CreatedBy,CreatedAt,UpdatedBy,Deleted")] UserAuthEntity userAuthEntity)
+        public async Task<IActionResult> Edit(Guid id, [Bind("UserId,PasswordHash,Verified,Id,CreatedBy,CreatedByClient,CreatedAt,UpdatedBy,UpdatedByClient,UpdatedAt,Deleted")] UserAuthEntity userAuthEntity)
         {
             if (id != userAuthEntity.Id)
             {
                 return NotFound();
             }
+
+            var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
+            var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
+
+            userAuthEntity.UpdatedBy = email;
+            userAuthEntity.UpdatedByClient = clientApp;
+            userAuthEntity.UpdatedAt = DateTime.UtcNow;
 
             if (ModelState.IsValid)
             {

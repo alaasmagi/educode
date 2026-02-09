@@ -27,6 +27,7 @@ import { ApplyStyles } from "../businesslogic/hooks/SelectAppTheme";
 import { GetNativeSafeArea } from "../layout/styles/NativeStyles";
 import ErrorMessage from "../layout/components/ErrorMessage";
 import SuccessMessage from "../layout/components/SuccessMessage";
+import PrimaryButton from "../layout/components/NormalButton";
 
 function InitialSelectionView({ navigation }: NavigationProps) {
   const { t } = useTranslation();
@@ -131,12 +132,12 @@ function InitialSelectionView({ navigation }: NavigationProps) {
         <View style={stylesLocal.screenContent}>
           {!isKeyboardVisible && (
             <View style={stylesLocal.mainLoginContainer}>
-              <NormalButton
+              <PrimaryButton
                 text={t("log-in")}
                 onPress={() => navigation.navigate("LoginView")}
                 disabled={!isConnection}
               />
-              <NormalButton
+              <PrimaryButton
                 text={t("register-as-student")}
                 onPress={() => navigation.navigate("CreateAccountView")}
                 disabled={!isConnection}
@@ -162,7 +163,7 @@ function InitialSelectionView({ navigation }: NavigationProps) {
               onChangeText={setFullName}
               autoCapitalize="words"
             />
-            <NormalButton
+            <PrimaryButton
               text={t("continue")}
               onPress={handleOfflineLogin}
               disabled={!isStudentCodeValid() || !isNameFormValid() || isButtonDisabled}

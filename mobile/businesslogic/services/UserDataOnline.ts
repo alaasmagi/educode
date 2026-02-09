@@ -16,7 +16,7 @@ import {
 import Constants from "expo-constants";
 
 export async function TestConnection(): Promise<boolean> {
-  const response = await axios.get(`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/User/TestConnection`);
+  const response = await axios.get(`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/General/HealthCheck`);
   return response.status === 200;
 }
 

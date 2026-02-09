@@ -1,56 +1,63 @@
 import React from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import { ApplyStyles } from "../../businesslogic/hooks/SelectAppTheme";
-import { OverallUiStyles } from "../styles/Styles";
+import {Button} from "react-native-paper";
+import {StyleSheet, TextStyle, ViewStyle} from 'react-native';
 
-interface NormalButtonProperties {
+interface PrimaryButtonProperties {
   text: string;
+  icon?: string;
   onPress: () => void;
   disabled?: boolean;
+  // optional style overrides
+  buttonStyle?: ViewStyle;
+  contentStyle?: ViewStyle; // controls internal padding
+  labelStyle?: TextStyle; // controls font size/family
+  // convenience shorthands
+  fontSize?: number;
+  fontFamily?: string;
+  paddingVertical?: number;
+  paddingHorizontal?: number;
 }
 
-const NormalButton: React.FC<NormalButtonProperties> = ({ text, onPress, disabled }) => {
-  const { styles } = ApplyStyles();
+const PrimaryButton: React.FC<PrimaryButtonProperties> = ({ text, icon, onPress, disabled, buttonStyle, contentStyle, labelStyle, fontSize, fontFamily, paddingVertical, paddingHorizontal }) => {
+  const mergedLabelStyle = [
+    styles.label,
+    labelStyle,
+    fontSize ? { fontSize } : null,
+    fontFamily ? { fontFamily } : null,
+  ];
 
-  const baseStructure = {
-    backgroundColor: styles["normal-button-bg-color"],
-    borderRadius: styles["normal-button-border-radius"],
-    borderWidth: styles["normal-button-border-thickness"] ?? styles["normal-border-thickness"],
-    borderColor: styles["normal-button-border-color"],
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    width: wp("85%"),
-    paddingHorizontal: wp("3.5%"),
-    paddingVertical: hp("1.5%"),
-  };
-
-  const sheet = StyleSheet.create({
-    structure: {
-      ...baseStructure,
-      opacity: 1,
-    },
-    structureDisabled: {
-      ...baseStructure,
-      opacity: 0.5,
-    },
-    content: {
-      color: styles["normal-button-font-color"],
-      textAlign: "center" as const,
-      fontSize: styles["normal-button-font-size"],
-      fontFamily: OverallUiStyles["default-heading-font-family"]
-    },
-  });
+  const mergedContentStyle = [
+    styles.content,
+    contentStyle,
+    paddingVertical ? { paddingVertical } : null,
+    paddingHorizontal ? { paddingHorizontal } : null,
+  ];
 
   return (
-    <TouchableOpacity
-      style={disabled ? sheet.structureDisabled : sheet.structure}
-      onPress={onPress}
-      disabled={disabled}
-    >
-      <Text style={sheet.content}>{text}</Text>
-    </TouchableOpacity>
+      <Button
+        icon={icon}
+        mode="elevated"
+        onPress={onPress}
+        disabled={disabled}
+        style={buttonStyle}
+        contentStyle={mergedContentStyle}
+        labelStyle={mergedLabelStyle}
+      >
+          {text}
+      </Button>
   );
 };
 
-export default NormalButton;
+const styles = StyleSheet.create({
+  label: {
+    fontSize: 16,
+    // default font family from your assets (adjust name to match how you register fonts)
+    fontFamily: 'Nunito-normal',
+  } as TextStyle,
+  content: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  } as ViewStyle,
+});
+
+export default PrimaryButton;

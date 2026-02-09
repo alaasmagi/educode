@@ -288,7 +288,7 @@ public class AuthService(
         
         userAuthData.UpdatedBy = request.Email;
         userAuthData.UpdatedByClient = request.ClientApp;
-        userAuthData.Verified = false;
+        userAuthData.Verified = true;
         var updateResponse = await userAuthRepository.UpdateAsync(userAuthData);
         if (updateResponse == null)        {
             logger.LogError($"Failed to verify OTP for user with ID {user.Id}");

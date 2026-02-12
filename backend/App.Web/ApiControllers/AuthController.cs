@@ -1,4 +1,5 @@
-﻿using App.Contracts.Services;
+﻿using App.Contracts.DTOs;
+using App.Contracts.Services;
 using App.Contracts.WebRequests;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
@@ -19,7 +20,7 @@ public class AuthController(
 {
 
     [HttpPost("Login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<(UserDto, string, string)>> Login([FromBody] LoginRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -54,11 +55,11 @@ public class AuthController(
         });
         
         logger.LogInformation($"User with ID {user.Id} was logged in successfully");
-        return Ok(new { UserId = user.Id, Token = jwtToken, RefreshToken = refreshToken});
+        return Ok(response.Value);
     }
     
     [HttpPost("Refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+    public async Task<ActionResult<(string, string)>> Refresh([FromBody] RefreshTokenRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
@@ -94,7 +95,7 @@ public class AuthController(
             MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenCookieExpirationDays)
         });
 
-        return Ok(new { Token = newJwt, RefreshToken = newRefreshToken });
+        return Ok(response.Value);
     }
     
     [HttpPost("Logout")]
@@ -124,7 +125,7 @@ public class AuthController(
     }
 
     [HttpPost("Register/{token}")]
-    public async Task<IActionResult> Register(string? token, [FromBody] CreateAccountRequest request)
+    public async Task<ActionResult<UserDto>> Register(string? token, [FromBody] CreateAccountRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         if (!ModelState.IsValid)
@@ -140,7 +141,7 @@ public class AuthController(
         }
         
         logger.LogInformation($"User with email {request.Email} was created successfully");
-        return Ok();
+        return Ok(response.Value);
     }
 
     [Authorize]

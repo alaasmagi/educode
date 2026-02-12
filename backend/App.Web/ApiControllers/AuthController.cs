@@ -62,7 +62,6 @@ public class AuthController(
     public async Task<ActionResult<(string, string)>> Refresh([FromBody] RefreshTokenRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
         if (!ModelState.IsValid)
         {
@@ -71,7 +70,7 @@ public class AuthController(
         }
 
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.AccessToken, ipAddress, clientApp);
+        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.AccessToken, ipAddress, request.ClientApp);
 
         if (!response.Successful)
         {
@@ -99,17 +98,9 @@ public class AuthController(
     }
     
     [HttpPost("Logout")]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout([FromBody] string refreshToken)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var refreshToken = Request.Cookies["refreshToken"];;
-    
-        if (refreshToken == null)
-        {
-            logger.LogWarning($"Refreshtoken is missing in cookies");
-            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
-        }
-        
         var response = await authService.LogOutUserAsync(refreshToken);
 
         if (!response.Successful)

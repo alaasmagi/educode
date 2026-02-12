@@ -105,10 +105,10 @@ public class JwtService(
         return tokenHandler.WriteToken(token);
     }
     
-    private Guid? GetUserIdFromJwt(string jwtToken)
+    private Guid? GetUserIdFromAccessToken(string accessToken)
     {
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(jwtToken);
+        var token = handler.ReadJwtToken(accessToken);
         var userIdClaim = token.Claims.FirstOrDefault(c => c.Type == Constants.UserIdClaim);
         if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
         {

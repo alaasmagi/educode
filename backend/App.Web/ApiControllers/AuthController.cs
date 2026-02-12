@@ -37,8 +37,8 @@ public class AuthController(
             return BadRequest(response.Error);
         }
         
-        var (user, jwtToken, refreshToken) = response.Value;
-        Response.Cookies.Append("jwt", jwtToken, new CookieOptions
+        var (user, accessToken, refreshToken) = response.Value;
+        Response.Cookies.Append("jwt", accessToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
@@ -71,7 +71,7 @@ public class AuthController(
         }
 
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.JwtToken, ipAddress, clientApp);
+        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.AccessToken, ipAddress, clientApp);
 
         if (!response.Successful)
         {

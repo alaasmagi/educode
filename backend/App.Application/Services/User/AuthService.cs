@@ -63,7 +63,7 @@ public class AuthService(
             );
         }
         
-        var jwtToken = accessTokenService.GenerateAccessToken(user, userAuthData, clientApp);
+        var accessToken = accessTokenService.GenerateAccessToken(user, userAuthData, clientApp);
         var refreshTokenResponse = await refreshTokenService.GenerateRefreshTokenAsync(user.Id, clientIp, request.Email, clientApp);
 
         if (!refreshTokenResponse.Successful)
@@ -73,7 +73,7 @@ public class AuthService(
         
         var userDto = new UserDto(user, envInitializer.OciPublicUrl);
         logger.LogInformation($"Successfully authenticated user with ID {user.Id}");
-        return MethodResponse<(UserDto, string, string)>.Success((userDto, jwtToken, refreshTokenResponse.Value!));
+        return MethodResponse<(UserDto, string, string)>.Success((userDto, accessToken, refreshTokenResponse.Value!));
     }
 
     public async Task<MethodResponse<UserDto>> RegisterUserAsync(CreateAccountRequest request)

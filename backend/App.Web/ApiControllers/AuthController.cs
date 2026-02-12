@@ -124,7 +124,7 @@ public class AuthController(
         return Ok();
     }
 
-    [HttpPost("Register/{token}")]
+    [HttpPost("Register/{token?}")]
     public async Task<ActionResult<UserDto>> Register(string? token, [FromBody] CreateAccountRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");

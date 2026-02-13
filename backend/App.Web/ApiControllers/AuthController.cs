@@ -1,6 +1,7 @@
 ﻿using App.Contracts.DTOs;
 using App.Contracts.Services;
 using App.Contracts.WebRequests;
+using App.Contracts.WebResponse;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
@@ -20,7 +21,7 @@ public class AuthController(
 {
 
     [HttpPost("Login")]
-    public async Task<ActionResult<(UserDto, string, string)>> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -54,12 +55,19 @@ public class AuthController(
             MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenCookieExpirationDays)
         });
         
+        var loginResponse = new LoginResponse
+        {
+            User = user,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken
+        };
+
         logger.LogInformation($"User with ID {user.Id} was logged in successfully");
-        return Ok(response.Value);
+        return Ok(loginResponse);
     }
     
     [HttpPost("Refresh")]
-    public async Task<ActionResult<(string, string)>> Refresh([FromBody] RefreshTokenRequest request)
+    public async Task<ActionResult<RefreshResponse>> Refresh([FromBody] RefreshTokenRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
 
@@ -93,8 +101,15 @@ public class AuthController(
             SameSite = SameSiteMode.None,   
             MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenCookieExpirationDays)
         });
+        
+        
+        var refreshResponse = new RefreshResponse
+        {
+            AccessToken = newJwt,
+            RefreshToken = newRefreshToken
+        };
 
-        return Ok(response.Value);
+        return Ok(refreshResponse);
     }
     
     [HttpPost("Logout")]

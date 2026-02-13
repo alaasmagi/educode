@@ -77,8 +77,7 @@ public class AuthController(
             return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
 
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.AccessToken, ipAddress, request.ClientApp);
+        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.AccessToken, request.ClientApp);
 
         if (!response.Successful)
         {

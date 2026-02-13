@@ -187,8 +187,17 @@ public class AuthService(
     }
 
     public async Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, 
-                                                                    string accessToken, string email, string clientApp)
+                                                                                    string accessToken, string clientApp)
     {
+        var email = accessTokenService.GetEmailFromAccessToken(accessToken);
+        if (email == null)
+        {
+            logger.LogError($"Failed to extract email from access token");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(
+                new Error(ErrorConstants.EmailNotFound, "Email was not found")
+            );
+        }
+        
         var user = await userRepository.GetByEmailAsync(email);
         if (user == null)
         {

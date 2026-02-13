@@ -117,4 +117,15 @@ public class JwtService(
         
         return null;
     }
+    
+    public string? GetEmailFromAccessToken(string accessToken)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(accessToken);
+
+        var emailClaim = token.Claims
+            .FirstOrDefault(c => c.Type == Constants.EmailClaim);
+
+        return emailClaim?.Value;
+    }
 }

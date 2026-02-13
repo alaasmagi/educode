@@ -13,7 +13,7 @@ public interface IAuthService
     public Task<MethodResponse<bool>> ChangePasswordAsync(ChangePasswordRequest request);
     public Task<MethodResponse<bool>> LogOutUserAsync(string refreshToken);
     public Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, 
-                                                                    string accessToken, string email, string clientApp);
+                                                                                        string accessToken, string clientApp);
     public Task<MethodResponse<bool>> GenerateAndSendOtpAsync(OtpRequest request);
     public Task<MethodResponse<(string AccessToken, string RefreshToken)>> VerifyOtpAsync(VerifyOtpRequest request, string creatorIp);
 }

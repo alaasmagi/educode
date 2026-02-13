@@ -253,7 +253,7 @@ public class AuthService(
             EmailTo =  request.Email,
             FullName = request.FullName,
             Otp = otpResponse.Value.ToString(),
-            OtpExpirationMinutes = envInitializer.OtpExpirationMinutes
+            Expiry = envInitializer.OtpExpirationMinutes
         };
         
         if (!await emailClient.SendOtpAsync(emailContent))

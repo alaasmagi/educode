@@ -120,7 +120,7 @@ For detailed setup instructions including environment variables and configuratio
 ### Entity Relationship Diagram (ERD)
 
 <!-- Add ERD diagram here -->
-![Entity Relationship Diagram](<img width="2880" height="1516" alt="drawSQL-image-export-2026-02-16" src="https://github.com/user-attachments/assets/c25bc4db-39a2-4bac-af95-0906e285621b" />)
+![Entity Relationship Diagram](https://github.com/user-attachments/assets/c25bc4db-39a2-4bac-af95-0906e285621b)
 
 *The ERD shows the database schema including all entities, their attributes, and relationships between tables.*
 

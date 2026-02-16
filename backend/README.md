@@ -122,7 +122,7 @@ OCI_PUBLIC_URL=https://objectstorage.region.oraclecloud.com
 SOFTDELETE_EXPIRATION_DAYS=180
 
 # CORS Configuration
-FRONTENDURLS=http://localhost:3000,http://localhost:5173
+FRONTENDURLS=http://localhost:3000;http://localhost:5173
 ```
 
 ---
@@ -316,40 +316,6 @@ All entities inherit from `BaseEntity` which provides:
 - Configurable limits per endpoint
 
 ---
----
-
-## Testing
-
-The project includes comprehensive testing:
-
-* **Unit Tests** - Business logic validation using NUnit/xUnit
-* **Integration Tests** - End-to-end API testing
-* **Bruno Collections** - API endpoint testing and documentation
-* **DAL Tests** - Data access layer verification
-
-Run tests:
-```bash
-dotnet test
-```
-
----
-
-## Database Migrations
-
-The project uses Entity Framework Core migrations for database schema management.
-
-**Create a new migration:**
-```bash
-cd App.Infrastructure
-dotnet ef migrations add MigrationName --startup-project ../App.Web
-```
-
-**Apply migrations:**
-```bash
-dotnet ef database update --startup-project ../App.Web
-```
-
----
 
 ## Deployment
 
@@ -371,43 +337,10 @@ docker compose up --build -d
 7. **Rate Limiting**: Adjust limits based on expected traffic
 8. **Backup Strategy**: Regular database backups and disaster recovery plan
 
----
-
-## API Response Format
-
-All API endpoints return a standard response format using `MethodResponse<T>`:
-
-```json
-{
-  "data": { ... },
-  "errors": [],
-  "status": 200,
-  "message": "Success"
-}
-```
-
-**Error Response Example:**
-```json
-{
-  "data": null,
-  "errors": [
-    {
-      "code": "validation-error",
-      "message": "Invalid email format"
-    }
-  ],
-  "status": 400,
-  "message": "Validation failed"
-}
-```
-
----
 
 ## Improvements & Future Enhancements
 
 ### Planned Features
-- [ ] GraphQL API endpoint alongside REST
-- [ ] Real-time notifications using SignalR
 - [ ] Advanced analytics and reporting dashboard
 - [ ] Integration with university student information systems
 - [ ] Mobile push notifications
@@ -427,12 +360,6 @@ All API endpoints return a standard response format using `MethodResponse<T>`:
 - [ ] Add IP whitelisting for admin endpoints
 - [ ] Implement security headers (CSP, HSTS, etc.)
 - [ ] Add comprehensive audit logging with tamper detection
-
----
-
-## Contributing
-
-For information on contributing to the educode project, see the main repository [README](../README.md).
 
 ---
 

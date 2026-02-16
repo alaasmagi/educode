@@ -113,7 +113,7 @@ For detailed setup instructions including environment variables and configuratio
 ### System Architecture
 
 <!-- Add system architecture diagram here -->
-![System Architecture]()
+![System Architecture](https://github.com/user-attachments/assets/81759b02-9164-412e-bde8-17e84710bbe8)
 
 *The system architecture diagram will show the overall design schema including the relationships between the backend API, web application, mobile application, database, cache layer, and external services.*
 

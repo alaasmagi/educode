@@ -12,7 +12,7 @@
 ## Version History
 
 ### Version 1
-This project started as my Bachelor's Thesis project. After graduation I have been improving this project alot. For clarity, I have separated the documentation of old and new version of the project. For the documentation of the old version of the project see the [LEGACY_README](LEGACY.md)
+This project started as my Bachelor's Thesis project. After graduation I have been improving this project alot. For clarity, I have separated the documentation of old and new version of the project. For the documentation of the old version of the project see the [LEGACY README](LEGACY.md)
 
 ### Version 2 (Current)
 This is the current implementation (v2) of the educode platform with enhanced features, improved architecture, and a Flutter-based mobile application.
@@ -40,7 +40,7 @@ This monorepo contains three main components:
 
 ### Prerequisites
 
-* **Backend**: Docker, .NET 8.0 SDK
+* **Backend**: Docker, .NET 10.0 SDK
 * **Frontend**: Node.js (v18+), modern web browser
 * **Mobile**: Flutter SDK (3.0+), Dart SDK, Android Studio or VS Code with Flutter extensions, Android device or emulator
 
@@ -112,14 +112,12 @@ For detailed setup instructions including environment variables and configuratio
 
 ### System Architecture
 
-<!-- Add system architecture diagram here -->
 ![System Architecture](https://github.com/user-attachments/assets/81759b02-9164-412e-bde8-17e84710bbe8)
 
 *The system architecture diagram will show the overall design schema including the relationships between the backend API, web application, mobile application, database, cache layer, and external services.*
 
 ### Entity Relationship Diagram (ERD)
 
-<!-- Add ERD diagram here -->
 ![Entity Relationship Diagram](https://github.com/user-attachments/assets/c25bc4db-39a2-4bac-af95-0906e285621b)
 
 *The ERD shows the database schema including all entities, their attributes, and relationships between tables.*
@@ -193,7 +191,7 @@ educode/
 ## Security
 
 - JWT-based authentication and authorization
-- BCrypt password hashing (12 rounds) with Base64 encoding for admin credentials
+- Argon2 password encryption
 - OTP-based email verification for account creation and password recovery
 - Environment-based configuration for sensitive data
 - CORS protection
@@ -208,13 +206,6 @@ The project was restructured from three separate repositories into a unified mon
 - Improve coordination between frontend, backend, and mobile development
 - Streamline deployment and version control
 - Facilitate code sharing and refactoring
-
-### Technology Stack
-- **Backend**: .NET Core was chosen for its performance, scalability, and strong typing
-- **Web**: React with Vite provides fast development experience and optimal production builds
-- **Mobile**: Flutter enables cross-platform development with native performance and a rich widget library
-- **Database**: PostgreSQL for reliable data persistence with strong ACID guarantees
-- **Cache**: Redis for session management and performance optimization
 
 ## License
 

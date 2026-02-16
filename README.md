@@ -1,4 +1,4 @@
-# educode
+# educode - UNDER DEVELOPMENT
 ## Description
 
 * UI languages: Estonian and English
@@ -16,6 +16,12 @@ This project started as my Bachelor's Thesis project. After graduation I have be
 
 ### Version 2 (Current)
 This is the current implementation (v2) of the educode platform with enhanced features, improved architecture, and a Flutter-based mobile application.
+
+## Project status
+* **Database:** implemented and set up
+* **Backend:** mostly implemented
+* **Mobile:** currently implementing
+* **Frontend:** implementation planned
 
 ## Components
 

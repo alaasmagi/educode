@@ -113,14 +113,14 @@ For detailed setup instructions including environment variables and configuratio
 ### System Architecture
 
 <!-- Add system architecture diagram here -->
-![System Architecture](/path/to/architecture-diagram.png)
+![System Architecture]()
 
 *The system architecture diagram will show the overall design schema including the relationships between the backend API, web application, mobile application, database, cache layer, and external services.*
 
 ### Entity Relationship Diagram (ERD)
 
 <!-- Add ERD diagram here -->
-![Entity Relationship Diagram](/path/to/erd-diagram.png)
+![Entity Relationship Diagram](<img width="2880" height="1516" alt="drawSQL-image-export-2026-02-16" src="https://github.com/user-attachments/assets/c25bc4db-39a2-4bac-af95-0906e285621b" />)
 
 *The ERD shows the database schema including all entities, their attributes, and relationships between tables.*
 

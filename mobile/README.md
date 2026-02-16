@@ -1,1 +1,1 @@
-# new-educode-mobile
+# educode-mobile

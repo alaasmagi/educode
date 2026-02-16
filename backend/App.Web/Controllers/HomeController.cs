@@ -114,7 +114,6 @@ public class AdminPanelController(
         var refreshResult = await authService.RefreshTokensAsync(
             currentRefreshToken, 
             currentAccessToken, 
-            emailClaim.Value, 
             Constants.BackendName);
         
         if (!refreshResult.Successful)

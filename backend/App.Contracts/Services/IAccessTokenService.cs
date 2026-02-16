@@ -7,4 +7,5 @@ public interface IAccessTokenService
 {
     string GenerateAccessToken(UserEntity user, UserAuthEntity userAuth, string clientApp);
     string GenerateAdminAccessToken(UserDto user);
+    string? GetEmailFromAccessToken(string accessToken);
 }

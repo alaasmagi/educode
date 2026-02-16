@@ -1,5 +1,7 @@
-﻿using App.Contracts.Services;
+﻿using App.Contracts.DTOs;
+using App.Contracts.Services;
 using App.Contracts.WebRequests;
+using App.Contracts.WebResponse;
 using App.Domain.Entities;
 using App.Infrastructure.Helpers;
 using App.Infrastructure.Initializers;
@@ -19,7 +21,7 @@ public class AuthController(
 {
 
     [HttpPost("Login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         var creatorIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -36,8 +38,8 @@ public class AuthController(
             return BadRequest(response.Error);
         }
         
-        var (user, jwtToken, refreshToken) = response.Value;
-        Response.Cookies.Append("jwt", jwtToken, new CookieOptions
+        var (user, accessToken, refreshToken) = response.Value;
+        Response.Cookies.Append("jwt", accessToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
@@ -53,15 +55,21 @@ public class AuthController(
             MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenCookieExpirationDays)
         });
         
+        var loginResponse = new LoginResponse
+        {
+            User = user,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken
+        };
+
         logger.LogInformation($"User with ID {user.Id} was logged in successfully");
-        return Ok(new { UserId = user.Id, Token = jwtToken, RefreshToken = refreshToken});
+        return Ok(loginResponse);
     }
     
     [HttpPost("Refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+    public async Task<ActionResult<RefreshResponse>> Refresh([FromBody] RefreshTokenRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
         if (!ModelState.IsValid)
         {
@@ -69,8 +77,7 @@ public class AuthController(
             return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
         }
 
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.JwtToken, ipAddress, clientApp);
+        var response = await authService.RefreshTokensAsync(request.RefreshToken, request.AccessToken, request.ClientApp);
 
         if (!response.Successful)
         {
@@ -93,22 +100,21 @@ public class AuthController(
             SameSite = SameSiteMode.None,   
             MaxAge = TimeSpan.FromDays(envInitializer.RefreshTokenCookieExpirationDays)
         });
+        
+        
+        var refreshResponse = new RefreshResponse
+        {
+            AccessToken = newJwt,
+            RefreshToken = newRefreshToken
+        };
 
-        return Ok(new { Token = newJwt, RefreshToken = newRefreshToken });
+        return Ok(refreshResponse);
     }
     
     [HttpPost("Logout")]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout([FromBody] string refreshToken)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
-        var refreshToken = Request.Cookies["refreshToken"];;
-    
-        if (refreshToken == null)
-        {
-            logger.LogWarning($"Refreshtoken is missing in cookies");
-            return BadRequest(new Error(ErrorConstants.InvalidCredentials, "Invalid credentials"));
-        }
-        
         var response = await authService.LogOutUserAsync(refreshToken);
 
         if (!response.Successful)
@@ -123,8 +129,8 @@ public class AuthController(
         return Ok();
     }
 
-    [HttpPost("Register/{token}")]
-    public async Task<IActionResult> Register(string? token, [FromBody] CreateAccountRequest request)
+    [HttpPost("Register/{token?}")]
+    public async Task<ActionResult<UserDto>> Register(string? token, [FromBody] CreateAccountRequest request)
     {
         logger.LogInformation($"{HttpContext.Request.Method.ToUpper()} - {HttpContext.Request.Path}");
         if (!ModelState.IsValid)
@@ -140,7 +146,7 @@ public class AuthController(
         }
         
         logger.LogInformation($"User with email {request.Email} was created successfully");
-        return Ok();
+        return Ok(response.Value);
     }
 
     [Authorize]

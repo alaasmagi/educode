@@ -63,7 +63,7 @@ public class AuthService(
             );
         }
         
-        var jwtToken = accessTokenService.GenerateAccessToken(user, userAuthData, clientApp);
+        var accessToken = accessTokenService.GenerateAccessToken(user, userAuthData, clientApp);
         var refreshTokenResponse = await refreshTokenService.GenerateRefreshTokenAsync(user.Id, clientIp, request.Email, clientApp);
 
         if (!refreshTokenResponse.Successful)
@@ -73,7 +73,7 @@ public class AuthService(
         
         var userDto = new UserDto(user, envInitializer.OciPublicUrl);
         logger.LogInformation($"Successfully authenticated user with ID {user.Id}");
-        return MethodResponse<(UserDto, string, string)>.Success((userDto, jwtToken, refreshTokenResponse.Value!));
+        return MethodResponse<(UserDto, string, string)>.Success((userDto, accessToken, refreshTokenResponse.Value!));
     }
 
     public async Task<MethodResponse<UserDto>> RegisterUserAsync(CreateAccountRequest request)
@@ -187,8 +187,17 @@ public class AuthService(
     }
 
     public async Task<MethodResponse<(string AccessToken, string RefreshToken)>> RefreshTokensAsync(string refreshToken, 
-                                                                    string accessToken, string email, string clientApp)
+                                                                                    string accessToken, string clientApp)
     {
+        var email = accessTokenService.GetEmailFromAccessToken(accessToken);
+        if (email == null)
+        {
+            logger.LogError($"Failed to extract email from access token");
+            return MethodResponse<(string AccessToken, string RefreshToken)>.Failure(
+                new Error(ErrorConstants.EmailNotFound, "Email was not found")
+            );
+        }
+        
         var user = await userRepository.GetByEmailAsync(email);
         if (user == null)
         {
@@ -244,7 +253,7 @@ public class AuthService(
             EmailTo =  request.Email,
             FullName = request.FullName,
             Otp = otpResponse.Value.ToString(),
-            OtpExpirationMinutes = envInitializer.OtpExpirationMinutes
+            Expiry = envInitializer.OtpExpirationMinutes
         };
         
         if (!await emailClient.SendOtpAsync(emailContent))
@@ -288,7 +297,7 @@ public class AuthService(
         
         userAuthData.UpdatedBy = request.Email;
         userAuthData.UpdatedByClient = request.ClientApp;
-        userAuthData.Verified = false;
+        userAuthData.Verified = true;
         var updateResponse = await userAuthRepository.UpdateAsync(userAuthData);
         if (updateResponse == null)        {
             logger.LogError($"Failed to verify OTP for user with ID {user.Id}");

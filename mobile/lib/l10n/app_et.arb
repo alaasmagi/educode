@@ -1,0 +1,82 @@
+{
+  "@@locale": "et",
+  "appTitle": "EDUCODE",
+  "@appTitle": {
+    "description": "Rakenduse pealkiri"
+  },
+  "settings": "Seaded",
+  "@settings": {
+    "description": "Seadete menüü pealkiri"
+  },
+  "logout": "Logi välja",
+  "@logout": {
+    "description": "Välja logimise nupp"
+  },
+  "scanQRCode": "Skänni tahvlil olev QR kood",
+  "@scanQRCode": {
+    "description": "Juhis QR koodi skaneerimiseks"
+  },
+  "orEnterIDManually": "Või sisesta ID käsitsi",
+  "@orEnterIDManually": {
+    "description": "Alternatiivne variant ID sisestamiseks"
+  },
+  "lessonID": "Ainetunni ID",
+  "@lessonID": {
+    "description": "Ainetunni ID välja label"
+  },
+  "lessonIDPlaceholder": "nt. 123456-123456",
+  "@lessonIDPlaceholder": {
+    "description": "Ainetunni ID näide"
+  },
+  "enterID": "Sisesta ID",
+  "@enterID": {
+    "description": "Valideerimise veateade tühja ID kohta"
+  },
+  "addWorkspace": "Lisa töökoht",
+  "@addWorkspace": {
+    "description": "Töökoha lisamise checkbox label"
+  },
+  "continueButton": "Jätka",
+  "@continueButton": {
+    "description": "Jätkamise nupp"
+  },
+  "scannedID": "Skännitud ID: {id}",
+  "@scannedID": {
+    "description": "Teade skaneeritud ID kohta",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "123456-123456"
+      }
+    }
+  },
+  "language": "Keel",
+  "@language": {
+    "description": "Keele vahetamise menüü"
+  },
+  "estonian": "Eesti",
+  "@estonian": {
+    "description": "Eesti keel"
+  },
+  "english": "English",
+  "@english": {
+    "description": "Inglise keel"
+  },
+  "theme": "Teema",
+  "@theme": {
+    "description": "Teema vahetamise menüü"
+  },
+  "lightMode": "Hele",
+  "@lightMode": {
+    "description": "Hele teema"
+  },
+  "darkMode": "Tume",
+  "@darkMode": {
+    "description": "Tume teema"
+  },
+  "systemDefault": "Süsteemi vaikimisi",
+  "@systemDefault": {
+    "description": "Süsteemi vaikimisi teema"
+  }
+}
+

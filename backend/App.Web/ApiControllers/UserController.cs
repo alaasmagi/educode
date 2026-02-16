@@ -18,7 +18,7 @@ namespace App.Web.ApiControllers
         ILogger<UserController> logger)
         : ControllerBase
     {
-        [Authorize(Policy = nameof(EAccessLevel.PrimaryLevel))]
+        [Authorize(Policy = nameof(EAccessLevel.TertiaryLevel))]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers([FromQuery] int pageNr = 1,
             [FromQuery] int pageSize = Constants.DefaultQueryPageSize)

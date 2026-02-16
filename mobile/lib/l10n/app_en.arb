@@ -1,0 +1,22 @@
+{
+  "@@locale": "en",
+  "appTitle": "EDUCODE",
+  "settings": "Settings",
+  "logout": "Log out",
+  "scanQRCode": "Scan the QR code on the board",
+  "orEnterIDManually": "Or enter ID manually",
+  "lessonID": "Lesson ID",
+  "lessonIDPlaceholder": "e.g. 123456-123456",
+  "enterID": "Enter ID",
+  "addWorkspace": "Add workspace",
+  "continueButton": "Continue",
+  "scannedID": "Scanned ID: {id}",
+  "language": "Language",
+  "estonian": "Estonian",
+  "english": "English",
+  "theme": "Theme",
+  "lightMode": "Light",
+  "darkMode": "Dark",
+  "systemDefault": "System default"
+}
+

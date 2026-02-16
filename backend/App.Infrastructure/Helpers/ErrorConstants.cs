@@ -20,6 +20,7 @@ public static class ErrorConstants
     public const string PhotoNotUploaded = "photo-not-uploaded";
     public const string PhotoNotRemoved = "photo-not-removed";
     public const string UserNotUpdated = "user-not-updated";
+    public const string EmailNotFound = "email-not-found";
     
     public const string AdminUserNotSeeded = "admin-user-not-seeded";
     

@@ -2,12 +2,20 @@
 ## Description
 
 * UI languages: Estonian and English (depending on component)
-* Development year: **2025**
-* Languages and technologies: **C#, .NET Core, TypeScript, React, React Native, Entity Framework Core, JWT, PostgreSQL, Redis**
+* Development year: **2025-2026**
+* Languages and technologies: **C#, .NET Core, TypeScript, React, Flutter, Entity Framework Core, JWT, PostgreSQL, Redis**
 * This is a unified monorepo containing all three components of my Bachelor's final thesis project: backend API, web application, and mobile application
 * Detailed documentation of my Bachelor's final thesis project (in Estonian): [Link to TalTech](https://digikogu.taltech.ee/et/item/6ceef6c1-93b9-428d-a366-8e67b557e207)
 
 **Note**: This repository was previously split into three separate repositories ([backend](https://github.com/alaasmagi/educode-backend), [web client](https://github.com/alaasmagi/educode-web), and [mobile app](https://github.com/alaasmagi/educode-mobile)) and has been unified into a monorepo structure for better maintainability and deployment coordination.
+
+## Version History
+
+### Version 2 (Current)
+This is the current implementation (v2) of the educode platform with enhanced features, improved architecture, and a Flutter-based mobile application.
+
+### Version 1
+<!-- Description of Version 1 will be added here -->
 
 ## Components
 
@@ -24,7 +32,7 @@ This monorepo contains three main components:
 * For detailed information, see [the frontend README](./frontend/README.md)
 
 ### Mobile Application
-* Languages and technologies: **TypeScript, React Native, Expo**
+* Languages and technologies: **Dart, Flutter**
 * Mobile app for students to register attendance via QR codes with offline mode support
 * For detailed information, see [the mobile README](./mobile/README.md)
 
@@ -34,7 +42,7 @@ This monorepo contains three main components:
 
 * **Backend**: Docker, .NET 8.0 SDK
 * **Frontend**: Node.js (v18+), modern web browser
-* **Mobile**: Node.js (v18+), npx package manager, Expo, Android device
+* **Mobile**: Flutter SDK (3.0+), Dart SDK, Android Studio or VS Code with Flutter extensions, Android device or emulator
 
 ### Running the components
 
@@ -58,11 +66,11 @@ The web UI can be viewed from the web browser on the address provided in the ter
 #### Mobile Application
 ```bash
 cd mobile
-# Configure .env file (see mobile/README.md for environment variables)
-npm install
-npx expo start --clear
+# Configure environment settings (see mobile/README.md for configuration details)
+flutter pub get
+flutter run
 ```
-The mobile app can be launched on your Android device by scanning QR code from terminal with the Expo Go app.
+The mobile app can be launched on your Android device or emulator. Use `flutter devices` to see available devices.
 
 For detailed setup instructions including environment variables and configuration options, refer to each component's README.
 
@@ -100,39 +108,86 @@ For detailed setup instructions including environment variables and configuratio
 - QR code scanning for quick attendance check-in
 - Multilingual support (Estonian/English)
 
+## Architecture & Design
+
+### System Architecture
+
+<!-- Add system architecture diagram here -->
+![System Architecture](/path/to/architecture-diagram.png)
+
+*The system architecture diagram will show the overall design schema including the relationships between the backend API, web application, mobile application, database, cache layer, and external services.*
+
+### Entity Relationship Diagram (ERD)
+
+<!-- Add ERD diagram here -->
+![Entity Relationship Diagram](/path/to/erd-diagram.png)
+
+*The ERD shows the database schema including all entities, their attributes, and relationships between tables.*
+
 ## Repository Structure
 
 ```
 educode/
-├── backend/          # .NET Core API server
-│   ├── App.BLL/      # Business Logic Layer
-│   ├── App.Contracts/# Service interfaces
-│   ├── App.DAL.EF/   # Data Access Layer (Entity Framework)
-│   ├── App.Domain/   # Domain entities
-│   ├── App.DTO/      # Data Transfer Objects
-│   ├── Base.Domain/  # Base domain classes
-│   ├── Tests/        # Unit and integration tests
-│   └── WebApp/       # ASP.NET Core Web API
-├── frontend/         # React web application
-│   ├── public/       # Static assets
-│   ├── services/     # API services
-│   └── src/          # Source code
-│       ├── assets/   # Icons and logos
-│       ├── businesslogic/  # Core logic
-│       ├── layout/   # UI components
-│       ├── locales/  # Translations
-│       └── models/   # DTOs
-├── mobile/           # React Native mobile app
-│   ├── app/          # App screens and navigation
-│   ├── assets/       # Icons and logos
-│   ├── businesslogic/# Core logic
-│   ├── layout/       # UI components
-│   ├── locales/      # Translations
-│   ├── modals/       # Modal components
-│   ├── models/       # DTOs
-│   └── screens/      # Screen components
-├── LICENSE           # Project license
-└── README.md         # This file
+├── backend/                    # .NET Core API server
+│   ├── App.Application/        # Application services and business logic
+│   ├── App.Contracts/          # Service interfaces, DTOs, and contracts
+│   │   ├── DTOs/               # Data Transfer Objects
+│   │   ├── Repositories/       # Repository interfaces
+│   │   ├── Services/           # Service interfaces
+│   │   ├── WebRequests/        # Request models
+│   │   └── WebResponse/        # Response models
+│   ├── App.Domain/             # Domain entities and enums
+│   │   ├── Entities/           # Domain entities
+│   │   └── Enums/              # Enumerations
+│   ├── App.Infrastructure/     # Infrastructure layer
+│   │   ├── Argon2/             # Password hashing
+│   │   ├── EFCore/             # Entity Framework Core implementation
+│   │   ├── JWT/                # JWT authentication
+│   │   ├── Migrations/         # Database migrations
+│   │   ├── Oracle/             # Oracle database support
+│   │   ├── Redis/              # Redis caching
+│   │   └── Sentry/             # Error tracking
+│   ├── App.Web/                # ASP.NET Core Web API
+│   │   ├── ApiControllers/     # API endpoints
+│   │   ├── Controllers/        # MVC controllers
+│   │   ├── ViewModels/         # View models
+│   │   ├── Views/              # Razor views
+│   │   └── wwwroot/            # Static files
+│   ├── Base.Domain/            # Base domain classes and error handling
+│   ├── Base.DTO/               # Base DTOs and responses
+│   ├── Tests/                  # Test projects
+│   │   ├── App.BLL Tests/      # Business logic tests
+│   │   ├── Bruno/              # API testing collections
+│   │   ├── DAL Tests/          # Data access tests
+│   │   └── WebApp Tests/       # Web application tests
+│   ├── WebApp/                 # Legacy web application
+│   ├── compose.yaml            # Docker Compose configuration
+│   └── Dockerfile              # Container configuration
+├── frontend/                   # React web application
+│   ├── public/                 # Static assets
+│   │   └── assets/             # Images and resources
+│   ├── services/               # API services and i18n
+│   └── src/                    # Source code
+│       ├── assets/             # Icons and logos
+│       ├── businesslogic/      # Core logic and state management
+│       ├── layout/             # UI components and layouts
+│       ├── locales/            # Translation files (i18n)
+│       ├── models/             # TypeScript models and DTOs
+│       └── screens/            # Page components
+├── mobile/                     # Flutter mobile application
+│   ├── android/                # Android platform files
+│   ├── ios/                    # iOS platform files
+│   ├── assets/                 # Icons, images, and resources
+│   ├── lib/                    # Dart source code
+│   │   ├── businesslogic/      # State management and logic
+│   │   ├── layout/             # UI components
+│   │   ├── locales/            # Translation files (i18n)
+│   │   ├── models/             # Data models
+│   │   └── screens/            # Screen components
+│   └── test/                   # Unit and widget tests
+├── functional-requirements.md  # Functional requirements document
+├── LICENSE                     # Project license
+└── README.md                   # This file
 ```
 
 ## Security
@@ -157,7 +212,7 @@ The project was restructured from three separate repositories into a unified mon
 ### Technology Stack
 - **Backend**: .NET Core was chosen for its performance, scalability, and strong typing
 - **Web**: React with Vite provides fast development experience and optimal production builds
-- **Mobile**: React Native with Expo enables cross-platform development with a single codebase
+- **Mobile**: Flutter enables cross-platform development with native performance and a rich widget library
 - **Database**: PostgreSQL for reliable data persistence with strong ACID guarantees
 - **Cache**: Redis for session management and performance optimization
 

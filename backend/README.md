@@ -1,329 +1,449 @@
-# educode-backend
+# educode Backend (v2)
+
 ## Description
 
-* UI language (Admin UI): English
-* Development year: **2025**
-* Languages and technologies: **C#, .NET Core, ASP.NET MVC, JWT, Entity Framework Core**
-* This is the backend component of my Bachelor's final thesis project, which also includes [mobile app](https://github.com/alaasmagi/educode-mobile) and [browser client](https://github.com/alaasmagi/educode-web)
-* Detailed documentation of my Bachelor's final thesis project (in Estonian):<link>
+* **Development Year**: 2025-2026
+* **Languages & Technologies**: C#, .NET 10.0, ASP.NET Core, Entity Framework Core, PostgreSQL, Redis, JWT
+* **Architecture**: Clean Architecture with Domain-Driven Design principles
+* This is the backend API component of the educode platform, providing RESTful endpoints for the web and mobile clients
+* Part of a unified monorepo: see [main README](../README.md) for overall project information
+* For legacy v1 documentation, see [LEGACY.md](./LEGACY.md)
 
-## How to run - option #1 (Using Docker)
+## Architecture Overview
+
+The backend follows Clean Architecture principles with clear separation of concerns across multiple layers:
+
+```
+App.Web              → Presentation layer (API Controllers, MVC Views)
+App.Application      → Application services and business logic
+App.Contracts        → Interfaces, DTOs, and contracts
+App.Domain           → Domain entities and business rules
+App.Infrastructure   → Infrastructure implementations (EF Core, Redis, JWT, etc.)
+Base.Domain          → Base entities and shared domain logic
+Base.DTO             → Base DTOs and response models
+```
+
+### Key Technologies & Infrastructure
+
+* **Database**: PostgreSQL with Entity Framework Core (code-first approach)
+* **Caching**: Redis for session management and performance optimization
+* **Authentication**: JWT with refresh tokens and secure cookie handling
+* **Password Hashing**: Argon2 (OWASP recommended)
+* **Error Tracking**: Sentry integration for production monitoring
+* **File Storage**: Oracle Cloud Infrastructure (OCI) Object Storage
+* **Logging**: Serilog with console and file output
+* **Rate Limiting**: Built-in request rate limiting
+* **API Documentation**: Swagger/OpenAPI
+
+---
+
+## How to Run
 
 ### Prerequisites
 
-* Docker
+* Docker and Docker Compose (recommended)
+* OR .NET 10.0 SDK
+* PostgreSQL database
+* Redis instance
 
-Docker image [link](https://hub.docker.com/r/alaasmagi/educode-backend)  
-Pull the Docker image from Docker Hub:  
+### Option 1: Using Docker Compose (Recommended)
+
+1. Create a `.env` file in the backend directory with the required environment variables (see Environment Variables section below)
+
+2. Run with Docker Compose:
 ```bash
-docker pull alaasmagi/educode-backend
+cd backend
+docker compose up --build
 ```
 
-The application should have .env file in the path of current terminal/cmd window and it shoult have following content:
+The API will be available at `http://localhost:8080`
+
+### Option 2: Using .NET SDK
+
+1. Ensure you have .NET 8.0 SDK installed
+2. Create a `.env` file in the backend root directory
+3. Run the application:
+
 ```bash
-HOST=<your-db-host>
-PORT=<your-db-port>
-USER=<your-db-username>
-DB=<your-db-name>
-DBKEY=<your-db-password>
-
-OTPKEY=<hash-for-otp-generation> //OTP-s are used to create accounts and recover forgotten passwords
-
-ADMINUSER=<your-bcrypted(12rounds)-and-base64-encoded-admin-username>
-ADMINKEY=<your-bcrypted(12rounds)-and-base64-encoded-admin-password>
-ADMINTOKENSALT=<your-admin-token-salt-for-token-generation-and-verification> //Use some kind of hash value
-
-JWTKEY=<your-json-web-token-authenticity-key> //Use some kind of hashed value
-JWTAUD=<your-json-web-token-audience>
-JWTISS=<your-json-web-token-issuer>
-
-MAILSENDER_EMAIL=<external-smtp-mailservice-email-address>
-MAILSENDER_KEY=<external-smtp-mailservice-key>
-MAILSENDER_HOST=<external-smtp-mailsender-host>
-MAILSENDER_PORT=<external-smtp-port>
-
-EMAILDOMAIN=<email-domain-for-otp> //For example: "@taltech.ee"
-
-FRONTENDURL=<web-frontend-url-for-cors>
-```
-
-### Running the app
-
-After meeting all prerequisites above - 
-* application can be run via terminal/cmd by command
-```bash
-docker run --env-file .env -p 8080:8080 alaasmagi/educode-backend:<version-number>
-```
-* user interface can be viewed from the web browser on the address the application provided in the terminal/cmd
-
-## How to run - option #2 (Using .NET SDK)
-
-### Prerequisites
-
-* .NET SDK 9.0
-
-The application should have .env file in the root folder `/` and it shoult have following content:
-```bash
-HOST=<your-db-host>
-PORT=<your-db-port>
-USER=<your-db-username>
-DB=<your-db-name>
-DBKEY=<your-db-password>
-
-OTPKEY=<hash-for-otp-generation> //OTP-s are used to create accounts and recover forgotten passwords
-
-ADMINUSER=<your-bcrypted(12rounds)-and-base64-encoded-admin-username>
-ADMINKEY=<your-bcrypted(12rounds)-and-base64-encoded-admin-password>
-ADMINTOKENSALT=<your-admin-token-salt-for-token-generation-and-verification> //Use some kind of hash value
-
-JWTKEY=<your-json-web-token-authenticity-key> //Use some kind of hashed value
-JWTAUD=<your-json-web-token-audience>
-JWTISS=<your-json-web-token-issuer>
-
-MAILSENDER_EMAIL=<external-smtp-mailservice-email-address>
-MAILSENDER_KEY=<external-smtp-mailservice-key>
-MAILSENDER_HOST=<external-smtp-mailsender-host>
-MAILSENDER_PORT=<external-smtp-port>
-
-EMAILDOMAIN=<email-domain-for-otp> //For example: "@taltech.ee"
-
-FRONTENDURL=<your-educode-web-frontend-url> //For CORS
-```
-
-### Running the app
-
-After meeting all prerequisites above - 
-* application can be run via terminal/cmd opened in the root of WebApp folder `/WebApp` by command
-```bash
+cd backend/App.Web
+dotnet restore
 dotnet run
 ```
-* The Admin UI can be viewed from the web browser on the address the application provided in the terminal/cmd
+
+### Environment Variables
+
+Create a `.env` file with the following configuration:
+
+```bash
+# Database Configuration
+PG_DB_CONNECTION=Host=localhost;Port=5432;Database=educode;Username=postgres;Password=yourpassword
+
+# Redis Configuration
+REDIS_CONNECTION=localhost:6379
+
+# JWT Configuration
+JWTKEY=your-secret-jwt-key-min-32-chars
+JWTAUD=educode-audience
+JWTISS=educode-issuer
+JWT_MINUTES=60
+JWT_ADMIN_MINUTES=120
+JWT_COOKIE_MINUTES=60
+
+# Refresh Token Configuration
+REFRESH_TOKEN_DAYS=7
+REFRESH_TOKEN_COOKIE_DAYS=7
+
+# OTP Configuration
+OTPKEY=your-otp-secret-key
+OTP_MINUTES=10
+
+# Admin Configuration
+DEFAULT_ADMIN_USER=admin@educode.ee
+DEFAULT_ADMIN_PASSWORD=YourSecurePassword123!
+
+# Email Service (External API)
+EMAIL_API_URL=https://your-email-service/api/send
+EMAIL_API_KEY=your-email-api-key
+EMAIL_EXPIRY_MINUTES=10
+
+# Sentry (Error Tracking)
+SENTRY_DSN=your-sentry-dsn-here
+
+# Oracle Cloud Infrastructure (Optional - for file storage)
+OCI_KEY=your-oci-private-key
+OCI_TENANCY_ID=your-tenancy-id
+OCI_USER_ID=your-user-id
+OCI_FINGERPRINT=your-key-fingerprint
+OCI_REGION=us-ashburn-1
+OCI_BUCKET_NAME=your-bucket-name
+OCI_PUBLIC_URL=https://objectstorage.region.oraclecloud.com
+
+# Soft Delete Configuration
+SOFTDELETE_EXPIRATION_DAYS=180
+
+# CORS Configuration
+FRONTENDURLS=http://localhost:3000,http://localhost:5173
+```
+
+---
+
+---
 
 ## Features
-* The Admin UI allows convenient management of the application's database.
 
+### Core Functionality
+- RESTful API for web and mobile clients
+- JWT-based authentication with refresh token rotation
+- Role-based authorization (Admin, Teacher, Student)
+- Email-based OTP verification for account creation and password recovery
+- Course management (CRUD operations)
+- Attendance session management
+- Student attendance tracking and registration
+- School/institution management
+- User invitation system
+- Comprehensive audit logging with client tracking
 
+### Admin UI
+- Built with ASP.NET MVC and Bootstrap
+- Database entity management through web interface
+- User management and role assignment
+- Course and attendance oversight
+- System configuration and monitoring
 
-## Design choices
+### API Endpoints
 
-### Application overall design
-ASP.NET MVC is used because it promotes a clear separation of concerns between application logic and presentation. This architectural pattern helps maintain clean and well-structured code, thereby enhancing maintainability, scalability, and testability.  
-### Services
-There are 7 main services:
-* **AdminAccessService** - controls admin access to the Admin UI
-* **AttendanceManagementService** - handles CRUD operations for attendances and attendance checks
-* **AuthService** - responsible for JWT generation
-* **CourseManagementService** - manages CRUD operations for courses
-* **EmailService** - sends emails containing OTPs
-* **OtpService** - handles OTP generation and verification
-* **UserManagementService** - manages all CRUD operations related to users  
+The API is organized into the following controller groups:
 
-Additionally, there is a helper service:  
-* **CleanupService** - performs automatic cleanup of attendances older than 6 months
-  
-### Database entities
-The solution uses code-first DB approach, which means DB tables are generated by the Entity Framework using previously set entities. There are 9 DB entities to manage user data, course data, attendance data and attendance check data.  
-* **AttendanceCheckEntity**
-```csharp
-public class AttendanceCheckEntity : BaseEntity
-{
-    [Required]
-    public string StudentCode { get; set; } = default!;
-    [Required]
-    public string FullName { get; set; } = default!;
-    [Required]
-    public int CourseAttendanceId { get; set; }
-    public int? WorkplaceId { get; set; }
-    public WorkplaceEntity? Workplace { get; set; }
-}
-```
-* **AttendanceTypeEntity**
-```csharp
-public class AttendanceTypeEntity : BaseEntity
-{
-    [Required]
-    [MaxLength(128)]
-    public string AttendanceType { get; set; } = default!;
-}
-```
-* **CourseAttendanceEntity**
-```csharp
-public class CourseAttendanceEntity : BaseEntity
-{
-    [Required]
-    [ForeignKey("Course")]
-    public int CourseId { get; set; }
-    public CourseEntity? Course { get; set; }
-    [Required]
-    [ForeignKey("AttendanceType")]
-    public int AttendanceTypeId { get; set; }
-    public AttendanceTypeEntity? AttendanceType { get; set; }
-    [Required]
-    public DateTime StartTime { get; set; }
-    [Required]
-    public DateTime EndTime { get; set; }
+* **AuthController** - Authentication, login, logout, token refresh
+* **UserController** - User management, profile operations
+* **CourseController** - Course CRUD operations, teacher assignments
+* **AttendanceController** - Attendance session management
+* **AttendanceCheckController** - Student attendance registration
+* **SchoolController** - School/institution management
+* **OtpController** - OTP generation and verification
+* **GeneralController** - Health checks and general utilities
 
-    public ICollection<AttendanceCheckEntity>? AttendanceChecks { get; set; }
-}
+---
+
+## Project Structure
+
 ```
-* **CourseEntity**
-```csharp
-public class CourseEntity : BaseEntity
-{
-    [Required]
-    [MaxLength(128)]
-    public string CourseCode { get; set; } = default!;
-    [Required]
-    [MaxLength(128)]
-    public string CourseName { get; set; } = default!;
-    [Required]
-    public ECourseValidStatus CourseValidStatus { get; set; }
-    public ICollection<CourseTeacherEntity>? CourseTeacherEntities { get; set; }
-}
-```
-* **CourseTeacherEntity**
-```csharp
-public class CourseTeacherEntity : BaseEntity
-{
-    [Required]
-    [ForeignKey("Course")]
-    public int CourseId { get; set; }
-    public CourseEntity? Course { get; set; }
-    [Required]
-    [ForeignKey("Teacher")]
-    public int TeacherId { get; set; }
-    public UserEntity? Teacher { get; set; }
-}
-```
-* **UserAuthEntity**
-```csharp
-public class UserAuthEntity : BaseEntity
-{
-    [Required]
-    [ForeignKey("User")]
-    public int UserId { get; set; }
-    public UserEntity? User { get; set; }
-    [Required]
-    [MaxLength(255)]
-    public string PasswordHash { get; set; } = default!;
-}
-```
-* **UserEntity**
-```csharp
-public class UserEntity : BaseEntity
-{
-    [Required]
-    [ForeignKey("UserType")]
-    public int? UserTypeId { get; set; }
-    public UserTypeEntity? UserType { get; set; }
-    [Required]
-    [MaxLength(128)]
-    public string UniId { get; set; } = default!;
-    [MaxLength(128)]
-    public string? StudentCode { get; set; }
-    [Required]
-    [MaxLength(255)]
-    public string FullName { get; set; } = default!;
-}
-```
-* **UserTypeEntity**
-```csharp
-public class UserTypeEntity : BaseEntity
-{
-    [Required]
-    [MaxLength(128)]
-    public string UserType { get; set; } = default!;
-    
-}
-```
-* **WorkplaceEntity**
-```csharp
-public class WorkplaceEntity : BaseEntity
-{
-    [Required]
-    [MaxLength(128)]
-    public string ClassRoom { get; set; } = default!;
-    [Required]
-    [MaxLength(128)]
-    public string ComputerCode { get; set; } = default!;
-}
+backend/
+├── App.Application/          # Application services layer
+│   └── Services/             # Business logic implementations
+│       ├── Attendance/       # Attendance management services
+│       ├── AttendanceCheck/  # Attendance check services
+│       ├── AttendanceType/   # Attendance type services
+│       ├── Course/           # Course management services
+│       ├── School/           # School management services
+│       ├── User/             # User management services
+│       └── UserType/         # User type services
+│
+├── App.Contracts/            # Interfaces and contracts
+│   ├── DTOs/                 # Data Transfer Objects
+│   ├── Repositories/         # Repository interfaces
+│   ├── Services/             # Service interfaces
+│   ├── WebRequests/          # API request models
+│   └── WebResponse/          # API response models
+│
+├── App.Domain/               # Domain layer
+│   ├── Entities/             # Domain entities
+│   │   ├── AttendanceCheckEntity.cs
+│   │   ├── AttendanceEntity.cs
+│   │   ├── AttendanceTypeEntity.cs
+│   │   ├── ClassroomEntity.cs
+│   │   ├── CourseEntity.cs
+│   │   ├── CourseStatusEntity.cs
+│   │   ├── CourseTeacherEntity.cs
+│   │   ├── InvitationEntity.cs
+│   │   ├── RefreshTokenEntity.cs
+│   │   ├── SchoolEntity.cs
+│   │   ├── UserAuthEntity.cs
+│   │   ├── UserEntity.cs
+│   │   ├── UserTypeEntity.cs
+│   │   └── WorkplaceEntity.cs
+│   └── Enums/                # Domain enumerations
+│
+├── App.Infrastructure/       # Infrastructure implementations
+│   ├── Argon2/               # Argon2 password hashing
+│   ├── EFCore/               # Entity Framework Core setup
+│   ├── Helpers/              # Utility helpers
+│   ├── Initializers/         # Application initializers
+│   ├── JSON/                 # JSON serialization
+│   ├── JWT/                  # JWT token handling
+│   ├── Migrations/           # Database migrations
+│   ├── Oracle/               # OCI Object Storage integration
+│   ├── Redis/                # Redis caching implementation
+│   └── Sentry/               # Sentry error tracking
+│
+├── App.Web/                  # Presentation layer
+│   ├── ApiControllers/       # REST API controllers
+│   ├── Clients/              # External service clients
+│   ├── Controllers/          # MVC controllers (Admin UI)
+│   ├── ViewModels/           # View models for MVC
+│   ├── Views/                # Razor views (Admin UI)
+│   ├── wwwroot/              # Static files
+│   └── Program.cs            # Application startup
+│
+├── Base.Domain/              # Base domain classes
+│   ├── BaseEntity.cs         # Base entity with audit fields
+│   └── Error.cs              # Error model
+│
+├── Base.DTO/                 # Base DTOs
+│   └── MethodResponse.cs     # Standard API response wrapper
+│
+├── Tests/                    # Test projects
+│   ├── App.BLL Tests/        # Business logic tests
+│   ├── Bruno/                # API testing collections
+│   ├── DAL Tests/            # Data access tests
+│   └── WebApp Tests/         # Integration tests
+│
+├── compose.yaml              # Docker Compose configuration
+├── Dockerfile                # Container definition
+└── educode-backend.sln       # Solution file
 ```
 
-### BaseEntity
-The `BaseEntity` class is defined in this project, and it is uploaded as a NuGet package [AL_AppDev.Base(v1.0.2)](https://www.nuget.org/packages/AL_AppDev.Base/1.0.2)
-```csharp
-public class BaseEntity
+---
+
+## Architecture & Design Decisions
+
+### Clean Architecture
+The application follows Clean Architecture principles to ensure:
+- **Separation of Concerns**: Each layer has a specific responsibility
+- **Dependency Inversion**: Dependencies point inward toward the domain
+- **Testability**: Business logic is isolated and easily testable
+- **Maintainability**: Changes in one layer don't cascade to others
+
+### Domain Entities
+
+All entities inherit from `BaseEntity` which provides:
+- **Guid-based IDs**: Using GUIDs instead of integers for better distribution and security
+- **Audit Tracking**: CreatedBy, CreatedByClient, CreatedAt, UpdatedBy, UpdatedByClient, UpdatedAt
+- **Soft Delete**: Logical deletion with `Deleted` flag
+- **Validation**: Built-in validation methods
+
+**Key Entities:**
+
+* **UserEntity** - User accounts with university ID and student code
+* **UserAuthEntity** - Secure password storage (Argon2 hashed)
+* **UserTypeEntity** - Role definitions (Admin, Teacher, Student)
+* **SchoolEntity** - Educational institutions
+* **CourseEntity** - Course information with status tracking
+* **CourseTeacherEntity** - Many-to-many relationship between courses and teachers
+* **AttendanceEntity** - Attendance sessions for courses
+* **AttendanceTypeEntity** - Types of attendance (lecture, lab, seminar, etc.)
+* **AttendanceCheckEntity** - Individual student attendance records
+* **WorkplaceEntity** - Physical location tracking (classroom/computer)
+* **ClassroomEntity** - Classroom information
+* **InvitationEntity** - User invitation system
+* **RefreshTokenEntity** - JWT refresh token management
+* **CourseStatusEntity** - Course status definitions
+
+### Security Implementation
+
+**Password Hashing:**
+- Argon2id algorithm (OWASP recommended, winner of Password Hashing Competition)
+- Memory-hard and resistant to GPU attacks
+- Configurable memory cost, time cost, and parallelism
+
+**JWT Authentication:**
+- Access tokens with configurable expiration
+- Refresh token rotation for enhanced security
+- Secure HTTP-only cookies for token storage
+- Token validation with issuer and audience claims
+
+**OTP System:**
+- Time-based one-time passwords for email verification
+- Configurable expiration times
+- Used for account creation and password recovery
+
+### Performance Optimizations
+
+**Database:**
+- Connection pooling (pool size: 128)
+- Batch operations (min: 10, max: 128)
+- Query result caching
+- No-tracking queries for read operations
+- Automatic retry on failure (3 attempts)
+
+**Redis Caching:**
+- Session data caching
+- Frequently accessed data caching
+- Reduced database load
+
+**Rate Limiting:**
+- Request throttling to prevent abuse
+- Configurable limits per endpoint
+
+---
+---
+
+## Testing
+
+The project includes comprehensive testing:
+
+* **Unit Tests** - Business logic validation using NUnit/xUnit
+* **Integration Tests** - End-to-end API testing
+* **Bruno Collections** - API endpoint testing and documentation
+* **DAL Tests** - Data access layer verification
+
+Run tests:
+```bash
+dotnet test
+```
+
+---
+
+## Database Migrations
+
+The project uses Entity Framework Core migrations for database schema management.
+
+**Create a new migration:**
+```bash
+cd App.Infrastructure
+dotnet ef migrations add MigrationName --startup-project ../App.Web
+```
+
+**Apply migrations:**
+```bash
+dotnet ef database update --startup-project ../App.Web
+```
+
+---
+
+## Deployment
+
+### Docker
+
+Build and run with Docker Compose:
+```bash
+docker compose up --build -d
+```
+
+### Production Considerations
+
+1. **Environment Variables**: Use secure secret management (Azure Key Vault, AWS Secrets Manager, etc.)
+2. **Database**: Use managed PostgreSQL service with automatic backups
+3. **Redis**: Use managed Redis instance with persistence enabled
+4. **Sentry**: Configure for production error tracking
+5. **Logging**: Ensure logs are persisted and monitored
+6. **HTTPS**: Always use HTTPS in production with valid certificates
+7. **Rate Limiting**: Adjust limits based on expected traffic
+8. **Backup Strategy**: Regular database backups and disaster recovery plan
+
+---
+
+## API Response Format
+
+All API endpoints return a standard response format using `MethodResponse<T>`:
+
+```json
 {
-    [Required]
-    public int Id { get; set; }
-    [Required]
-    [MaxLength(128)]
-    public string CreatedBy { get; set; } = default!;
-    [Required]
-    public DateTime CreatedAt { get; set; }
-    [Required]
-    [MaxLength(128)]
-    public string UpdatedBy { get; set; } = default!;
-    [Required]
-    public DateTime UpdatedAt { get; set; }
-    [Required] 
-    public bool Deleted { get; set; } = false;
+  "data": { ... },
+  "errors": [],
+  "status": 200,
+  "message": "Success"
 }
 ```
 
-### Data Transfer Objects (DTOs) and enums
-There are several DTOs and enums that are used in the application.  
-* **CourseStatusDto**
-```csharp
-public class CourseStatusDto
+**Error Response Example:**
+```json
 {
-    public int Id { get; set; }
-    public string Status { get; set; } = string.Empty;
-}
-```
-* **CourseUserCountDto**
-```csharp
-public class CourseUserCountDto
-{
-    public DateTime AttendanceDate { get; set; }
-    public int UserCount { get; set; } = 0;
-}
-```
-* **ECourseValidStatus**
-```csharp
-public enum ECourseValidStatus
-{
-    Available,
-    TempUnavailable,
-    Unavailable
+  "data": null,
+  "errors": [
+    {
+      "code": "validation-error",
+      "message": "Invalid email format"
+    }
+  ],
+  "status": 400,
+  "message": "Validation failed"
 }
 ```
 
-### DB conseptual diagram
-This diagram is purely conseptual and describes relationships between different entities. The diagram does not reflect the real structure of the database.  
-![drawSQL-image-export-2025-05-22](https://github.com/user-attachments/assets/498c48ac-213f-4c5e-897c-a0f7678f6acb)  
+---
 
-### User Interface (Admin UI)
-* The Admin UI is implemented using ASP.NET MVC default pages (Views)
-* Bootstrap is used for quick customisation
+## Improvements & Future Enhancements
 
-### Unit tests
-* Unit tests cover 100% of the business logic
-* Tests are written using the NUnit framework
+### Planned Features
+- [ ] GraphQL API endpoint alongside REST
+- [ ] Real-time notifications using SignalR
+- [ ] Advanced analytics and reporting dashboard
+- [ ] Integration with university student information systems
+- [ ] Mobile push notifications
+- [ ] Automated attendance reminders
+- [ ] QR code expiration and rotation for enhanced security
+- [ ] Multi-factor authentication options
+- [ ] API versioning for backward compatibility
 
-## Screenshots (Admin UI)
-* Login page:  
-![Screenshot 2025-05-21 232318](https://github.com/user-attachments/assets/2ec61886-e21c-4d92-ae5e-d6c45db64b54)
-* Main page:  
-![Screenshot 2025-05-21 232335](https://github.com/user-attachments/assets/d093fbd4-ae64-4c50-ba93-6c3d8b6e3111)
-* Entity main page:  
-![Screenshot 2025-05-21 232350](https://github.com/user-attachments/assets/e3796688-dbcd-4d14-a244-89e1349437ed)
+### Performance Enhancements
+- [ ] Implement CQRS pattern for complex queries
+- [ ] Add Elasticsearch for advanced search capabilities
+- [ ] Implement response caching with cache invalidation
+- [ ] Add CDN support for static assets
 
+### Security Enhancements
+- [ ] Implement API key authentication for external integrations
+- [ ] Add IP whitelisting for admin endpoints
+- [ ] Implement security headers (CSP, HSTS, etc.)
+- [ ] Add comprehensive audit logging with tamper detection
 
+---
 
-## Improvements & scaling possibilities
+## Contributing
 
-### Implementation of soft deletion functionality
-* As soft deletion is becoming standard in IT industry, logical deletion with user account recovery is great implementation idea as database already supports soft deletion 
-### Integration with more education related services
-* User testing results suggested the idea of integrating this application with the existing infrastructure of the University (e.g., the TalTech app)
+For information on contributing to the educode project, see the main repository [README](../README.md).
+
+---
+
+## License
+
+See the [LICENSE](../LICENSE) file in the root directory.
+
+---
+
+## Version History
+
+- **v2 (Current)**: Complete architectural redesign with Clean Architecture, enhanced security, Redis caching, OCI integration
+- **v1**: Initial implementation - see [LEGACY.md](./LEGACY.md) for details
+

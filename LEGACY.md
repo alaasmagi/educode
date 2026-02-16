@@ -37,7 +37,7 @@ These components communicated via REST API endpoints, with JWT-based authenticat
   - Automatic cleanup service for old attendances
 * **Deployment**: Available as Docker image or via .NET SDK
 
-See [backend/LEGACY.md](./backend/LEGACY.md) for complete details including database schema, entity definitions, service architecture, and setup instructions.
+See [Backend LEGACY README](./backend/LEGACY.md) for complete details including database schema, entity definitions, service architecture, and setup instructions.
 
 ### Frontend ([detailed documentation](./frontend/LEGACY.md))
 
@@ -51,7 +51,7 @@ See [backend/LEGACY.md](./backend/LEGACY.md) for complete details including data
   - Multilingual support (Estonian/English)
 * **Project Structure**: 6 main folders (assets, businesslogic, layout, locales, models, screens)
 
-See [frontend/LEGACY.md](./frontend/LEGACY.md) for complete details including all 13 DTOs, setup instructions, and UI screenshots.
+See [Frontend LEGACY README](./frontend/LEGACY.md) for complete details including all 13 DTOs, setup instructions, and UI screenshots.
 
 ### Mobile ([detailed documentation](./mobile/LEGACY.md))
 
@@ -65,7 +65,7 @@ See [frontend/LEGACY.md](./frontend/LEGACY.md) for complete details including al
   - Multilingual support (Estonian/English)
 * **Project Structure**: 6 main folders (assets, businesslogic, layout, locales, models, screens)
 
-See [mobile/LEGACY.md](./mobile/LEGACY.md) for complete details including all 10 DTOs, setup instructions, and app screenshots.
+See [Mobile LEGACY README](./mobile/LEGACY.md) for complete details including all 10 DTOs, setup instructions, and app screenshots.
 
 ---
 

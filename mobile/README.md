@@ -1,4 +1,4 @@
-# educode Mobile App (v2)
+# educode Mobile App (v2) - UNDER DEVELOPMENT
 
 ## Description
 
@@ -41,8 +41,7 @@ lib/
 * **Code Generation**: Freezed, Riverpod Generator, Build Runner
 * **Camera**: Camera package (QR code scanning)
 * **Permissions**: Permission Handler
-* **Local Auth**: Biometric authentication support
-
+  
 ---
 
 ## Features
@@ -51,7 +50,7 @@ lib/
 - **Account Management**
   - Sign up with university email
   - Email verification via OTP
-  - Secure login with biometric support
+  - Offline attendance registration
   - Password recovery
 - **Attendance Registration**
   - QR code scanning for attendance check-in
@@ -81,9 +80,6 @@ lib/
   - JWT token-based authentication
   - Automatic token refresh
   - Secure storage of credentials
-- **Offline Support** (planned)
-  - Cache attendance data
-  - Sync when connection restored
 
 ---
 
@@ -142,74 +138,6 @@ flutter build apk --release
 
 ---
 
-## Project Structure
-
-### Views (`/lib/views/`)
-UI screens and pages:
-- **auth_gate_view.dart** - Authentication gateway (redirects based on login state)
-- **login_view.dart** - Login screen
-- **create_account_view.dart** - Registration screen
-- **otp_verification_view.dart** - OTP verification
-- **role_selection_view.dart** - Role selection for multi-role users
-- **student_home_view.dart** - Student dashboard
-- **teacher_home_view.dart** - Teacher dashboard
-
-### Controllers (`/lib/controllers/`)
-Business logic and state management:
-- **login_controller.dart** - Login flow management
-- **create_account_controller.dart** - Registration flow
-- **otp_controller.dart** - OTP verification logic
-- **student_home_view_controller.dart** - Student home logic
-
-### Providers (`/lib/providers/`)
-Riverpod state providers:
-- **login_provider.dart** - Authentication state
-- **api_providers.dart** - API service instances
-- **loading_provider.dart** - Global loading state
-- **locale_provider.dart** - Language/locale state
-- **theme.dart** - Theme configuration
-
-### Services (`/lib/services/`)
-API communication and external services:
-- **auth_service.dart** - Authentication API calls
-- **user_service.dart** - User management API
-- **school_service.dart** - School/institution API
-- **general_service.dart** - General utility APIs
-- **secure_store.dart** - Encrypted local storage
-- **loading_manager.dart** - Loading state management
-- **api/** - API client configuration and interceptors
-
-### Models (`/lib/models/`)
-Data models with Freezed:
-- **Requests/** - API request models
-- **Responses/** - API response models
-- **result.dart** - Result type for error handling
-
-### Widgets (`/lib/widgets/`)
-Reusable UI components:
-- **form_text_field.dart** - Custom text input
-- **email_with_domain_field.dart** - Email input with domain
-- **normal_button.dart** - Standard button
-- **link_button.dart** - Link-style button
-- **default_checkbox.dart** - Custom checkbox
-- **school_dropdown.dart** - School selection dropdown
-- **language_switcher.dart** - Language toggle
-- **theme_toggle.dart** - Dark/Light mode toggle
-- **loading_overlay.dart** - Loading indicator overlay
-- **camera_preview.dart** - Camera preview for QR scanning
-- **section_divider.dart** - UI section divider
-- **app_logo.dart** - Application logo widget
-
-### Localization (`/lib/l10n/`)
-Internationalization files:
-- **app_et.arb** - Estonian translations (default)
-- **app_en.arb** - English translations
-- Generated localization classes
-
----
-
----
-
 ## Key Implementation Details
 
 ### Secure Storage
@@ -246,67 +174,6 @@ Flutter's built-in i18n support with ARB files:
 - Dynamic language switching
 - Context-aware translations
 - Plural and select support
-
----
-
-## Development Workflow
-
-### Code Generation
-
-When modifying Riverpod providers or Freezed models, regenerate code:
-
-```bash
-# Watch mode (auto-regenerates on changes)
-flutter pub run build_runner watch
-
-# One-time generation
-flutter pub run build_runner build --delete-conflicting-outputs
-```
-
-### Adding Translations
-
-1. Add entries to `lib/l10n/app_et.arb` (Estonian - template)
-2. Add corresponding entries to `lib/l10n/app_en.arb` (English)
-3. Run code generation: `flutter gen-l10n` (or `flutter pub get`)
-4. Use in code: `AppLocalizations.of(context)!.yourKey`
-
-### Adding New Routes
-
-1. Define route in `lib/router.dart`:
-```dart
-GoRoute(
-  path: '/new-screen',
-  builder: (context, state) => NewScreenView(),
-)
-```
-
-2. Navigate to route:
-```dart
-context.go('/new-screen');  // Replace current route
-context.push('/new-screen'); // Push on stack
-```
-
----
-
-## Testing
-
-### Unit Tests
-
-```bash
-flutter test
-```
-
-### Widget Tests
-
-```bash
-flutter test test/widget_test.dart
-```
-
-### Integration Tests
-
-```bash
-flutter test integration_test/
-```
 
 ---
 
@@ -358,12 +225,6 @@ flutter build ios --release
 
 Additional documentation files:
 - [LEGACY.md](./LEGACY.md) - Version 1 (React Native) documentation
-
----
-
-## Contributing
-
-For information on contributing to the educode project, see the main repository [README](../README.md).
 
 ---
 

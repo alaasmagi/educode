@@ -1,9 +1,9 @@
 # educode
 ## Description
 
-* UI languages: Estonian and English (depending on component)
+* UI languages: Estonian and English
 * Development year: **2025-2026**
-* Languages and technologies: **C#, .NET Core, TypeScript, React, Flutter, Entity Framework Core, JWT, PostgreSQL, Redis**
+* Languages and technologies: **C#, .NET Core, TypeScript, React, Dart, Flutter, Entity Framework Core, JWT, PostgreSQL, Redis**
 * This is a unified monorepo containing all three components of my Bachelor's final thesis project: backend API, web application, and mobile application
 * Detailed documentation of my Bachelor's final thesis project (in Estonian): [Link to TalTech](https://digikogu.taltech.ee/et/item/6ceef6c1-93b9-428d-a366-8e67b557e207)
 
@@ -11,11 +11,11 @@
 
 ## Version History
 
+### Version 1
+This project started as my Bachelor's Thesis project. After graduation I have been improving this project alot. For clarity, I have separated the documentation of old and new version of the project. For the documentation of the old version of the project see the [LEGACY_README](LEGACY.md)
+
 ### Version 2 (Current)
 This is the current implementation (v2) of the educode platform with enhanced features, improved architecture, and a Flutter-based mobile application.
-
-### Version 1
-<!-- Description of Version 1 will be added here -->
 
 ## Components
 

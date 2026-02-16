@@ -1,4 +1,4 @@
-# educode Backend (v2)
+# educode-backend - UNDER DEVELOPMENT
 
 ## Description
 

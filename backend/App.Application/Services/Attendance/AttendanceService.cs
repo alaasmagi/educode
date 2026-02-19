@@ -168,14 +168,16 @@ public class AttendanceService(
     }
     
     
+    // TODO: This needs a bulk insert to be implemented in the EF 
     public async Task<MethodResponse<bool>> AddAttendanceAsync(AttendanceRequest request, string email, string clientApp)
     {
         var failureCount = 0;
         foreach (var date in request.AttendanceDates)
         {
-            var newAttendance = new AttendanceEntity()
+            var newAttendance = new AttendanceEntity
             {
                 CourseId = request.CourseId,
+                Identifier = IdentifierGenerator.Generate(request.CourseId.ToString()),
                 ClassroomId =  request.ClassroomId,
                 TypeId = request.AttendanceTypeId,
                 StartTime = date.ToDateTime(request.StartTime).ToUniversalTime(),
@@ -211,6 +213,7 @@ public class AttendanceService(
     {
         var updatedAttendance = new AttendanceEntity()
         {
+            Id = id,
             ClassroomId = request.ClassroomId,
             TypeId = request.AttendanceTypeId,
             StartTime = request.StartTime.ToUniversalTime(),

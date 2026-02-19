@@ -84,6 +84,7 @@ namespace App.Web.Controllers
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
             var now = DateTime.UtcNow;
             
+            workplaceEntity.Identifier = workplaceEntity.Identifier.ToUpper();
             workplaceEntity.CreatedBy = email;
             workplaceEntity.CreatedByClient = clientApp;
             workplaceEntity.UpdatedBy = email;
@@ -135,6 +136,7 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            workplaceEntity.Identifier = workplaceEntity.Identifier.ToUpper();
             workplaceEntity.UpdatedBy = email;
             workplaceEntity.UpdatedByClient = clientApp;
             workplaceEntity.UpdatedAt = DateTime.UtcNow;

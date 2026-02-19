@@ -87,6 +87,7 @@ namespace App.Web.Controllers
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
             var now = DateTime.UtcNow;
             
+            attendanceEntity.Identifier = attendanceEntity.Identifier.ToUpper();
             attendanceEntity.CreatedBy = email;
             attendanceEntity.CreatedByClient = clientApp;
             attendanceEntity.UpdatedBy = email;
@@ -142,6 +143,7 @@ namespace App.Web.Controllers
             var email = User.FindFirst(Constants.EmailClaim)?.Value ?? string.Empty;
             var clientApp = User.FindFirst(Constants.ClientAppClaim)?.Value ?? string.Empty;
 
+            attendanceEntity.Identifier = attendanceEntity.Identifier.ToUpper();
             attendanceEntity.UpdatedBy = email;
             attendanceEntity.UpdatedByClient = clientApp;
             attendanceEntity.UpdatedAt = DateTime.UtcNow;

@@ -12,6 +12,7 @@ public class UserDto
     {
         Id = user.Id;
         Email = user.Email;
+        FullName = user.FullName;
         UserTypeId = user.TypeId;
         UserType = user.Type?.TypeName;
         AccessLevel = user.Type?.AccessLevel;
@@ -21,6 +22,7 @@ public class UserDto
 
     public Guid Id { get; set; }
     public string Email { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
     public Guid UserTypeId { get; set; }
     public string? UserType { get; set; }
     public EAccessLevel? AccessLevel { get; set; }

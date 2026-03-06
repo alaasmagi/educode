@@ -8,4 +8,5 @@ public class CreateAccountRequest
     public required string Password { get; set; }
     public required Guid SchoolId { get; set; }
     public string? StudentCode { get; set; }
+    public string? RegistrationToken { get; set; }
 }

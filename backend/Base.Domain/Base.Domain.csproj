@@ -1,15 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <TargetFramework>net10.0</TargetFramework>
+        <Version>1.0.0</Version>
+        <Authors>Aleksander Laasmägi</Authors>
+        <Company>alaasmagi</Company>
+        <PackageId>alaasmagi.Base.Domain</PackageId>
+        <Description>Base Domain package for .NET webapps</Description>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PackageReadmeFile>Base.NuGet.README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
       <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.2" />
       <PackageReference Include="Sentry" Version="6.0.0" />
       <PackageReference Include="Sentry.AspNetCore" Version="6.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Base.Contracts.DataAccess\Base.Contracts.DataAccess.csproj" />
+      <ProjectReference Include="..\Base.Contracts.Domain\Base.Contracts.Domain.csproj" />
+      <ProjectReference Include="..\Base.Contracts.DTO\Base.Contracts.DTO.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="..\Base.NuGet.README.md" Pack="true" PackagePath="\" Visible="false" />
     </ItemGroup>
 
 </Project>

@@ -6,17 +6,13 @@
         <Version>1.0.0</Version>
         <Authors>Aleksander Laasmägi</Authors>
         <Company>alaasmagi</Company>
-        <PackageId>alaasmagi.Base.DTO</PackageId>
-        <Description>Base DTO package for .NET webapps</Description>
+        <PackageId>alaasmagi.Base.Contracts.DTO</PackageId>
+        <Description>Base Contracts DTO package for .NET webapps</Description>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>Base.Contracts.DTO</RootNamespace>
         <PackageReadmeFile>Base.NuGet.README.md</PackageReadmeFile>
     </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Base.Contracts.DTO\Base.Contracts.DTO.csproj" />
-      <ProjectReference Include="..\Base.Domain\Base.Domain.csproj" />
-    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
